@@ -1,4 +1,4 @@
-/* Revision hub: the subject sites plus links, images and notes, all read from hub.json. */
+/* Revision hub: the subject sites plus useful links, all read from hub.json. */
 (function () {
   'use strict';
 
@@ -7,7 +7,6 @@
       return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
     });
   }
-  function host(u) { try { return new URL(u, location.href).hostname.replace(/^www\./, ''); } catch (e) { return ''; } }
   function fmt(n) { return n ? Number(n).toLocaleString('en-GB') : ''; }
 
   function render(data) {
@@ -33,9 +32,7 @@
       h += '<h2>' + esc(sec.title) + '</h2><div class="grid">';
       sec.cards.forEach(function (c) {
         var inner = (c.image ? '<img src="' + esc(c.image) + '" alt="" loading="lazy">' : '') +
-          '<div class="body"><div class="title">' + esc(c.title) + '</div>' +
-          (c.note ? '<div class="note">' + esc(c.note) + '</div>' : '') +
-          (c.url ? '<div class="host">' + esc(host(c.url)) + '</div>' : '') + '</div>';
+          '<div class="body"><div class="title">' + esc(c.title) + '</div></div>';
         h += c.url ? '<a class="card" href="' + esc(c.url) + '" target="_blank" rel="noopener">' + inner + '</a>' : '<div class="card">' + inner + '</div>';
       });
       h += '</div>';

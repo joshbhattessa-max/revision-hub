@@ -45,8 +45,6 @@ h2 { font-size: 1.15rem; font-weight: 600; margin: 32px 0 12px; display: flex; a
 .card img { width: 100%; height: 140px; object-fit: cover; display: block; background: var(--line); }
 .card .body { padding: 12px 14px; }
 .card .title { font-weight: 600; }
-.card .note { color: var(--muted); font-size: .88rem; margin-top: 3px; white-space: pre-wrap; }
-.card .host { color: var(--muted); font-size: .75rem; margin-top: 6px; }
 footer { color: var(--muted); font-size: .8rem; margin-top: 48px; }
 
 /* ---- light / dark toggle: a sun that folds into a moon ---- */
