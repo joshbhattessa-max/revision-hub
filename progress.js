@@ -1,5 +1,5 @@
 /* Study progress, shared with the subject sites (same browser store, synced to your account through /api/progress).
-   Used by the home page's campus and the revision planner. */
+   Used by the revision planner. */
 window.JBR_PROGRESS = (function () {
   'use strict';
   var KEY = 'jbr-progress-v1';

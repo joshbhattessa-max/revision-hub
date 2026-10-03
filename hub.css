@@ -340,29 +340,3 @@ body, .subject, .card, .theme-toggle { transition: background-color .35s ease, c
   .pl-dialog { padding: 16px; }
 }
 
-/* ---- your campus (campus.js) ---- */
-.campus { min-height: 120px; }
-.cm-card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; box-shadow: var(--shadow); padding: 14px 16px; }
-.cm-hud { display: flex; flex-wrap: wrap; gap: 8px 26px; font-size: .8rem; color: var(--muted); }
-.cm-hud b { display: block; font-size: 1.35rem; color: var(--ink); font-variant-numeric: tabular-nums; line-height: 1.2; }
-.campus-art { display: block; width: 100%; max-height: 420px; margin: 6px auto 0; }
-.cm-foot { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; font-size: .85rem; color: var(--muted); }
-.cm-tip { flex: 1 1 260px; }
-.cm-next b { color: var(--ink); }
-.cm-btns { margin-left: auto; display: flex; gap: 8px; }
-.cm-btns .btn-quiet { text-decoration: none; color: var(--ink); cursor: pointer; }
-@media (max-width: 560px) { .cm-btns { margin-left: 0; } .cm-hud { gap: 8px 18px; } }
-.cm-legend { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 12px; }
-.cm-legend a { display: flex; align-items: center; gap: 7px; padding: 5px 10px 5px 8px; border: 1px solid var(--line); border-radius: 999px; text-decoration: none; font-size: .8rem; background: var(--bg); }
-.cm-legend a:hover { border-color: var(--muted); }
-.cm-legend i { width: 10px; height: 10px; border-radius: 3px; background: var(--c); }
-.cm-legend span { font-weight: 600; }
-.cm-legend em { font-style: normal; color: var(--muted); }
-.campus-art .cm-b { cursor: pointer; }
-.campus-art .cm-b:hover { filter: brightness(1.08); }
-.cm-unlock { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; font-size: .8rem; color: var(--muted); margin: 0 0 12px; }
-.cm-unlock > b { color: var(--ink); font-weight: 600; }
-.cm-unlock span { display: inline-flex; align-items: center; gap: 6px; }
-.cm-unlock em { font-style: normal; color: var(--ink); font-weight: 600; }
-.cm-unlock .cm-how { flex-basis: 100%; font-size: .75rem; }
-.cm-unlock i { display: inline-block; width: 46px; height: 5px; border-radius: 3px; background: linear-gradient(90deg, var(--ink) var(--p), var(--line) var(--p)); }
