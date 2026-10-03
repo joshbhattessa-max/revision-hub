@@ -13,7 +13,7 @@
   function render(data) {
     document.title = data.title || 'Revision';
     var h = '<div class="wrap"><header class="top"><div><h1>' + esc(data.title) + '</h1>' +
-      '<p class="subtitle">' + esc(data.subtitle) + '</p></div>' + TOGGLE + '</header>';
+      (data.subtitle ? '<p class="subtitle">' + esc(data.subtitle) + '</p>' : '') + '</div>' + TOGGLE + '</header>';
 
     h += '<h2>Subjects</h2><div class="grid">';
     (data.sites || []).forEach(function (s) {
