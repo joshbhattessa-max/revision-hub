@@ -63,3 +63,18 @@ You can buy a domain such as `myrevision.co.uk` (about £5–10 a year, e.g. thr
 ## Limits
 
 The hub's forwarding and the subject sites' secret check run on Cloudflare's free plan, which allows 100,000 requests a day across the account. KV, which holds sign-ins, allows 100,000 reads and 1,000 writes a day. Each page in a subject is about 5–15 requests and each is counted twice (hub + subject), so that's still a few thousand pages a day, plenty for a school group.
+
+## Study tools
+
+Every subject site has **My topics** (a heatmap of how secure each topic is, from your self-marking, plus red/amber/green
+ratings), **Mock paper** (a fresh paper from the school board's questions, timed on screen or printed with the mark
+scheme at the back, with a grade estimate from the board's grade boundaries) and a "How many marks did you get?" row
+under every mark scheme. On the main site, **Your campus** (home page) grows a building per subject as topics become
+secure, and the **Revision planner** (`/planner`) holds exams, class tests and topic deadlines, reads revision
+checklists (PDF or pasted text) to tick the topics they cover, picks question sets from past papers and lays out a
+day-by-day plan (also as a calendar file).
+
+- Progress lives in the browser and syncs to your account through `/api/progress` (KV key `prog:<account id>`; merged
+  item by item, newest wins). Deleting an account deletes its progress.
+- `study-meta.json` and `study/<subject>.json` are built from the subject sites by `examq_cop/tools/build_study_meta.py`;
+  grade boundaries and examiner-report notes go into each subject's `data/` with `examq_cop/tools/build_study_data.py`.

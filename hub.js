@@ -17,6 +17,7 @@
       '<div class="top-actions">' + (me && me.role === 'admin' ? '<a class="btn-quiet admin-link" href="/admin">Admin console</a>' : '') +
       (me ? userMenu(me) : '') + TOGGLE + '</div></header>';
 
+    if (window.JBR_CAMPUS) h += '<h2>Your campus</h2><div id="campus" class="campus"></div>';
     h += '<h2>Subjects</h2><div class="grid">';
     (data.sites || []).forEach(function (s) {
       if (s.hidden) return;
@@ -43,6 +44,7 @@
     h += '<footer>Past papers and mark schemes are © their exam boards. For personal revision.</footer></div>';
     document.getElementById('app').innerHTML = h;
     if (me) { wireUserMenu(); hello(me); }
+    if (window.JBR_CAMPUS) window.JBR_CAMPUS.mount(document.getElementById('campus'));
     var btn = document.querySelector('.theme-toggle');
     btn.addEventListener('click', function () { toggleTheme(btn); });
     syncToggle();

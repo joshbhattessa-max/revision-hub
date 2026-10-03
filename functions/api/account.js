@@ -38,5 +38,6 @@ export async function onRequestDelete(ctx) {
     return json({ error: "This is the only admin account, so it can't be deleted." }, 400);
   await saveAccounts(ctx.env, list.filter(a => a.id !== account.id));
   await endSessions(ctx.env, s => s.accountId === account.id);
+  await ctx.env.HUB_KV.delete('prog:' + account.id);  // and its study progress
   return json({ ok: true }, 200, { 'set-cookie': clearCookie() });
 }

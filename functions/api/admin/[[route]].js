@@ -90,6 +90,7 @@ export async function onRequest(ctx) {
       return json({ error: 'There must always be at least one admin account.' }, 400);
     await saveAccounts(env, list.filter(x => x.id !== a.id));
     await endSessions(env, s => s.accountId === a.id);
+    await env.HUB_KV.delete('prog:' + a.id);
     return json({ ok: true });
   }
 
