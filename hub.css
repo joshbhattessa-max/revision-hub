@@ -1,10 +1,20 @@
 :root {
   --bg: #f7f7f5; --card: #ffffff; --ink: #33312e; --muted: #6b6862; --line: #e4e2dd; --accent: #33312e;
   --shadow: 0 1px 2px rgba(0,0,0,.05), 0 4px 14px rgba(0,0,0,.05);
+  color-scheme: light;
+}
+/* dark: chosen with the toggle, or the device setting when nothing has been chosen */
+:root[data-theme="dark"] {
+  --bg: #17171a; --card: #222226; --ink: #ecebe8; --muted: #a3a09a; --line: #34343a; --accent: #ecebe8;
+  --shadow: 0 1px 2px rgba(0,0,0,.4), 0 4px 14px rgba(0,0,0,.25);
+  color-scheme: dark;
 }
 @media (prefers-color-scheme: dark) {
-  :root { --bg: #17171a; --card: #222226; --ink: #ecebe8; --muted: #a3a09a; --line: #34343a; --accent: #ecebe8;
-    --shadow: 0 1px 2px rgba(0,0,0,.4); }
+  :root:not([data-theme="light"]) {
+    --bg: #17171a; --card: #222226; --ink: #ecebe8; --muted: #a3a09a; --line: #34343a; --accent: #ecebe8;
+    --shadow: 0 1px 2px rgba(0,0,0,.4), 0 4px 14px rgba(0,0,0,.25);
+    color-scheme: dark;
+  }
 }
 * { box-sizing: border-box; }
 body { margin: 0; background: var(--bg); color: var(--ink); font-family: "IBM Plex Sans", Arial, Helvetica, sans-serif; }
@@ -37,3 +47,32 @@ h2 { font-size: 1.15rem; font-weight: 600; margin: 32px 0 12px; display: flex; a
 .card .note { color: var(--muted); font-size: .88rem; margin-top: 3px; white-space: pre-wrap; }
 .card .host { color: var(--muted); font-size: .75rem; margin-top: 6px; }
 footer { color: var(--muted); font-size: .8rem; margin-top: 48px; }
+
+/* ---- light / dark toggle: a sun that folds into a moon ---- */
+.theme-toggle { --size: 44px; width: var(--size); height: var(--size); flex: none; border-radius: 50%; border: 1px solid var(--line);
+  background: var(--card); color: var(--ink); cursor: pointer; display: grid; place-items: center; padding: 0;
+  box-shadow: var(--shadow); transition: transform .25s ease, border-color .25s ease; -webkit-tap-highlight-color: transparent; }
+.theme-toggle:hover { transform: rotate(-12deg) scale(1.06); border-color: var(--muted); }
+.theme-toggle:active { transform: scale(.92); }
+.theme-toggle:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
+.theme-toggle svg { width: 24px; height: 24px; overflow: visible; }
+.sun-core { transition: r .5s cubic-bezier(.34, 1.56, .64, 1); }
+.moon-cut { transition: cx .5s cubic-bezier(.34, 1.56, .64, 1), cy .5s cubic-bezier(.34, 1.56, .64, 1); }
+.sun-rays { transform-origin: 12px 12px; transition: transform .5s cubic-bezier(.34, 1.56, .64, 1), opacity .3s ease; }
+.sun-moon { transition: transform .6s cubic-bezier(.34, 1.56, .64, 1); }
+[data-mode="dark"] .sun-core { r: 9; }
+[data-mode="dark"] .moon-cut { cx: 17; cy: 7; }
+[data-mode="dark"] .sun-rays { transform: rotate(-90deg) scale(0); opacity: 0; }
+[data-mode="dark"] .sun-moon { transform: rotate(40deg); }
+.stars circle { opacity: 0; transform-box: fill-box; transform-origin: center; transform: scale(0); transition: opacity .3s ease, transform .4s cubic-bezier(.34, 1.56, .64, 1); }
+[data-mode="dark"] .stars circle { opacity: 1; transform: scale(1); }
+[data-mode="dark"] .stars circle:nth-child(2) { transition-delay: .12s; }
+[data-mode="dark"] .stars circle:nth-child(3) { transition-delay: .22s; }
+
+/* the new theme spreads out in a circle from the button (browsers with view transitions) */
+::view-transition-old(root), ::view-transition-new(root) { animation: none; mix-blend-mode: normal; }
+/* elsewhere colours simply fade */
+body, .subject, .card, .theme-toggle { transition: background-color .35s ease, color .35s ease, border-color .35s ease; }
+@media (prefers-reduced-motion: reduce) {
+  .theme-toggle, .sun-core, .moon-cut, .sun-rays, .sun-moon, .stars circle, body, .subject, .card { transition: none !important; }
+}
