@@ -1,0 +1,22 @@
+{
+  "title": "My GCSE Revision",
+  "subtitle": "Past exam questions by topic for every subject, plus my links and notes.",
+  "sites": [
+    { "path": "chemistry", "name": "ChemQ", "subject": "Chemistry", "origin": "https://chemq.pages.dev", "color": "#17A398", "questions": 18143, "papers": 1376, "image": "" },
+    { "path": "biology", "name": "BioQ", "subject": "Biology", "origin": "https://bioq.pages.dev", "color": "#2E9E4F", "questions": 17818, "papers": 1385, "image": "" },
+    { "path": "physics", "name": "PhysQ", "subject": "Physics", "origin": "https://physq.pages.dev", "color": "#067BC2", "questions": 18622, "papers": 1355, "image": "" },
+    { "path": "maths", "name": "MathsQ", "subject": "Maths", "origin": "https://mathsq.pages.dev", "color": "#6750D5", "questions": 28105, "papers": 1698, "image": "" },
+    { "path": "geography", "name": "GeoQ", "subject": "Geography", "origin": "https://geoq.pages.dev", "color": "#C2711A", "questions": 2768, "papers": 586, "image": "" },
+    { "path": "computer-science", "name": "CSQ", "subject": "Computer Science", "origin": "https://csq.pages.dev", "color": "#33312E", "questions": 2157, "papers": 252, "image": "" },
+    { "path": "spanish", "name": "SpanishQ", "subject": "Spanish", "origin": "https://spanishq.pages.dev", "color": "#E0453A", "questions": 541, "papers": 36, "image": "" }
+  ],
+  "sections": [
+    {
+      "title": "Useful links",
+      "cards": [
+        { "title": "Physics & Maths Tutor", "url": "https://www.physicsandmathstutor.com", "image": "", "note": "Revision notes, flashcards and the original past papers" },
+        { "title": "ExamQ", "url": "https://www.examq.co.uk", "image": "", "note": "The site these are modelled on" }
+      ]
+    }
+  ]
+}
