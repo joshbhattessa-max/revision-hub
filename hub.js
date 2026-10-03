@@ -9,10 +9,12 @@
   }
   function fmt(n) { return n ? Number(n).toLocaleString('en-GB') : ''; }
 
-  function render(data) {
+  function render(data, me) {
     document.title = data.title || 'Revision';
     var h = '<div class="wrap"><header class="top"><div class="brand">' + JBR_LOGO + '<div><h1>' + esc(data.title) + '</h1>' +
-      (data.subtitle ? '<p class="subtitle">' + esc(data.subtitle) + '</p>' : '') + '</div></div>' + TOGGLE + '</header>';
+      (data.subtitle ? '<p class="subtitle">' + esc(data.subtitle) + '</p>' : '') + '</div></div>' +
+      '<div class="top-actions">' + (me && me.role === 'admin' ? '<a class="btn-quiet" href="/admin">Admin console</a>' : '') +
+      TOGGLE + '</div></header>';
 
     h += '<h2>Subjects</h2><div class="grid">';
     (data.sites || []).forEach(function (s) {
@@ -29,7 +31,7 @@
 
     (data.sections || []).forEach(function (sec) {
       if (!sec.cards || !sec.cards.length) return;
-      h += '<h2>' + esc(sec.title) + '</h2><div class="grid">';
+      h += '<h2>' + esc(sec.title) + '</h2><div class="grid links">';
       sec.cards.forEach(function (c) {
         var inner = (c.image ? '<img src="' + esc(c.image) + '" alt="" loading="lazy">' : '') +
           '<div class="body"><div class="title">' + esc(c.title) + '</div></div>';
@@ -37,8 +39,13 @@
       });
       h += '</div>';
     });
-    h += '<footer>Past papers and mark schemes are © their exam boards. For personal revision.</footer></div>';
+    h += '<footer>Past papers and mark schemes are © their exam boards. For personal revision.' +
+      (me ? ' · <button type="button" class="signout">Sign out</button>' : '') + '</footer></div>';
     document.getElementById('app').innerHTML = h;
+    var so = document.querySelector('.signout');
+    if (so) so.addEventListener('click', function () {
+      fetch('/api/logout', { method: 'POST', credentials: 'same-origin' }).then(function () { location.replace('/login'); });
+    });
     var btn = document.querySelector('.theme-toggle');
     btn.addEventListener('click', function () { toggleTheme(btn); });
     syncToggle();
@@ -92,7 +99,14 @@
   // drafts left over from the old editable version are no longer used
   try { localStorage.removeItem('hub-draft'); } catch (e) { /* storage blocked */ }
 
-  fetch('hub.json', { cache: 'no-store' }).then(function (r) { return r.json(); }).then(render).catch(function () {
-    document.getElementById('app').innerHTML = '<p class="loading">Could not load hub.json.</p>';
+  // content and who is signed in come from the hub's functions (signed-in only)
+  var get = function (u) {
+    return fetch(u, { cache: 'no-store', credentials: 'same-origin' }).then(function (r) {
+      if (r.status === 401) { location.replace('/login'); throw new Error('signed out'); }
+      return r.json();
+    });
+  };
+  Promise.all([get('/api/hub'), get('/api/me')]).then(function (r) { render(r[0], r[1]); }).catch(function (e) {
+    if (e.message !== 'signed out') document.getElementById('app').innerHTML = '<p class="loading">Could not load the page.</p>';
   });
 })();

@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Admin console · Josh B Revision</title>
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="color-scheme" content="light dark">
+  <script>try { var t = localStorage.getItem('hub-theme'); if (t) document.documentElement.setAttribute('data-theme', t); } catch (e) {}</script>
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="favicon-32.png" sizes="32x32" type="image/png">
+  <link rel="stylesheet" href="fonts.css">
+  <link rel="stylesheet" href="hub.css">
+</head>
+<body>
+  <div class="wrap admin">
+    <header class="top">
+      <div class="brand"><img src="favicon.svg" alt="" width="52" height="52"><div><h1>Admin console</h1></div></div>
+      <div class="top-actions"><a class="btn-quiet" href="/">Back to the site</a></div>
+    </header>
+    <nav class="tabs" role="tablist">
+      <button type="button" role="tab" data-tab="content" class="on">Content</button>
+      <button type="button" role="tab" data-tab="sessions">Signed in</button>
+      <button type="button" role="tab" data-tab="accounts">Accounts</button>
+    </nav>
+    <p class="notice" role="status"></p>
+    <section id="tab-content"></section>
+    <section id="tab-sessions" hidden></section>
+    <section id="tab-accounts" hidden></section>
+  </div>
+  <dialog class="ask"><form method="dialog"><p class="ask-q"></p><input class="ask-in"><div class="ask-btns">
+    <button value="cancel" type="submit" class="btn-quiet">Cancel</button><button value="ok" type="submit" class="btn-main">OK</button></div></form></dialog>
+  <script src="admin.js"></script>
+</body>
+</html>

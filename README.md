@@ -1,6 +1,6 @@
 # Revision hub
 
-One web address for everything: a home page with all the subject sites, plus your own links, pictures and notes.
+One web address for everything: a sign-in, then a home page with all the subject sites plus your own links and pictures.
 
 - `https://<your-hub>.pages.dev/` is the home page.
 - `https://<your-hub>.pages.dev/chemistry/` is ChemQ. The same goes for `/biology/`, `/physics/`, `/maths/`, `/geography/`, `/computer-science/` and `/spanish/`.
@@ -16,28 +16,31 @@ Before you start, the seven subject sites should already be on Cloudflare (chemq
 3. Click *Save and Deploy*. Your hub is at `https://<project-name>.pages.dev`.
 4. If any subject site ended up with a different address (e.g. `bioq-7x3.pages.dev`), change its `origin` in `hub.json`.
 
-## Changing the page
+## Sign-in
 
-The page is view-only. Everything on it (title, subjects, links, pictures, notes) comes from `hub.json`; change that file and the site updates within a couple of minutes. Pictures can go in an `images/` folder and be referred to as `images/name.jpg`.
+Everything (the home page, every subject and the admin console) needs a sign-in. A sign-in lasts 6 hours.
 
-## Adding a login (Cloudflare Access, free for up to 50 people)
+- **Accounts to start with:** `JoshB` / `admin` (admin), `JoshB` / `normal` and `test` / `test` (standard). Change these weak passwords in the admin console once the site is up.
+- **Sign-up:** anyone can make a standard account on the login page ("Create an account") with a username and a password of at least 6 characters. Each address can make at most 5 accounts an hour.
+- **Standard accounts** see the site as normal.
+- **Admin accounts** also get an **Admin console** button on the home page (`/admin`):
+  - **Content:** change the title, subjects, links and pictures. Uploads are kept in Cloudflare. *Reset to the built-in version* goes back to `hub.json`.
+  - **Signed in:** who is signed in now, from which device and country. You can sign out one session, or everyone except you.
+  - **Accounts:** change a password, rename, make admin or standard, sign out everywhere, delete, or add an account.
+- Passwords are stored only as salted PBKDF2 hashes. Ten wrong passwords from one address lock that address out for 15 minutes.
 
-The hub and all seven subject sites go behind one login. You type your email and get a one-time code, and only the emails you list can get in.
+### Setting it up (once)
 
-1. In the Cloudflare dashboard open **Zero Trust**. The first time, pick a team name and the **Free** plan.
-2. **Access → Service Auth → Service Tokens → Create Service Token**, named `hub`. Copy the **Client ID** and **Client Secret** (the secret is only shown once).
-3. **Access → Applications → Add an application → Self-hosted**:
-   - Name: `Revision`
-   - Domains: add your hub (e.g. `my-revision.pages.dev`) and every subject site
-     (`chemq.pages.dev`, `bioq.pages.dev`, `physq.pages.dev`, `mathsq.pages.dev`, `geoq.pages.dev`, `csq-o88.pages.dev`, `spanishq.pages.dev`)
-   - Policy 1: action **Allow**, include **Emails** → your email address(es)
-   - Policy 2: action **Service Auth**, include **Service Token** → `hub`
-   - Login method: **One-time PIN**
-4. In the hub's Pages project, open **Settings → Variables and Secrets** and add two secrets:
-   `ACCESS_CLIENT_ID` (the Client ID) and `ACCESS_CLIENT_SECRET` (the Client Secret).
-5. **Deployments → Retry deployment** on the hub, so it picks up the secrets.
+1. **Make the store.** In the Cloudflare dashboard go to *Storage & Databases* → *KV* → *Create a namespace*, and name it `hub`.
+2. **Bind it to the hub.** In the hub's Pages project go to *Settings* → *Bindings* → *Add* → *KV namespace*. Name it `HUB_KV` and pick `hub`. Do this for Production (and Preview, if you use it).
+3. **Make a shared secret.** Pick a long random string, e.g. from a password generator, at least 32 characters.
+   - Hub: add it in *Settings* → *Variables and Secrets* → *Add* → type *Secret*, name `HUB_SECRET`.
+   - Each of the seven subject projects (chemq, bioq, physq, mathsq, geoq, csq, spanishq): add the same secret, with the same name `HUB_SECRET`.
 
-To let someone else in later, add their email to Policy 1.
+   The subject sites then refuse anyone who opens them directly. Only the hub can fetch them, so no one gets round the sign-in. Set the hub's secret first: until a subject has the secret it stays open, and once it has the secret it only answers the hub.
+4. **Redeploy everything.** Run *Deployments* → *Retry deployment* on the hub and on each subject site, so they pick up the binding and secret.
+
+Until `HUB_KV` is bound, the hub shows a "Sign-in isn't set up yet" page instead of the site. It fails closed, never open.
 
 ## Your own domain (optional)
 
@@ -45,4 +48,4 @@ You can buy a domain such as `myrevision.co.uk` (about £5–10 a year, e.g. thr
 
 ## Limits
 
-The hub's forwarding runs on Cloudflare's free plan, which allows 100,000 requests a day. One question page is about 5–15 requests, so that's thousands of pages a day.
+The hub's forwarding and the subject sites' secret check run on Cloudflare's free plan, which allows 100,000 requests a day across the account. KV, which holds sign-ins, allows 100,000 reads and 1,000 writes a day. Each page in a subject is about 5–15 requests and each is counted twice (hub + subject), so that's still a few thousand pages a day, plenty for a school group.

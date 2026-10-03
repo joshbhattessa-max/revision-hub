@@ -1,19 +1,5 @@
 {
   "version": 1,
-  "include": [
-    "/*"
-  ],
-  "exclude": [
-    "/",
-    "/index.html",
-    "/hub.json",
-    "/hub.css",
-    "/hub.js",
-    "/favicon.svg",
-    "/apple-touch-icon.png",
-    "/favicon-32.png",
-    "/images/*",
-    "/fonts.css",
-    "/fonts/*"
-  ]
+  "include": ["/*"],
+  "exclude": []
 }
