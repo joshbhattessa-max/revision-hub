@@ -24,7 +24,18 @@ a { color: inherit; }
 .loading { padding: 40px; color: var(--muted); }
 
 header.top { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; padding: 36px 0 24px; }
-h1 { font-size: clamp(1.8rem, 4vw, 2.6rem); font-weight: 700; margin: 0 0 6px; letter-spacing: -.5px; }
+.brand { display: flex; align-items: center; gap: 14px; }
+.jbr { width: clamp(46px, 7vw, 58px); height: auto; aspect-ratio: 1; display: block; flex: none; }
+/* the JBR monogram: light letters on dark in light mode, dark letters on light in dark mode */
+.jbr-bg { fill: #1c1c1c; }
+.jbr-fg { fill: #e8e8e8; }
+:root[data-theme="dark"] .jbr-bg { fill: #e8e8e8; }
+:root[data-theme="dark"] .jbr-fg { fill: #1c1c1c; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .jbr-bg { fill: #e8e8e8; }
+  :root:not([data-theme="light"]) .jbr-fg { fill: #1c1c1c; }
+}
+h1 { font-size: clamp(1.8rem, 4vw, 2.6rem); font-weight: 700; margin: 0; letter-spacing: -.5px; }
 .subtitle { color: var(--muted); margin: 0; font-size: 1.05rem; }
 
 h2 { font-size: 1.15rem; font-weight: 600; margin: 32px 0 12px; display: flex; align-items: center; gap: 8px; }
