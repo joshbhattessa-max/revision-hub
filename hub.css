@@ -352,3 +352,10 @@ body, .subject, .card, .theme-toggle { transition: background-color .35s ease, c
 .cm-legend i { width: 10px; height: 10px; border-radius: 3px; background: var(--c); }
 .cm-legend span { font-weight: 600; }
 .cm-legend em { font-style: normal; color: var(--muted); }
+.campus-art .cm-b { cursor: pointer; }
+.campus-art .cm-b:hover { filter: brightness(1.08); }
+.cm-unlock { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; font-size: .8rem; color: var(--muted); margin: 0 0 12px; }
+.cm-unlock > b { color: var(--ink); font-weight: 600; }
+.cm-unlock span { display: inline-flex; align-items: center; gap: 6px; }
+.cm-unlock em { font-style: normal; color: var(--ink); font-weight: 600; }
+.cm-unlock i { display: inline-block; width: 46px; height: 5px; border-radius: 3px; background: linear-gradient(90deg, var(--ink) var(--p), var(--line) var(--p)); }
