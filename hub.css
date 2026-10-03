@@ -36,4 +36,4 @@ h2 { font-size: 1.15rem; font-weight: 600; margin: 32px 0 12px; display: flex; a
 .card .title { font-weight: 600; }
 .card .note { color: var(--muted); font-size: .88rem; margin-top: 3px; white-space: pre-wrap; }
 .card .host { color: var(--muted); font-size: .75rem; margin-top: 6px; }
-.subject footer { color: var(--muted); font-size: .8rem; margin-top: 48px; }
+footer { color: var(--muted); font-size: .8rem; margin-top: 48px; }
