@@ -1,9 +1,13 @@
 // Every request to the hub (its pages, the subject sites it serves and the API) needs a signed-in session.
 import { getSession, json } from './_lib/auth.js';
+import { maintenance, maintenancePage } from './_lib/maintenance.js';
 
 // what the login page itself needs
 const OPEN = new Set(['/login', '/login.html', '/login.js', '/hub.css', '/fonts.css', '/favicon.svg', '/favicon-32.png',
-  '/apple-touch-icon.png', '/api/login', '/api/signup']);
+  '/apple-touch-icon.png', '/api/login', '/api/signup', '/api/status']);
+// what still works for everyone during maintenance (so an admin can sign in)
+const DURING_MAINTENANCE = new Set(['/login.js', '/hub.css', '/fonts.css', '/favicon.svg', '/favicon-32.png', '/apple-touch-icon.png',
+  '/api/login', '/api/logout', '/api/status']);
 const ADMIN = p => p === '/admin' || p === '/admin.html' || p === '/admin.js' || p.startsWith('/api/admin/');
 
 const SETUP = `<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
@@ -18,8 +22,19 @@ export async function onRequest(ctx) {
   if (!ctx.env.HUB_KV) return new Response(SETUP, { status: 503, headers: { 'content-type': 'text/html; charset=utf-8' } });
 
   const session = await getSession(ctx.env, ctx.request);
+  const isLogin = path === '/login' || path === '/login.html';
+  const m = await maintenance(ctx);
+  if (m.on && !(session && session.role === 'admin')) {
+    const adminLogin = isLogin && url.searchParams.has('admin');
+    if (!adminLogin && !DURING_MAINTENANCE.has(path) && !path.startsWith('/fonts/')) {
+      const headers = { 'cache-control': 'no-store', 'retry-after': '120' };
+      if (path.startsWith('/api/')) return json({ error: 'Down for maintenance', maintenance: true }, 503, headers);
+      return new Response(maintenancePage(m), { status: 503, headers: { ...headers, 'content-type': 'text/html; charset=utf-8' } });
+    }
+    if (adminLogin) return ctx.next();
+  }
   if (OPEN.has(path) || path.startsWith('/fonts/')) {
-    if (session && (path === '/login' || path === '/login.html')) return Response.redirect(url.origin + safeNext(url), 302);
+    if (session && isLogin) return Response.redirect(url.origin + safeNext(url), 302);
     return ctx.next();
   }
   if (!session) {

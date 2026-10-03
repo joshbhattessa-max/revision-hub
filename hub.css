@@ -207,3 +207,7 @@ body, .subject, .card, .theme-toggle { transition: background-color .35s ease, c
 .ask::backdrop { background: rgba(0, 0, 0, .45); }
 .ask-in { width: 100%; box-sizing: border-box; margin: 6px 0 14px; }
 .ask-btns { display: flex; gap: 8px; justify-content: flex-end; }
+
+/* shown to admins while maintenance mode is on */
+.maint-bar { background: var(--ink); color: var(--bg); text-align: center; font-size: .88rem; padding: 9px 16px; }
+.maint-bar a { color: inherit; font-weight: 600; }

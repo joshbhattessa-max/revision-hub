@@ -7,6 +7,8 @@
 //   DELETE /api/admin/accounts/:id
 //   GET    /api/admin/hub    PUT /api/admin/hub {content}    DELETE /api/admin/hub (back to hub.json)
 //   POST   /api/admin/media                  raw image body -> {url}
+//   GET    /api/admin/maintenance    PUT /api/admin/maintenance {on, message}
+import { forgetMaintenance, maintenance } from '../../_lib/maintenance.js';
 import { endSessions, getAccounts, hashPassword, hubContent, json, listSessions, randomToken, saveAccounts } from '../../_lib/auth.js';
 
 const ROLES = ['admin', 'user'];
@@ -87,6 +89,14 @@ export async function onRequest(ctx) {
     await saveAccounts(env, list.filter(x => x.id !== a.id));
     await endSessions(env, s => s.accountId === a.id);
     return json({ ok: true });
+  }
+
+  if (route === 'maintenance' && method === 'GET') return json(await maintenance(ctx, true));
+  if (route === 'maintenance' && method === 'PUT') {
+    const on = !!body.on, message = String(body.message || '').trim().slice(0, 300);
+    await env.HUB_KV.put('maintenance', JSON.stringify({ on, message, since: on ? Date.now() : null }));
+    forgetMaintenance();
+    return json(await maintenance(ctx, true));
   }
 
   if (route === 'hub' && method === 'GET') return json(await hubContent(ctx));

@@ -47,10 +47,11 @@
   });
   function show(name) {
     Array.prototype.forEach.call(tabs, function (b) { b.classList.toggle('on', b.getAttribute('data-tab') === name); });
-    ['content', 'sessions', 'accounts'].forEach(function (n) { document.getElementById('tab-' + n).hidden = n !== name; });
+    ['content', 'sessions', 'accounts', 'maintenance'].forEach(function (n) { document.getElementById('tab-' + n).hidden = n !== name; });
     say('');
     if (name === 'sessions') loadSessions();
     if (name === 'accounts') loadAccounts();
+    if (name === 'maintenance') loadMaintenance();
   }
 
   // ------------------------------------------------------------------ content
@@ -190,6 +191,33 @@
     }).catch(function (e) { say(e.message, true); });
   }
 
+  // ------------------------------------------------------------------ maintenance
+  var mbox = document.getElementById('tab-maintenance');
+  function loadMaintenance() {
+    api('GET', 'maintenance').then(drawMaintenance).catch(function (e) { say(e.message, true); });
+  }
+  function drawMaintenance(m) {
+    mbox.innerHTML = '<div class="box">' +
+      '<div class="row"><b class="grow">Maintenance mode is ' + (m.on ? 'ON' : 'off') + '</b>' +
+      '<button type="button" class="' + (m.byAdmin ? 'small' : 'btn-main') + ' flip">' + (m.byAdmin ? 'Turn off' : 'Turn on') + '</button></div>' +
+      '<p class="muted">While it\'s on, everyone except admins sees a "Down for maintenance" page, and that page reloads by itself when the site is back. ' +
+      'Admins can still sign in (the page has an "Admin sign-in" link) and use the site as normal.</p>' +
+      (m.byUpdate ? '<p class="muted"><b>An update is being deployed</b> and has switched maintenance on by itself. It turns off when the update is finished.</p>' : '') +
+      '<label class="lbl">Message on the maintenance page (optional)<input type="text" class="msg" maxlength="300" placeholder="e.g. Adding the 2026 papers. Back by 6pm." value="' + esc(m.message || '') + '"></label>' +
+      '<div class="row"><button type="button" class="small savemsg">Save message</button>' +
+      '<a class="small btn-quiet" href="/" target="_blank" rel="noopener">See the site</a></div></div>';
+    var msg = mbox.querySelector('.msg');
+    function put(on) {
+      return api('PUT', 'maintenance', { on: on, message: msg.value }).then(function (s) { drawMaintenance(s); say(s.on ? 'Maintenance mode is on.' : 'Maintenance mode is off.'); })
+        .catch(function (e) { say(e.message, true); });
+    }
+    mbox.querySelector('.flip').addEventListener('click', function () {
+      if (!m.byAdmin && !confirm('Turn maintenance mode on? Everyone except admins will see the maintenance page.')) return;
+      put(!m.byAdmin);
+    });
+    mbox.querySelector('.savemsg').addEventListener('click', function () { put(m.byAdmin); });
+  }
+
   // ------------------------------------------------------------------ accounts
   var abox = document.getElementById('tab-accounts');
   function loadAccounts() {
@@ -236,4 +264,6 @@
   }
 
   loadContent();
+  // /admin#maintenance (from the banner on the home page) opens that tab
+  if (location.hash === '#maintenance') show('maintenance');
 })();

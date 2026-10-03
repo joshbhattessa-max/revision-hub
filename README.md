@@ -30,6 +30,10 @@ Everything (the home page, every subject and the admin console) needs a sign-in.
   - **Accounts:** change a password, rename, make admin or standard, sign out everywhere, delete, or add an account.
 - Passwords are stored only as salted PBKDF2 hashes. Ten wrong passwords from one address lock that address out for 15 minutes.
 
+### Maintenance mode
+
+The **Maintenance** tab in the admin console turns it on or off, with an optional message. While it's on, everyone except admins gets a "Down for maintenance" page. That page reloads by itself when the site is back, and has an "Admin sign-in" link. Setting `"on": true` in `maintenance.json` does the same from the repository, which is useful while a big update deploys.
+
 ### Setting it up (once)
 
 1. **Make the store.** In the Cloudflare dashboard go to *Storage & Databases* → *KV* → *Create a namespace*, and name it `hub`.
