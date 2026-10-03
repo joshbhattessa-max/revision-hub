@@ -211,3 +211,7 @@ body, .subject, .card, .theme-toggle { transition: background-color .35s ease, c
 /* shown to admins while maintenance mode is on */
 .maint-bar { background: var(--ink); color: var(--bg); text-align: center; font-size: .88rem; padding: 9px 16px; }
 .maint-bar a { color: inherit; font-weight: 600; }
+
+/* admin console: maintenance switch in the header */
+.quick-maint.on { background: #d33c3c; border-color: #d33c3c; color: #fff; }
+.quick-maint:disabled { opacity: .7; cursor: default; }

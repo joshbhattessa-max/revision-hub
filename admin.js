@@ -196,7 +196,27 @@
   function loadMaintenance() {
     api('GET', 'maintenance').then(drawMaintenance).catch(function (e) { say(e.message, true); });
   }
+  // one-click switch in the header, on every tab (admins keep using the site while it's on)
+  var quick = document.querySelector('.quick-maint');
+  function drawQuick(m) {
+    quick.hidden = false;
+    quick.classList.toggle('on', m.on);
+    quick.disabled = m.byUpdate && !m.byAdmin;
+    quick.textContent = m.on ? 'Maintenance mode: ON' : 'Maintenance mode: off';
+    quick.title = quick.disabled ? 'Switched on by an update being deployed; it turns off when the update is finished'
+      : m.on ? 'Click to open the site to everyone again' : 'Click to show everyone except admins the maintenance page';
+    quick.onclick = function () {
+      if (!m.byAdmin && !confirm('Put the site into maintenance mode? Everyone except admins will see the maintenance page; you can still use the site.')) return;
+      api('PUT', 'maintenance', { on: !m.byAdmin, message: m.message || '' }).then(function (s) {
+        drawQuick(s); if (!mbox.hidden) drawMaintenance(s);
+        say(s.on ? 'Maintenance mode is on. You can still use the site as normal.' : 'Maintenance mode is off. The site is open to everyone.');
+      }).catch(function (e) { say(e.message, true); });
+    };
+  }
+  api('GET', 'maintenance').then(drawQuick).catch(function () {});
+
   function drawMaintenance(m) {
+    drawQuick(m);
     mbox.innerHTML = '<div class="box">' +
       '<div class="row"><b class="grow">Maintenance mode is ' + (m.on ? 'ON' : 'off') + '</b>' +
       '<button type="button" class="' + (m.byAdmin ? 'small' : 'btn-main') + ' flip">' + (m.byAdmin ? 'Turn off' : 'Turn on') + '</button></div>' +
