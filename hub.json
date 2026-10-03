@@ -1,5 +1,5 @@
 {
-  "title": "My GCSE Revision",
+  "title": "Josh B Revision",
   "subtitle": "Past exam questions by topic for every subject, plus my links and notes.",
   "sites": [
     { "path": "chemistry", "name": "ChemQ", "subject": "Chemistry", "origin": "https://chemq.pages.dev", "color": "#17A398", "questions": 18143, "papers": 1376, "image": "" },
