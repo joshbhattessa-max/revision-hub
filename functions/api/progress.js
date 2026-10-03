@@ -1,18 +1,18 @@
-// Study progress for the signed-in account: self-marked questions, topic confidence ratings, mock results and the
-// revision plan. The subject sites keep a copy in the browser and sync it here, so it follows you between devices.
+// Study progress for the signed-in account: the questions you've done (and your marks), the mock papers you've
+// submitted, and the revision plan. Nothing else is kept. The subject sites keep a copy in the browser and sync it
+// here, so it follows you between devices.
 // Each save is merged with what's stored (newest wins, item by item), so two tabs or devices never undo each other.
 import { json } from '../_lib/auth.js';
 
 const MAX_BYTES = 600 * 1024;
 const key = s => 'prog:' + s.accountId;
-const blank = () => ({ v: 1, items: {}, rag: {}, mocks: [], plan: null, t: 0 });
+const blank = () => ({ v: 1, items: {}, mocks: [], plan: null, t: 0 });
 
 function merge(a, b) {
   const out = blank();
   for (const x of [a, b]) {
     if (!x || x.v !== 1) continue;
     for (const [k, v] of Object.entries(x.items || {})) if (v && (!out.items[k] || v.t > out.items[k].t)) out.items[k] = v;
-    for (const [k, v] of Object.entries(x.rag || {})) if (v && (!out.rag[k] || v.t > out.rag[k].t)) out.rag[k] = v;
     for (const m of x.mocks || []) if (m && !out.mocks.some(y => y.id === m.id)) out.mocks.push(m);
     if (x.plan && (!out.plan || (x.plan.t || 0) > (out.plan.t || 0))) out.plan = x.plan;
     out.t = Math.max(out.t, x.t || 0);

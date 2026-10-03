@@ -3,7 +3,7 @@
 window.JBR_PROGRESS = (function () {
   'use strict';
   var KEY = 'jbr-progress-v1';
-  function blank() { return { v: 1, items: {}, rag: {}, mocks: [], plan: null, t: 0 }; }
+  function blank() { return { v: 1, items: {}, mocks: [], plan: null, t: 0 }; }
   function load() {
     try { var p = JSON.parse(localStorage.getItem(KEY)); return p && p.v === 1 ? p : blank(); } catch (e) { return blank(); }
   }
@@ -13,7 +13,6 @@ window.JBR_PROGRESS = (function () {
     [a, b].forEach(function (x) {
       if (!x) return;
       Object.keys(x.items || {}).forEach(function (k) { var v = x.items[k]; if (!out.items[k] || v.t > out.items[k].t) out.items[k] = v; });
-      Object.keys(x.rag || {}).forEach(function (k) { var v = x.rag[k]; if (!out.rag[k] || v.t > out.rag[k].t) out.rag[k] = v; });
       (x.mocks || []).forEach(function (m) { if (!out.mocks.some(function (y) { return y.id === m.id; })) out.mocks.push(m); });
       if (x.plan && (!out.plan || (x.plan.t || 0) > (out.plan.t || 0))) out.plan = x.plan;
       out.t = Math.max(out.t, x.t || 0);
@@ -59,5 +58,18 @@ window.JBR_PROGRESS = (function () {
     if (ms.pct >= 0.75 && ms.n >= 3) return 'secure';
     return ms.pct >= 0.5 ? 'developing' : 'weak';
   }
-  return { get: function () { return P; }, save: save, pull: pull, mastery: mastery, level: level, flush: push };
+  // spaced repetition, the same rule as the subject sites: a question you didn't get full marks on is due a day
+  // later, then 3 days, then 7 after each right answer; three right in a row and it's learnt
+  var GAPS = [1, 3, 7];
+  function review(rec) {
+    if (!rec) return null;
+    var h = rec.h || [[rec.t, rec.g]], lastMiss = -1;
+    for (var i = 0; i < h.length; i++) if (h[i][1] < rec.m) lastMiss = i;
+    if (lastMiss < 0) return null;
+    var rightSince = h.length - 1 - lastMiss;
+    if (rightSince >= GAPS.length) return null;
+    var due = h[h.length - 1][0] + GAPS[rightSince] * 864e5;
+    return { due: due, now: due <= Date.now(), step: rightSince };
+  }
+  return { get: function () { return P; }, save: save, pull: pull, mastery: mastery, level: level, review: review, flush: push };
 })();

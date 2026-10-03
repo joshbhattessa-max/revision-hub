@@ -1,0 +1,8 @@
+{
+  "name": "josh-b-revision",
+  "private": true,
+  "description": "The main site's server code (Cloudflare Pages Functions). The AI question picker uses the Anthropic SDK.",
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.131.0"
+  }
+}

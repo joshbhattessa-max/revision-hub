@@ -74,7 +74,7 @@
 
   // one checklist line -> { topic, how: 'number' | 'words', sure } or null
   // the checklist's own title and the "Name: / Class:" line aren't topics
-  var HEADING = /\b(check ?list|revision list|topic list|learning objectives)\b|\b(name|class|date|teacher|form)\s*:/i;
+  var HEADING = /\b(check ?list|revision list|topic list|topic sheet|learning objectives)\b|\b(name|class|date|teacher|form)\s*:/i;
   function matchLine(ix, line) {
     if (HEADING.test(line)) return null;
     var n = byNumber(ix, line);
@@ -98,6 +98,6 @@
     return lines(text).map(function (l) { var m = matchLine(ix, l); return { line: l, topic: m ? m.topic : null, how: m ? m.how : null, sure: m ? m.sure : false }; });
   }
 
-  var api = { match: match, lines: lines, tokens: tokens };
+  var api = { match: match, lines: lines, tokens: tokens, isHeading: function (l) { return HEADING.test(l); } };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.JBR_MATCH = api;
 })(this);

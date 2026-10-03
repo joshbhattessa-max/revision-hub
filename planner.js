@@ -1,12 +1,14 @@
 /* Revision planner: your exams, class tests and topic deadlines; a day-by-day plan that favours the topics you're
-   weakest at and the dates coming up soonest; revision checklists matched to topics; and question sets picked
-   from the school's own exam board's past papers. Saved with your progress, so it follows you between devices. */
+   weakest at and the dates coming up soonest; topic sheets matched to topics; and question sets picked from the
+   school's own exam board's past papers. The AI reads each line of a topic sheet (or a test's topics) and picks the
+   questions that test exactly that point; questions you got wrong come back in the sets when they're due for review.
+   Saved with your progress, so it follows you between devices. */
 (function () {
   'use strict';
   var S = window.JBR_PROGRESS, MATCH = window.JBR_MATCH;
-  var META = null, PICK = {};
+  var META = null, PICK = {}, TEXT = {}, AI_OFF = false;
   var app = document.getElementById('app');
-  var TYPES = { exam: 'Exam', test: 'Class test', topic: 'Topic deadline', list: 'Checklist' };
+  var TYPES = { exam: 'Exam', test: 'Class test', topic: 'Topic deadline', list: 'Topic sheet' };
   var MARKS = { exam: 80, test: 40, topic: 25, list: 50 };
   var showWeeks = false;
 
@@ -37,18 +39,13 @@
     var P = S.get();
     if (!P.plan) P.plan = { t: 0 };
     var p = P.plan;
-    p.events = p.events || []; p.sets = p.sets || []; p.done = p.done || {};
+    p.events = p.events || []; p.sets = p.sets || []; delete p.done;
     p.settings = p.settings || { weekday: 1, weekend: 2, mins: 30 };
     return p;
   }
   function savePlan(soon) { plan().t = Date.now(); S.save(soon); }
   function topicsOf(e) { return e.topics && e.topics.length ? e.topics : subj(e.subj).topics.map(function (t) { return t[0]; }); }
-  function need(ms, rag) {
-    var n = !ms ? 0.9 : S.level(ms) === 'secure' ? 0.35 : S.level(ms) === 'developing' ? 0.7 : 1;
-    if (rag === 'r') n *= 1.3; else if (rag === 'g') n *= 0.7;
-    return n;
-  }
-  function ragOf(s, t) { return (S.get().rag[s + '|' + t] || {}).v || ''; }
+  function need(ms) { return !ms ? 0.9 : S.level(ms) === 'secure' ? 0.35 : S.level(ms) === 'developing' ? 0.7 : 1; }
 
   // ------------------------------------------------------------------ the day-by-day plan
   // Each slot goes to the topic with the best mix of: a date coming up soon, low marks so far (or a red rating),
@@ -85,7 +82,7 @@
           topicsOf(e).forEach(function (t, i) {
             var key = e.subj + '|' + t, since = lastSeen[key] == null ? 99 : d - lastSeen[key];
             if (since < 2) return;
-            var score = urgency * need(M[e.subj][t], ragOf(e.subj, t)) * Math.min(1, since / 6) * (used[e.subj] ? 0.5 : 1) - i * 1e-6;
+            var score = urgency * need(M[e.subj][t]) * Math.min(1, since / 6) * (used[e.subj] ? 0.5 : 1) - i * 1e-6;
             if (!best || score > best.score) best = { score: score, subj: e.subj, t: t, ev: e, until: until };
           });
         });
@@ -93,7 +90,7 @@
         var ms = M[best.subj][best.t];
         day.sessions.push({ kind: 'topic', subj: best.subj, t: best.t, ev: best.ev, key: date + '|' + best.subj + '|' + best.t,
           why: (best.ev.title || TYPES[best.ev.type]) + ' ' + (best.until === 1 ? 'tomorrow' : 'in ' + best.until + ' days') +
-            (ms ? ' · ' + Math.round(ms.pct * 100) + '% so far' : ' · not tried yet') + (ragOf(best.subj, best.t) === 'r' ? ' · rated red' : '') });
+            (ms ? ' · ' + Math.round(ms.pct * 100) + '% so far' : ' · not tried yet') });
         lastSeen[best.subj + '|' + best.t] = d; used[best.subj] = 1;
       }
       out.push(day);
@@ -118,7 +115,7 @@
       var T = {}, tl = subj(s).topics, P = S.get(), M = S.mastery(s), seed = String(Date.now());
       topics.forEach(function (t) { T[t] = 1; });
       var w = {};
-      topics.forEach(function (t) { w[t] = need(M[t], ragOf(s, t)); });
+      topics.forEach(function (t) { w[t] = need(M[t]); });
       var cands = Q.map(function (e) {
         if (avoid[e[0]]) return null;
         var rel = e[6].filter(function (p) { return p[3].some(function (i) { return tl[i] && T[tl[i][0]]; }); });
@@ -155,17 +152,171 @@
       });
     });
   }
+  // ------------------------------------------------------------------ questions you got wrong, due for review
+  // (the same spaced-repetition rule as the subject sites' Review page), on this date's topics
+  function reviewItems(s, topics, Q, maxMarks) {
+    var T = {}, P = S.get(), byId = {}, out = [], total = 0;
+    topics.forEach(function (t) { T[t] = 1; });
+    Q.forEach(function (e) { byId[e[0]] = e; });
+    var due = Object.keys(P.items).map(function (k) {
+      var v = P.items[k];
+      if (v.s !== s || !(v.tp || []).some(function (t) { return T[t]; })) return null;
+      var r = S.review(v);
+      return r && r.now ? { k: k, v: v, due: r.due } : null;
+    }).filter(Boolean).sort(function (a, b) { return a.due - b.due; });
+    due.forEach(function (d) {
+      var id = d.k.slice(d.k.indexOf('|') + 1), q = id.split('/')[0], part = id.split('/')[1] || null, e = byId[q];
+      if (!e || total + d.v.m > maxMarks && out.length) return;
+      var pl = part ? (e[6].filter(function (x) { return x[0] === part; })[0] || [])[1] : '';
+      out.push({ q: q, k: part, parts: part ? [part] : null, mk: d.v.m, full: e[1], label: e[4] + ' · Q' + e[5] + (pl ? ' ' + pl : ''),
+        tp: (d.v.tp || []).filter(function (t) { return T[t]; }), review: true, last: d.v.g });
+      total += d.v.m;
+    });
+    return out;
+  }
+
+  // ------------------------------------------------------------------ the AI picker
+  function loadText(s) {
+    if (TEXT[s]) return Promise.resolve(TEXT[s]);
+    return fetch('/study/text/' + s + '.json', { credentials: 'same-origin' }).then(function (r) { return r.ok ? r.json() : {}; })
+      .catch(function () { return {}; }).then(function (j) { TEXT[s] = j; return j; });
+  }
+  var STOP = {};
+  ('about above after again also among and any are as at be because been before being below between both but by can could ' +
+   'describe did does doing down during each explain few for from further give had has have how including into its ' +
+   'know more most must not now off once only other out over own same should some state such than that the their them ' +
+   'then there these they this those through under understand until use using very was were what when where which while ' +
+   'who why will with would your able candidates students should identify recall including different between ' +
+   'topic topics lesson lessons week revise revision check list learning objectives').split(' ').forEach(function (w) { STOP[w] = 1; });
+  function stem(w) { return w.replace(/(ies)$/, 'y').replace(/(ing|ed|es|s)$/, '').slice(0, 9); }
+  function words(t) {
+    var out = {};
+    String(t || '').toLowerCase().replace(/[^a-z0-9+\- ]+/g, ' ').split(/\s+/).forEach(function (w) {
+      if (w.length > 2 && !STOP[w] && !/^\d+$/.test(w)) out[stem(w)] = 1;
+    });
+    return out;
+  }
+  // the points to revise: the lines of the topic sheet, or else the names of the date's topics
+  function pointsOf(e) {
+    var lines = e.checklist && e.checklist.lines ? e.checklist.lines.map(function (x) { return x.line; }) : [];
+    lines = lines.filter(function (l) { return !MATCH.isHeading(l) && Object.keys(words(l)).length; });
+    if (lines.length) return lines.slice(0, 120);
+    return topicsOf(e).map(function (t) { return topicName(e.subj, t); }).slice(0, 120);
+  }
+  // A shortlist of question parts for the AI to choose from: for each point, the parts whose wording shares the most
+  // words with it (on the date's topics, or anywhere if they share a lot), taken in turn so every point gets some.
+  function shortlist(s, topics, points, Q, X, avoid) {
+    var T = {}, tl = subj(s).topics, P = S.get(), M = 160;
+    topics.forEach(function (t) { T[t] = 1; });
+    var pw = points.map(words), parts = [];
+    Q.forEach(function (e) {
+      if (avoid[e[0]]) return;
+      var tx = X[e[0]] || {}, list = e[6].length ? e[6] : [[null, '', e[1], []]];
+      list.forEach(function (p) {
+        var id = p[0] ? e[0] + '/' + p[0] : e[0], tps = (p[3] || []).map(function (i) { return tl[i] && tl[i][0]; }).filter(Boolean);
+        var onTopic = tps.some(function (t) { return T[t]; }), wording = tx[p[0] || '*'] || (p[0] ? '' : tx['*']) || '';
+        var stemText = tx['*'] ? tx['*'].split('(a)')[0].slice(0, 150) : '';
+        if (p[0] && wording && stemText.length > 25 && wording.length < 200) wording = stemText + ' … ' + wording;
+        var w = words(wording), done = P.items[s + '|' + id];
+        parts.push({ id: id, e: e, p: p, tps: tps, on: onTopic, w: w, wording: wording,
+          base: (onTopic ? 1 : 0) + 0.3 * Math.max(0, Math.min(1, (e[2] - 2012) / 12)) + 0.2 * e[3] - (done ? 0.6 : 0) });
+      });
+    });
+    var ranked = pw.map(function (w) {
+      var keys = Object.keys(w);
+      return parts.map(function (c) {
+        var hit = 0;
+        keys.forEach(function (k) { if (c.w[k]) hit++; });
+        if (!hit && !c.on) return null;
+        if (!c.on && hit < 2) return null;
+        return { c: c, sc: hit / Math.sqrt(keys.length || 1) * 2 + c.base };
+      }).filter(Boolean).sort(function (a, b) { return b.sc - a.sc; }).slice(0, 40);
+    });
+    var seen = {}, out = [];
+    for (var r = 0; out.length < M && r < 40; r++) {
+      for (var i = 0; i < ranked.length && out.length < M; i++) {
+        var x = ranked[i][r];
+        if (x && !seen[x.c.id]) { seen[x.c.id] = 1; out.push(x.c); }
+      }
+    }
+    // topping up with on-topic parts if the points were short on wording to go on
+    parts.filter(function (c) { return c.on && !seen[c.id]; }).sort(function (a, b) { return b.base - a.base; }).slice(0, Math.max(0, 60 - out.length))
+      .forEach(function (c) { seen[c.id] = 1; out.push(c); });
+    return out.slice(0, M);
+  }
+  function aiPick(e, target, avoid) {
+    if (AI_OFF) return Promise.reject(new Error('off'));
+    var s = e.subj, points = pointsOf(e), topics = topicsOf(e);
+    return Promise.all([loadPick(s), loadText(s)]).then(function (r) {
+      var cands = shortlist(s, topics, points, r[0], r[1], avoid), byId = {};
+      if (!cands.length) throw new Error('none');
+      cands.forEach(function (c) { byId[c.id] = c; });
+      return fetch('/api/ai/pick', {
+        method: 'POST', credentials: 'same-origin', headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ subj: s, title: e.title, points: points, target: target, cands: cands.map(function (c) {
+          return { id: c.id, mk: c.p[2] || c.e[1], paper: c.e[4] + ' Q' + c.e[5] + (c.p[1] ? ' ' + c.p[1] : ''),
+            topics: c.tps.map(function (t) { return topicName(s, t); }).join('; '), wording: c.wording };
+        }) })
+      }).then(function (res) {
+        return res.json().catch(function () { return {}; }).then(function (j) {
+          if (res.status === 503) AI_OFF = true;
+          if (!res.ok) { var err = new Error(j.error || 'The AI picker isn\'t available.'); err.code = j.code; throw err; }
+          // parts of the same question go together, in the order the AI gave
+          var items = [], byQ = {};
+          (j.picks || []).forEach(function (pk) {
+            var c = byId[pk.id];
+            if (!c) return;
+            var point = points[pk.point - 1] || '', it = byQ[c.e[0]];
+            if (!it) {
+              it = byQ[c.e[0]] = { q: c.e[0], k: c.p[0], parts: c.p[0] ? [] : null, mk: 0, full: c.e[1], label: c.e[4] + ' · Q' + c.e[5], tp: [], why: [], all: c.e[6] };
+              items.push(it);
+            }
+            if (c.p[0]) it.parts.push(c.p[0]);
+            it.mk += c.p[2] || c.e[1];
+            c.tps.forEach(function (t) { if (it.tp.indexOf(t) < 0) it.tp.push(t); });
+            it.why.push({ point: point.slice(0, 140), why: pk.why });
+          });
+          // every part picked means the whole question
+          items.forEach(function (it) {
+            if (it.parts) {
+              var order = it.all.map(function (x) { return x[0]; });
+              it.parts.sort(function (a, b) { return order.indexOf(a) - order.indexOf(b); });
+              it.k = it.parts[0];
+              if (it.parts.length < it.all.length) it.label += ' ' + it.parts.map(function (k) { return it.all[order.indexOf(k)][1]; }).join(', ');
+              else it.parts = null;
+            }
+            delete it.all;
+          });
+          return { items: items, uncovered: (j.uncovered || []).map(function (n) { return points[n - 1]; }).filter(Boolean).slice(0, 20), left: j.left };
+        });
+      });
+    });
+  }
   function makeSet(e, extra) {
     var p = plan(), avoid = {};
     p.sets.forEach(function (x) { if (x.ev === e.id) x.items.forEach(function (it) { avoid[it.q] = 1; }); });
     var target = MARKS[e.type] || 40;
-    return pickSet(e.subj, topicsOf(e), target, avoid).then(function (items) {
-      if (!items.length) throw new Error('No ' + subj(e.subj).subject + ' questions left on those topics.');
-      var n = p.sets.filter(function (x) { return x.ev === e.id; }).length;
-      p.sets.unshift({ id: uid(), ev: e.id, subj: e.subj, title: (e.title || TYPES[e.type]) + (n ? ' (set ' + (n + 1) + ')' : ''), made: Date.now(),
-        items: items, total: items.reduce(function (a, it) { return a + it.mk; }, 0) });
-      savePlan(true);
-      if (!extra) render();
+    return loadPick(e.subj).then(function (Q) {
+      // questions you got wrong that are due again come first, up to about a third of the set
+      var rev = reviewItems(e.subj, topicsOf(e), Q, Math.round(target / 3));
+      rev.forEach(function (it) { avoid[it.q] = 1; });
+      var rest = Math.max(10, target - rev.reduce(function (a, it) { return a + it.mk; }, 0)), note = '';
+      busy('Picking questions…');
+      return aiPick(e, rest, avoid).then(function (r) {
+        if (!r.items.length) throw new Error('none');
+        return { items: r.items, ai: true, uncovered: r.uncovered };
+      }).catch(function (err) {
+        if (err.code === 'daily_limit' || err.code === 'busy' || err.code === 'refused' || err.code === 'ai_error') note = err.message + ' These were picked by matching topics instead.';
+        return pickSet(e.subj, topicsOf(e), rest, avoid).then(function (items) { return { items: items, ai: false }; });
+      }).then(function (r) {
+        var items = rev.concat(r.items);
+        if (!items.length) throw new Error('No ' + subj(e.subj).subject + ' questions left on those topics.');
+        var n = p.sets.filter(function (x) { return x.ev === e.id; }).length;
+        p.sets.unshift({ id: uid(), ev: e.id, subj: e.subj, title: (e.title || TYPES[e.type]) + (n ? ' (set ' + (n + 1) + ')' : ''), made: Date.now(),
+          items: items, total: items.reduce(function (a, it) { return a + it.mk; }, 0), ai: r.ai, uncovered: r.uncovered || [], note: note, reviews: rev.length });
+        savePlan(true);
+        if (!extra) render();
+      });
     });
   }
   function qLink(s, it) { return '/' + s + '/#/question/' + encodeURIComponent(it.q) + (it.k ? '/' + encodeURIComponent(it.k) : ''); }
@@ -189,7 +340,7 @@
     location.href = '/' + set.subj + '/#/mock/' + then;
   }
 
-  // ------------------------------------------------------------------ reading a checklist
+  // ------------------------------------------------------------------ reading a topic sheet
   var pdfjs = null;
   function loadPdfJs() {
     if (pdfjs) return pdfjs;
@@ -253,10 +404,10 @@
         }).join('') + '</select></label>' +
         '<label>' + (e.type === 'list' ? 'Date (optional)' : 'Date') + '<input type="date" name="date" value="' + esc(e.date || '') + '"' + (e.type === 'list' ? '' : ' required') + '></label></div>' +
         '<label class="pl-wide">Name<input name="title" maxlength="80" value="' + esc(e.title) + '" placeholder="' +
-          esc({ exam: sm.subject + ' Paper 1', test: sm.subject + ' end of topic test', topic: 'Finish revising…', list: sm.subject + ' checklist' }[e.type]) + '"></label>' +
-        '<fieldset class="pl-check"><legend>Revision checklist</legend><p>Upload your checklist (PDF or text) or paste it below, and the topics on it are ticked for you.</p>' +
+          esc({ exam: sm.subject + ' Paper 1', test: sm.subject + ' end of topic test', topic: 'Finish revising…', list: sm.subject + ' topic sheet' }[e.type]) + '"></label>' +
+        '<fieldset class="pl-check"><legend>Topic sheet</legend><p>Upload your topic sheet or checklist (PDF or text), or paste it below. The topics on it are ticked for you, and the AI picks questions that test exactly what each line says.</p>' +
           '<div class="pl-row"><input type="file" name="file" accept=".pdf,.txt,.md,.csv,text/plain,application/pdf"><button type="button" class="pl-btn ghost read">Match pasted text</button></div>' +
-          '<textarea name="paste" rows="3" placeholder="…or paste the checklist here"></textarea><div class="pl-matched"></div></fieldset>' +
+          '<textarea name="paste" rows="3" placeholder="…or paste the topic sheet here"></textarea><div class="pl-matched"></div></fieldset>' +
         '<fieldset class="pl-topics"><legend>Topics' + (e.type === 'exam' ? ' (none ticked = the whole course)' : '') + '</legend>' +
           '<div class="pl-tbar"><button type="button" class="linkish all">Tick all</button> · <button type="button" class="linkish none">Clear</button> · <span class="pl-count"></span></div>' +
           Object.keys(byArea).map(function (a) {
@@ -283,7 +434,7 @@
       });
       f.querySelector('.read').addEventListener('click', function () {
         var t = f.querySelector('[name=paste]').value;
-        if (t.trim()) useText(t, 'pasted text'); else status('Paste your checklist into the box first.', true);
+        if (t.trim()) useText(t, 'pasted text'); else status('Paste your topic sheet into the box first.', true);
       });
     }
     function keep() {
@@ -298,7 +449,7 @@
     function status(msg, bad) { var m = f.querySelector('.pl-matched'); m.innerHTML = '<p class="' + (bad ? 'pl-err' : 'pl-note') + '">' + esc(msg) + '</p>'; }
     function useText(text, from) {
       var r = MATCH.match(subj(e.subj), text);
-      if (!r.length) { status('No checklist lines were found in ' + from + '.', true); return; }
+      if (!r.length) { status('No lines were found in ' + from + '.', true); return; }
       matched = r.map(function (x) { return { line: x.line.slice(0, 200), topic: x.topic, sure: x.sure }; });
       var tick = {};
       matched.forEach(function (x) { if (x.topic) tick[x.topic] = 1; });
@@ -331,8 +482,8 @@
       keep();
       var err = f.querySelector(':scope > .pl-err');
       if (e.type !== 'list' && !e.date) { err.textContent = 'Choose a date.'; return; }
-      if (e.type !== 'exam' && !e.topics.length) { err.textContent = 'Tick at least one topic (or upload a checklist).'; return; }
-      if (!e.title) e.title = { exam: subj(e.subj).subject + ' exam', test: subj(e.subj).subject + ' test', topic: topicName(e.subj, e.topics[0]), list: subj(e.subj).subject + ' checklist' }[e.type];
+      if (e.type !== 'exam' && !e.topics.length) { err.textContent = 'Tick at least one topic (or upload a topic sheet).'; return; }
+      if (!e.title) e.title = { exam: subj(e.subj).subject + ' exam', test: subj(e.subj).subject + ' test', topic: topicName(e.subj, e.topics[0]), list: subj(e.subj).subject + ' topic sheet' }[e.type];
       if (matched.length) e.checklist = { lines: matched, t: Date.now() };
       var p = plan(), i = p.events.map(function (x) { return x.id; }).indexOf(e.id);
       if (i >= 0) p.events[i] = e; else p.events.push(e);
@@ -409,12 +560,19 @@
   function setCard(set) {
     var sm = subj(set.subj), P = S.get(), done = setDone(set);
     var c = el('<article class="pl-set" style="--c:' + esc(sm.color) + '"><div class="pl-evtop"><span class="pl-badge">' + esc(sm.subject) + '</span>' +
-      '<span class="pl-when">' + set.items.length + ' questions · ' + set.total + ' marks · ' + done + ' done</span></div>' +
+      '<span class="pl-when">' + set.items.length + ' questions · ' + set.total + ' marks · ' + done + ' done</span>' +
+      (set.ai ? '<span class="pl-ai">Picked by AI</span>' : '') + '</div>' +
       '<h3>' + esc(set.title) + '</h3><ol class="pl-qs">' + set.items.map(function (it) {
         var ok = (it.parts || [it.k]).every(function (k) { return P.items[set.subj + '|' + (k ? it.q + '/' + k : it.q)]; });
+        var why = (it.why || []).map(function (w) { return '<span class="pl-why">' + (w.point ? '<b>' + esc(w.point) + '</b> ' : '') + esc(w.why) + '</span>'; }).join('');
         return '<li class="' + (ok ? 'ok' : '') + '"><a href="' + qLink(set.subj, it) + '">' + esc(it.label) + '</a><span class="pl-mk">' + it.mk + ' mark' + (it.mk === 1 ? '' : 's') + '</span>' +
-          '<span class="pl-tp">' + esc(it.tp.map(function (t) { return topicName(set.subj, t).replace(/^[\w.()-]+\s/, ''); }).join(', ')) + '</span></li>';
+          (it.review ? '<span class="pl-rv" title="You got this wrong before and it\'s due again">Review · last time ' + it.last + '/' + it.mk + '</span>' : '') +
+          (why || '<span class="pl-tp">' + esc(it.tp.map(function (t) { return topicName(set.subj, t).replace(/^[\w.()-]+\s/, ''); }).join(', ')) + '</span>') + '</li>';
       }).join('') + '</ol>' +
+      (set.uncovered && set.uncovered.length ? '<details class="pl-unc"><summary>' + set.uncovered.length + ' point' + (set.uncovered.length === 1 ? '' : 's') +
+        ' with no past-paper question that really tests ' + (set.uncovered.length === 1 ? 'it' : 'them') + '</summary><ul>' +
+        set.uncovered.map(function (u) { return '<li>' + esc(u) + '</li>'; }).join('') + '</ul></details>' : '') +
+      (set.note ? '<p class="pl-note">' + esc(set.note) + '</p>' : '') +
       '<div class="pl-evact"><button type="button" class="pl-btn timed">Do it as a timed paper</button><button type="button" class="pl-btn ghost print">Print it</button>' +
       '<button type="button" class="pl-btn ghost del">Remove</button></div>' +
       '<p class="pl-note">The timed paper and the printout use the full questions; mark yourself as you go and it all counts towards your topics.</p></article>');
@@ -451,18 +609,14 @@
         ul.appendChild(el('<li class="pl-s ev" style="--c:' + esc(subj(e.subj).color) + '"><span class="pl-dot"></span><span class="pl-st"><b>' + TYPES[e.type] + ': ' + esc(e.title) + '</b>Good luck!</span></li>'));
       });
       day.sessions.forEach(function (s) {
-        var sm = subj(s.subj), on = !!p.done[s.key];
+        var sm = subj(s.subj);
         var set = s.kind === 'final' ? p.sets.filter(function (x) { return x.ev === s.ev.id; })[0] : null;
-        var li = el('<li class="pl-s' + (on ? ' done' : '') + '" style="--c:' + esc(sm.color) + '"><input type="checkbox" aria-label="Done"' + (on ? ' checked' : '') + '>' +
+        var li = el('<li class="pl-s" style="--c:' + esc(sm.color) + '"><span class="pl-dot"></span>' +
           '<span class="pl-st"><b>' + (s.kind === 'final' ? 'Run-through: ' + esc(s.ev.title) : esc(sm.subject) + ': ' + esc(topicName(s.subj, s.t))) + '</b>' +
           (s.kind === 'final' ? 'Everything on it, the day before' + (set ? '' : ' · a mock paper is a good way') : esc(s.why)) + '</span>' +
           '<span class="pl-min">' + p.settings.mins + ' min</span>' +
           (s.kind === 'final' ? (set ? '<button type="button" class="pl-go asmock">Do your set</button>' : '<a class="pl-go" href="/' + s.subj + '/#/mock">Mock paper</a>') :
             '<a class="pl-go" href="/' + s.subj + '/#/practise/' + encodeURIComponent(s.t) + '">Practise</a>') + '</li>');
-        li.querySelector('input').addEventListener('change', function (ev) {
-          if (ev.target.checked) p.done[s.key] = Date.now(); else delete p.done[s.key];
-          li.classList.toggle('done', ev.target.checked); savePlan();
-        });
         var am = li.querySelector('.asmock');
         if (am) am.addEventListener('click', function () { asMock(set, 'ready'); });
         ul.appendChild(li);
@@ -481,15 +635,15 @@
     var past = p.events.filter(function (e) { return e.date && e.date < TODAY; }).sort(function (a, b) { return a.date < b.date ? 1 : -1; }).slice(0, 4);
     var root = el('<div class="wrap pl"><header class="top"><div class="brand">' +
       '<div><a class="pl-back" href="/">← All subjects</a><h1>Revision planner</h1><p class="subtitle">Your exams, class tests and topic deadlines, and a plan to get ready for them.</p></div></div></header>' +
-      '<div class="pl-top"><button type="button" class="pl-btn add">Add a date</button><button type="button" class="pl-btn ghost list">Pick questions from a checklist</button>' +
+      '<div class="pl-top"><button type="button" class="pl-btn add">Add a date</button><button type="button" class="pl-btn ghost list">Pick questions from a topic sheet</button>' +
       (p.events.length ? '<button type="button" class="pl-btn ghost cal">Add to my calendar</button>' : '') + '<span class="pl-busy" aria-live="polite"></span></div>' +
       '<section><h2>Coming up</h2><div class="pl-evs"></div></section></div>');
     var evs = root.querySelector('.pl-evs');
-    if (!up.length) evs.appendChild(el('<p class="pl-empty">Nothing yet. Add your exams, any class tests (with the topics they cover, or their revision checklist) and dates you want topics finished by.</p>'));
+    if (!up.length) evs.appendChild(el('<p class="pl-empty">Nothing yet. Add your exams, any class tests (with the topics they cover, or their topic sheet) and dates you want topics finished by.</p>'));
     up.forEach(function (e) { evs.appendChild(eventCard(e)); });
     root.appendChild(planSection());
     if (p.sets.length) {
-      var ss = el('<section><h2>Question sets</h2><p class="pl-note">Picked from your exam board\'s past papers: recent ones first, ones with a mark scheme, ones you haven\'t done yet, spread across the topics with your weakest first.</p><div class="pl-sets"></div></section>');
+      var ss = el('<section><h2>Question sets</h2><p class="pl-note">Picked from your exam board\'s past papers. The AI reads each line of your topic sheet (or the test\'s topics) and picks questions that test exactly that, and questions you got wrong come back first when they\'re due for review.</p><div class="pl-sets"></div></section>');
       p.sets.forEach(function (x) { ss.querySelector('.pl-sets').appendChild(setCard(x)); });
       root.appendChild(ss);
     }
