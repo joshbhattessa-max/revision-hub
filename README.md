@@ -24,6 +24,25 @@ Before you start, the seven subject sites should already be on Cloudflare (chemq
 
 You can also edit `hub.json` directly on GitHub (click the file, then the pencil icon).
 
+## Adding a login (Cloudflare Access, free for up to 50 people)
+
+The hub and all seven subject sites go behind one login. You type your email and get a one-time code, and only the emails you list can get in.
+
+1. In the Cloudflare dashboard open **Zero Trust**. The first time, pick a team name and the **Free** plan.
+2. **Access → Service Auth → Service Tokens → Create Service Token**, named `hub`. Copy the **Client ID** and **Client Secret** (the secret is only shown once).
+3. **Access → Applications → Add an application → Self-hosted**:
+   - Name: `Revision`
+   - Domains: add your hub (e.g. `my-revision.pages.dev`) and every subject site
+     (`chemq.pages.dev`, `bioq.pages.dev`, `physq.pages.dev`, `mathsq.pages.dev`, `geoq.pages.dev`, `csq.pages.dev`, `spanishq.pages.dev`)
+   - Policy 1: action **Allow**, include **Emails** → your email address(es)
+   - Policy 2: action **Service Auth**, include **Service Token** → `hub`
+   - Login method: **One-time PIN**
+4. In the hub's Pages project, open **Settings → Variables and Secrets** and add two secrets:
+   `ACCESS_CLIENT_ID` (the Client ID) and `ACCESS_CLIENT_SECRET` (the Client Secret).
+5. **Deployments → Retry deployment** on the hub, so it picks up the secrets.
+
+To let someone else in later, add their email to Policy 1.
+
 ## Your own domain (optional)
 
 You can buy a domain such as `myrevision.co.uk` (about £5–10 a year, e.g. through Cloudflare Registrar). Then in the hub's Pages project go to *Custom domains* → *Set up a domain*. Every subject is then at `myrevision.co.uk/chemistry/` and so on. The free `*.pages.dev` address keeps working either way.

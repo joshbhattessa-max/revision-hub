@@ -34,6 +34,11 @@ export async function onRequest(ctx) {
     const v = ctx.request.headers.get(h);
     if (v) headers.set(h, v);
   }
+  // when the subject sites sit behind Cloudflare Access, the hub signs in with a service token
+  if (ctx.env.ACCESS_CLIENT_ID && ctx.env.ACCESS_CLIENT_SECRET) {
+    headers.set('CF-Access-Client-Id', ctx.env.ACCESS_CLIENT_ID);
+    headers.set('CF-Access-Client-Secret', ctx.env.ACCESS_CLIENT_SECRET);
+  }
   const upstream = await fetch(origin + m[2] + url.search, { method: ctx.request.method, headers, redirect: 'manual' });
   const out = new Headers(upstream.headers);
   const loc = out.get('location');
