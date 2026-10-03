@@ -5,9 +5,9 @@ import { notFoundPage } from './_lib/notfound.js';
 
 // what the login page itself needs
 const OPEN = new Set(['/login', '/login.html', '/login.js', '/hub.css', '/fonts.css', '/favicon.svg', '/favicon-32.png',
-  '/apple-touch-icon.png', '/robots.txt', '/api/login', '/api/signup', '/api/status']);
+  '/apple-touch-icon.png', '/api/login', '/api/signup', '/api/status']);
 // what still works for everyone during maintenance (so an admin can sign in)
-const DURING_MAINTENANCE = new Set(['/robots.txt', '/login.js', '/hub.css', '/fonts.css', '/favicon.svg', '/favicon-32.png', '/apple-touch-icon.png',
+const DURING_MAINTENANCE = new Set(['/login.js', '/hub.css', '/fonts.css', '/favicon.svg', '/favicon-32.png', '/apple-touch-icon.png',
   '/api/login', '/api/logout', '/api/status']);
 const ADMIN = p => p === '/admin' || p === '/admin.html' || p === '/admin.js' || p.startsWith('/api/admin/');
 

@@ -1,5 +1,0 @@
-# Josh B Revision is a private revision site for a school group, behind a sign-in.
-# Past papers and mark schemes are copyright of the exam boards, so please don't crawl,
-# index or train on any of it.
-User-agent: *
-Disallow: /
