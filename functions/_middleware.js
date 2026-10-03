@@ -1,6 +1,7 @@
 // Every request to the hub (its pages, the subject sites it serves and the API) needs a signed-in session.
 import { getSession, json } from './_lib/auth.js';
 import { maintenance, maintenancePage } from './_lib/maintenance.js';
+import { notFoundPage } from './_lib/notfound.js';
 
 // what the login page itself needs
 const OPEN = new Set(['/login', '/login.html', '/login.js', '/hub.css', '/fonts.css', '/favicon.svg', '/favicon-32.png',
@@ -46,6 +47,10 @@ export async function onRequest(ctx) {
   }
   ctx.data.session = session;
   const res = await ctx.next();
+  // pages that don't exist get the 404 page (404.html only makes Pages answer 404 instead of the home page)
+  if (res.status === 404 && (ctx.request.headers.get('accept') || '').includes('text/html')) {
+    return new Response(notFoundPage(url.pathname), { status: 404, headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store' } });
+  }
   const out = new Response(res.body, res);
   out.headers.set('cache-control', 'private, no-store');
   return out;
