@@ -7,8 +7,8 @@
       "subject": "Chemistry",
       "origin": "https://chemq.pages.dev",
       "color": "#17A398",
-      "questions": 18143,
-      "papers": 1376,
+      "questions": 10945,
+      "papers": 893,
       "image": ""
     },
     {
@@ -17,8 +17,8 @@
       "subject": "Biology",
       "origin": "https://bioq.pages.dev",
       "color": "#2E9E4F",
-      "questions": 17818,
-      "papers": 1385,
+      "questions": 10471,
+      "papers": 902,
       "image": ""
     },
     {
@@ -27,8 +27,8 @@
       "subject": "Physics",
       "origin": "https://physq.pages.dev",
       "color": "#067BC2",
-      "questions": 18622,
-      "papers": 1355,
+      "questions": 11310,
+      "papers": 884,
       "image": ""
     },
     {
@@ -37,8 +37,8 @@
       "subject": "Maths",
       "origin": "https://mathsq.pages.dev",
       "color": "#6750D5",
-      "questions": 28239,
-      "papers": 1707,
+      "questions": 15670,
+      "papers": 996,
       "image": ""
     },
     {
