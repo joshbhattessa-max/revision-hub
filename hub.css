@@ -25,18 +25,15 @@ a { color: inherit; }
 
 header.top { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; padding: 36px 0 24px; }
 .brand { display: flex; align-items: center; gap: 14px; }
-.jbr { width: clamp(46px, 7vw, 58px); height: auto; aspect-ratio: 1; display: block; flex: none; }
-/* the JBR monogram: light letters on dark in light mode, dark letters on light in dark mode */
-.jbr-bg { fill: #1c1c1c; }
-.jbr-over { stroke: #1c1c1c; }
-.jbr-fg { fill: #e8e8e8; }
-:root[data-theme="dark"] .jbr-bg { fill: #e8e8e8; }
-:root[data-theme="dark"] .jbr-over { stroke: #e8e8e8; }
-:root[data-theme="dark"] .jbr-fg { fill: #1c1c1c; }
+.jbr { width: clamp(54px, 8vw, 68px); height: auto; aspect-ratio: 1; display: block; flex: none; }
+/* the JBR logo: dark ink in light mode, light ink in dark mode */
+.jbr-ink { fill: #1c1c1c; }
+.jbr-ring { stroke: #1c1c1c; }
+:root[data-theme="dark"] .jbr-ink { fill: #ececec; }
+:root[data-theme="dark"] .jbr-ring { stroke: #ececec; }
 @media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) .jbr-bg { fill: #e8e8e8; }
-  :root:not([data-theme="light"]) .jbr-over { stroke: #e8e8e8; }
-  :root:not([data-theme="light"]) .jbr-fg { fill: #1c1c1c; }
+  :root:not([data-theme="light"]) .jbr-ink { fill: #ececec; }
+  :root:not([data-theme="light"]) .jbr-ring { stroke: #ececec; }
 }
 h1 { font-size: clamp(1.8rem, 4vw, 2.6rem); font-weight: 700; margin: 0; letter-spacing: -.5px; }
 .subtitle { color: var(--muted); margin: 0; font-size: 1.05rem; }
