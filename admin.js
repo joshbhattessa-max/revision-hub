@@ -204,11 +204,13 @@
       'Admins can still sign in (the page has an "Admin sign-in" link) and use the site as normal.</p>' +
       (m.byUpdate ? '<p class="muted"><b>An update is being deployed</b> and has switched maintenance on by itself. It turns off when the update is finished.</p>' : '') +
       '<label class="lbl">Message on the maintenance page (optional)<input type="text" class="msg" maxlength="300" placeholder="e.g. Adding the 2026 papers. Back by 6pm." value="' + esc(m.message || '') + '"></label>' +
-      '<div class="row"><button type="button" class="small savemsg">Save message</button>' +
+      '<label class="lbl">Countdown in the corner, in minutes (optional)<input type="text" inputmode="numeric" class="mins" placeholder="e.g. 10" value="' +
+      (m.until && m.until > Date.now() ? Math.ceil((m.until - Date.now()) / 60000) : '') + '"></label>' +
+      '<div class="row"><button type="button" class="small savemsg">Save message and countdown</button>' +
       '<a class="small btn-quiet" href="/" target="_blank" rel="noopener">See the site</a></div></div>';
     var msg = mbox.querySelector('.msg');
     function put(on) {
-      return api('PUT', 'maintenance', { on: on, message: msg.value }).then(function (s) { drawMaintenance(s); say(s.on ? 'Maintenance mode is on.' : 'Maintenance mode is off.'); })
+      return api('PUT', 'maintenance', { on: on, message: msg.value, minutes: parseInt(mbox.querySelector('.mins').value, 10) || 0 }).then(function (s) { drawMaintenance(s); say(s.on ? 'Maintenance mode is on.' : 'Maintenance mode is off.'); })
         .catch(function (e) { say(e.message, true); });
     }
     mbox.querySelector('.flip').addEventListener('click', function () {

@@ -94,7 +94,9 @@ export async function onRequest(ctx) {
   if (route === 'maintenance' && method === 'GET') return json(await maintenance(ctx, true));
   if (route === 'maintenance' && method === 'PUT') {
     const on = !!body.on, message = String(body.message || '').trim().slice(0, 300);
-    await env.HUB_KV.put('maintenance', JSON.stringify({ on, message, since: on ? Date.now() : null }));
+    const minutes = Math.min(Math.max(Number(body.minutes) || 0, 0), 24 * 60);
+    await env.HUB_KV.put('maintenance', JSON.stringify({ on, message, since: on ? Date.now() : null,
+      until: on && minutes ? Date.now() + minutes * 60000 : null }));
     forgetMaintenance();
     return json(await maintenance(ctx, true));
   }
