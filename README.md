@@ -14,15 +14,11 @@ Before you start, the seven subject sites should already be on Cloudflare (chemq
 1. Go to *Workers & Pages* → *Create* → *Pages* → *Connect to Git*, then pick this repository.
 2. Production branch `main`, framework preset *None*, build command empty, output directory `/`.
 3. Click *Save and Deploy*. Your hub is at `https://<project-name>.pages.dev`.
-4. If any subject site ended up with a different address (e.g. `bioq-7x3.pages.dev`), open the hub, click **Edit page**, then **Edit** on that subject, and paste in its real address. Then publish (see below).
+4. If any subject site ended up with a different address (e.g. `bioq-7x3.pages.dev`), change its `origin` in `hub.json`.
 
 ## Changing the page
 
-1. Click **Edit page**. You can rename the title, add sections, and add links or pictures (paste an image address or upload a photo). You can also reorder or delete cards, recolour subjects, or hide one.
-2. Click **Done**. Changes show at once on that device, with a yellow *not on the live site yet* bar.
-3. To put them online for every device, click **Publish…**. This downloads `hub.json`. On GitHub, open this repository, click **Add file** → **Upload files**, drag in the file and click **Commit changes**. The live page updates within a couple of minutes.
-
-You can also edit `hub.json` directly on GitHub (click the file, then the pencil icon).
+The page is view-only. Everything on it (title, subjects, links, pictures, notes) comes from `hub.json`; change that file and the site updates within a couple of minutes. Pictures can go in an `images/` folder and be referred to as `images/name.jpg`.
 
 ## Adding a login (Cloudflare Access, free for up to 50 people)
 
