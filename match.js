@@ -73,7 +73,10 @@
   }
 
   // one checklist line -> { topic, how: 'number' | 'words', sure } or null
+  // the checklist's own title and the "Name: / Class:" line aren't topics
+  var HEADING = /\b(check ?list|revision list|topic list|learning objectives)\b|\b(name|class|date|teacher|form)\s*:/i;
   function matchLine(ix, line) {
+    if (HEADING.test(line)) return null;
     var n = byNumber(ix, line);
     if (n) return { topic: n, how: 'number', sure: true };
     var r = scoreLine(ix, line);
