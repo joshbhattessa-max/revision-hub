@@ -17,8 +17,8 @@
   }
 }
 * { box-sizing: border-box; }
-body { margin: 0; background: var(--bg); color: var(--ink); font-family: "EB Garamond", Garamond, Georgia, serif;
-  font-size-adjust: 0.47; }
+body { margin: 0; background: var(--bg); color: var(--ink); font-family: Inter, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-optical-sizing: auto; }
 a { color: inherit; }
 .wrap { max-width: 1120px; margin: 0 auto; padding: 0 16px 64px; }
 .loading { padding: 40px; color: var(--muted); }

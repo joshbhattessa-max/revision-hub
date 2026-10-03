@@ -29,7 +29,7 @@ The hub and all seven subject sites go behind one login. You type your email and
 3. **Access → Applications → Add an application → Self-hosted**:
    - Name: `Revision`
    - Domains: add your hub (e.g. `my-revision.pages.dev`) and every subject site
-     (`chemq.pages.dev`, `bioq.pages.dev`, `physq.pages.dev`, `mathsq.pages.dev`, `geoq.pages.dev`, `csq.pages.dev`, `spanishq.pages.dev`)
+     (`chemq.pages.dev`, `bioq.pages.dev`, `physq.pages.dev`, `mathsq.pages.dev`, `geoq.pages.dev`, `csq-o88.pages.dev`, `spanishq.pages.dev`)
    - Policy 1: action **Allow**, include **Emails** → your email address(es)
    - Policy 2: action **Service Auth**, include **Service Token** → `hub`
    - Login method: **One-time PIN**
