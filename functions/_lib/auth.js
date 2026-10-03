@@ -1,9 +1,11 @@
 // Sign-in for the whole hub: accounts, 6-hour sessions and login throttling, kept in the HUB_KV namespace.
-// Passwords are stored only as PBKDF2-SHA256 hashes (100,000 rounds, per-account salt).
+// Passwords are stored only as salted PBKDF2-SHA256 hashes. 10,000 rounds keeps a sign-in inside the free plan's
+// 10 ms of CPU per request (100,000 rounds took several times that and the request was cut off).
 
 export const SESSION_SECONDS = 6 * 60 * 60;
 export const COOKIE = 'jbr_session';
-const ITER = 100000;
+const ITER = 10000;
+const OLD_ITER = 100000; // accounts saved before the change; upgraded at their next sign-in
 
 // first-run accounts (hashes only); the admin console changes them from then on
 const SEED_ACCOUNTS = [
@@ -11,34 +13,39 @@ const SEED_ACCOUNTS = [
     "id": "a1",
     "username": "JoshB",
     "role": "admin",
-    "salt": "7aCUT5XzQmtlcdGqtuUZEw==",
-    "hash": "5RvYjbXDpKsyhRiG4U/dawMxWeBobFoHAhlhcnGtUXU="
+    "iter": 10000,
+    "salt": "3w8ioH5mmq7v+wNwIVTSjw==",
+    "hash": "WZnfkGl0vYPaBrYuHRUzi4as6rQ3mGgjQYsJU11UlZs="
   },
   {
     "id": "a2",
     "username": "JoshB",
     "role": "user",
-    "salt": "A7VeG/rG/Yc/JoqyhQdOdQ==",
-    "hash": "o3ZCmg5N22kQMTBOfVr/bggo6ht279qKxtGpsddpufU="
+    "iter": 10000,
+    "salt": "PGh3X8/AzKmN8ST/zTQLWA==",
+    "hash": "2f99LC/yKD4//y7ONH8ZvvEuTFsyxPIhL3obFsjEq+0="
   },
   {
     "id": "a3",
     "username": "test",
     "role": "user",
-    "salt": "QnO6JgKoAPN9RHVKVx6S6Q==",
-    "hash": "CCNKtAaf2NXz74oMtWm9MlTAxFmtUq2P34BYsucuUMg="
+    "iter": 10000,
+    "salt": "NN71CNIuOhDYdzR9Awq3NA==",
+    "hash": "sUkt1QE/7fgSxaUzt4daRzsePS8TXaphVhpHM/lDNcU="
   }
 ];
+// the first version's seed hashes (100,000 rounds), swapped for the ones above wherever they're still stored
+const OLD_SEED_HASHES = ["5RvYjbXDpKsyhRiG4U/dawMxWeBobFoHAhlhcnGtUXU=", "o3ZCmg5N22kQMTBOfVr/bggo6ht279qKxtGpsddpufU=", "CCNKtAaf2NXz74oMtWm9MlTAxFmtUq2P34BYsucuUMg="];
 
 const enc = new TextEncoder();
 const b64 = buf => btoa(String.fromCharCode(...new Uint8Array(buf)));
 const unb64 = s => Uint8Array.from(atob(s), c => c.charCodeAt(0));
 
-export async function hashPassword(password, saltB64) {
+export async function hashPassword(password, saltB64, iter = ITER) {
   const salt = saltB64 ? unb64(saltB64) : crypto.getRandomValues(new Uint8Array(16));
   const key = await crypto.subtle.importKey('raw', enc.encode(password), 'PBKDF2', false, ['deriveBits']);
-  const bits = await crypto.subtle.deriveBits({ name: 'PBKDF2', hash: 'SHA-256', salt, iterations: ITER }, key, 256);
-  return { salt: b64(salt), hash: b64(bits) };
+  const bits = await crypto.subtle.deriveBits({ name: 'PBKDF2', hash: 'SHA-256', salt, iterations: iter }, key, 256);
+  return { salt: b64(salt), hash: b64(bits), iter };
 }
 
 function sameBytes(a, b) {
@@ -54,7 +61,16 @@ export function randomToken(bytes = 32) {
 
 export async function getAccounts(env) {
   const list = await env.HUB_KV.get('accounts', 'json');
-  if (list) return list;
+  if (list) {
+    // replace first-version seed accounts nobody has changed yet with the lighter hashes
+    let changed = false;
+    list.forEach((a, i) => {
+      const seed = SEED_ACCOUNTS.find(x => x.id === a.id);
+      if (seed && OLD_SEED_HASHES.includes(a.hash)) { list[i] = { ...seed, username: a.username, role: a.role }; changed = true; }
+    });
+    if (changed) await saveAccounts(env, list);
+    return list;
+  }
   await env.HUB_KV.put('accounts', JSON.stringify(SEED_ACCOUNTS));
   return SEED_ACCOUNTS;
 }
@@ -62,15 +78,18 @@ export async function getAccounts(env) {
 export const saveAccounts = (env, list) => env.HUB_KV.put('accounts', JSON.stringify(list));
 
 export async function verifyPassword(account, password) {
-  const { hash } = await hashPassword(String(password || ''), account.salt);
+  const { hash } = await hashPassword(String(password || ''), account.salt, account.iter || OLD_ITER);
   return sameBytes(hash, account.hash);
 }
 
 // the same username may have several accounts (JoshB has an admin and a standard one): the password picks
 export async function checkLogin(env, username, password) {
   const name = String(username || '').trim().toLowerCase();
-  for (const a of await getAccounts(env)) {
-    if (a.username.toLowerCase() === name && await verifyPassword(a, password)) return a;
+  const list = await getAccounts(env);
+  for (const a of list) {
+    if (a.username.toLowerCase() !== name || !await verifyPassword(a, password)) continue;
+    if (a.iter !== ITER) { Object.assign(a, await hashPassword(String(password))); await saveAccounts(env, list); }
+    return a;
   }
   return null;
 }

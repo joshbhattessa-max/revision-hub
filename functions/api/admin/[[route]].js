@@ -47,8 +47,7 @@ export async function onRequest(ctx) {
     if (!username) return json({ error: 'Enter a username.' }, 400);
     if (!body.password || String(body.password).length < 4) return json({ error: 'Passwords need at least 4 characters.' }, 400);
     const list = await getAccounts(env);
-    const { salt, hash } = await hashPassword(String(body.password));
-    list.push({ id: 'a' + randomToken(6), username, role, salt, hash });
+    list.push({ id: 'a' + randomToken(6), username, role, ...(await hashPassword(String(body.password))) });
     await saveAccounts(env, list);
     return json({ ok: true });
   }
