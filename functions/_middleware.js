@@ -22,6 +22,11 @@ export async function onRequest(ctx) {
   // without its store the sign-in can't work, so nothing is served (fail closed)
   if (!ctx.env.HUB_KV) return new Response(SETUP, { status: 503, headers: { 'content-type': 'text/html; charset=utf-8' } });
 
+  // Google Search Console ownership check: answered word for word, without a sign-in and even during maintenance
+  // (Pages would otherwise redirect *.html to the address without .html, which Google doesn't accept)
+  if (path === '/google4ee74d39786946b2.html') {
+    return new Response('google-site-verification: google4ee74d39786946b2.html', { headers: { 'content-type': 'text/html; charset=utf-8' } });
+  }
   const session = await getSession(ctx.env, ctx.request);
   const isLogin = path === '/login' || path === '/login.html';
   const m = await maintenance(ctx);
