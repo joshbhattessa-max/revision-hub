@@ -265,7 +265,6 @@ body, .subject, .card, .theme-toggle { transition: background-color .35s ease, c
 .pl-bar i { display: block; height: 100%; background: var(--c); border-radius: 3px; }
 .pl-chips { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 12px; }
 .pl-chip { font-size: .75rem; text-decoration: none; padding: 3px 8px; border-radius: 7px; border: 1px solid var(--line); color: var(--ink); background: var(--bg); }
-.pl-chip.secure { border-color: #2E8A47; } .pl-chip.developing { border-color: #B8741A; } .pl-chip.weak { border-color: #C8372D; }
 .pl-chip:hover { border-color: var(--ink); }
 .pl-more { font-size: .75rem; color: var(--muted); padding: 3px 2px; }
 .pl-evact { display: flex; flex-wrap: wrap; gap: 6px; }
@@ -340,3 +339,23 @@ body, .subject, .card, .theme-toggle { transition: background-color .35s ease, c
   .pl-dialog { padding: 16px; }
 }
 
+
+/* ---- progress over time (charts.js, progress-page.js) ---- */
+.pc-tools { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 4px 0 14px; }
+.pc-ranges { display: inline-flex; border: 1px solid var(--line); border-radius: 999px; overflow: hidden; }
+.pc-ranges button { font: inherit; font-size: .82rem; padding: 6px 12px; border: 0; background: transparent; color: var(--ink); cursor: pointer; }
+.pc-ranges button + button { border-left: 1px solid var(--line); }
+.pc-ranges button.on { background: var(--ink); color: var(--bg); }
+.pc-pick { font: inherit; font-size: .82rem; padding: 6px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--card); color: var(--ink); max-width: 100%; }
+.pc-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 460px), 1fr)); gap: 12px; }
+.pc-card { margin: 0; border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px 8px; background: var(--card); color: var(--ink); min-width: 0; }
+.pc-card svg { overflow: visible; }
+.pc-empty b { display: block; margin-bottom: 4px; }
+.pc-empty p { margin: 0; color: var(--muted); font-size: .88rem; }
+.pc-legend { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: .75rem; color: var(--muted); margin-top: 6px; }
+.pc-legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 5px; vertical-align: -1px; }
+.pc-save { font: inherit; font-size: .75rem; background: none; border: 0; padding: 6px 0 2px; color: var(--muted); text-decoration: underline; cursor: pointer; }
+.pg-log { margin-top: 22px; overflow-x: auto; }
+.pg-log table { width: 100%; border-collapse: collapse; font-size: .85rem; }
+.pg-log th, .pg-log td { text-align: left; padding: 7px 8px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+.pg-dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 7px; }

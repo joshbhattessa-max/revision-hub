@@ -53,11 +53,6 @@ window.JBR_PROGRESS = (function () {
     });
     return out;
   }
-  function level(ms) {
-    if (!ms) return 'none';
-    if (ms.pct >= 0.75 && ms.n >= 3) return 'secure';
-    return ms.pct >= 0.5 ? 'developing' : 'weak';
-  }
   // spaced repetition, the same rule as the subject sites: a question you didn't get full marks on is due a day
   // later, then 3 days, then 7 after each right answer; three right in a row and it's learnt
   var GAPS = [1, 3, 7];
@@ -71,5 +66,5 @@ window.JBR_PROGRESS = (function () {
     var due = h[h.length - 1][0] + GAPS[rightSince] * 864e5;
     return { due: due, now: due <= Date.now(), step: rightSince };
   }
-  return { get: function () { return P; }, save: save, pull: pull, mastery: mastery, level: level, review: review, flush: push };
+  return { get: function () { return P; }, save: save, pull: pull, mastery: mastery, review: review, flush: push };
 })();

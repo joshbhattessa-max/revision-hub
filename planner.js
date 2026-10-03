@@ -1,12 +1,13 @@
 /* Revision planner: your exams, class tests and topic deadlines; a day-by-day plan that favours the topics you're
    weakest at and the dates coming up soonest; topic sheets matched to topics; and question sets picked from the
-   school's own exam board's past papers. The AI reads each line of a topic sheet (or a test's topics) and picks the
-   questions that test exactly that point; questions you got wrong come back in the sets when they're due for review.
+   school's own exam board's past papers. Each line of a topic sheet (or a test's topics) is matched against the
+   wording of every past-paper question, so the picks test that point; questions you got wrong come back in the
+   sets when they're due for review.
    Saved with your progress, so it follows you between devices. */
 (function () {
   'use strict';
   var S = window.JBR_PROGRESS, MATCH = window.JBR_MATCH;
-  var META = null, PICK = {}, TEXT = {}, AI_OFF = false;
+  var META = null, PICK = {}, TEXT = {};
   var app = document.getElementById('app');
   var TYPES = { exam: 'Exam', test: 'Class test', topic: 'Topic deadline', list: 'Topic sheet' };
   var MARKS = { exam: 80, test: 40, topic: 25, list: 50 };
@@ -45,7 +46,8 @@
   }
   function savePlan(soon) { plan().t = Date.now(); S.save(soon); }
   function topicsOf(e) { return e.topics && e.topics.length ? e.topics : subj(e.subj).topics.map(function (t) { return t[0]; }); }
-  function need(ms) { return !ms ? 0.9 : S.level(ms) === 'secure' ? 0.35 : S.level(ms) === 'developing' ? 0.7 : 1; }
+  // how much a topic needs practice: more when you've got fewer of its marks, a little less when untried
+  function need(ms) { return !ms ? 0.9 : ms.pct >= 0.75 && ms.n >= 3 ? 0.35 : ms.pct >= 0.5 ? 0.7 : 1; }
 
   // ------------------------------------------------------------------ the day-by-day plan
   // Each slot goes to the topic with the best mix of: a date coming up soon, low marks so far (or a red rating),
@@ -90,7 +92,7 @@
         var ms = M[best.subj][best.t];
         day.sessions.push({ kind: 'topic', subj: best.subj, t: best.t, ev: best.ev, key: date + '|' + best.subj + '|' + best.t,
           why: (best.ev.title || TYPES[best.ev.type]) + ' ' + (best.until === 1 ? 'tomorrow' : 'in ' + best.until + ' days') +
-            (ms ? ' · ' + Math.round(ms.pct * 100) + '% so far' : ' · not tried yet') });
+            (ms ? ' · ' + Math.round(ms.pct * 100) + '% of the marks so far' : '') });
         lastSeen[best.subj + '|' + best.t] = d; used[best.subj] = 1;
       }
       out.push(day);
@@ -175,7 +177,7 @@
     return out;
   }
 
-  // ------------------------------------------------------------------ the AI picker
+  // ------------------------------------------------------------------ picking by the topic sheet's lines
   function loadText(s) {
     if (TEXT[s]) return Promise.resolve(TEXT[s]);
     return fetch('/study/text/' + s + '.json', { credentials: 'same-origin' }).then(function (r) { return r.ok ? r.json() : {}; })
@@ -203,7 +205,7 @@
     if (lines.length) return lines.slice(0, 120);
     return topicsOf(e).map(function (t) { return topicName(e.subj, t); }).slice(0, 120);
   }
-  // A shortlist of question parts for the AI to choose from: for each point, the parts whose wording shares the most
+  // A shortlist of question parts to choose from: for each point, the parts whose wording shares the most
   // words with it (on the date's topics, or anywhere if they share a lot), taken in turn so every point gets some.
   function shortlist(s, topics, points, Q, X, avoid) {
     var T = {}, tl = subj(s).topics, P = S.get(), M = 160;
@@ -244,24 +246,34 @@
       .forEach(function (c) { seen[c.id] = 1; out.push(c); });
     return out.slice(0, M);
   }
-  function aiPick(e, target, avoid) {
-    if (AI_OFF) return Promise.reject(new Error('off'));
+  // Picks for each line of the topic sheet in turn: the part whose wording shares the most of that line's key words,
+  // then the next best, until the marks add up. All in your browser, free.
+  function linePick(e, target, avoid) {
     var s = e.subj, points = pointsOf(e), topics = topicsOf(e);
     return Promise.all([loadPick(s), loadText(s)]).then(function (r) {
       var cands = shortlist(s, topics, points, r[0], r[1], avoid), byId = {};
-      if (!cands.length) throw new Error('none');
+      if (!cands.length) return { items: [], uncovered: [] };
       cands.forEach(function (c) { byId[c.id] = c; });
-      return fetch('/api/ai/pick', {
-        method: 'POST', credentials: 'same-origin', headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ subj: s, title: e.title, points: points, target: target, cands: cands.map(function (c) {
-          return { id: c.id, mk: c.p[2] || c.e[1], paper: c.e[4] + ' Q' + c.e[5] + (c.p[1] ? ' ' + c.p[1] : ''),
-            topics: c.tps.map(function (t) { return topicName(s, t); }).join('; '), wording: c.wording };
-        }) })
-      }).then(function (res) {
-        return res.json().catch(function () { return {}; }).then(function (j) {
-          if (res.status === 503) AI_OFF = true;
-          if (!res.ok) { var err = new Error(j.error || 'The AI picker isn\'t available.'); err.code = j.code; throw err; }
-          // parts of the same question go together, in the order the AI gave
+      var ranked = points.map(function (pt) {
+        var keys = Object.keys(words(pt)), need = Math.min(2, keys.length);
+        return cands.map(function (c) {
+          var hit = keys.filter(function (k) { return c.w[k]; }).length;
+          return hit >= need && hit ? { c: c, sc: hit + c.base * 0.5 } : null;
+        }).filter(Boolean).sort(function (x, y) { return y.sc - x.sc; });
+      });
+      var j = { picks: [], uncovered: [] }, used = {}, total = 0;
+      ranked.forEach(function (rk, i) { if (!rk.length) j.uncovered.push(i + 1); });
+      for (var round = 0; round < 6 && total < target; round++) {
+        for (var i = 0; i < ranked.length && total < target; i++) {
+          var x = ranked[i].filter(function (y) { return !used[y.c.id]; })[0];
+          if (!x) continue;
+          used[x.c.id] = 1; total += x.c.p[2] || x.c.e[1];
+          var own = x.c.wording.split(' … ').pop().replace(/\s+/g, ' ').trim();
+          j.picks.push({ id: x.c.id, point: i + 1, why: own.length > 110 ? own.slice(0, 107) + '…' : own });
+        }
+      }
+      return (function () {
+        // parts of the same question go together, in the order they were picked
           var items = [], byQ = {};
           (j.picks || []).forEach(function (pk) {
             var c = byId[pk.id];
@@ -287,9 +299,8 @@
             }
             delete it.all;
           });
-          return { items: items, uncovered: (j.uncovered || []).map(function (n) { return points[n - 1]; }).filter(Boolean).slice(0, 20), left: j.left };
-        });
-      });
+          return { items: items, uncovered: (j.uncovered || []).map(function (n) { return points[n - 1]; }).filter(Boolean).slice(0, 20) };
+      })();
     });
   }
   function makeSet(e, extra) {
@@ -300,20 +311,17 @@
       // questions you got wrong that are due again come first, up to about a third of the set
       var rev = reviewItems(e.subj, topicsOf(e), Q, Math.round(target / 3));
       rev.forEach(function (it) { avoid[it.q] = 1; });
-      var rest = Math.max(10, target - rev.reduce(function (a, it) { return a + it.mk; }, 0)), note = '';
+      var rest = Math.max(10, target - rev.reduce(function (a, it) { return a + it.mk; }, 0));
       busy('Picking questions…');
-      return aiPick(e, rest, avoid).then(function (r) {
-        if (!r.items.length) throw new Error('none');
-        return { items: r.items, ai: true, uncovered: r.uncovered };
-      }).catch(function (err) {
-        if (err.code === 'daily_limit' || err.code === 'busy' || err.code === 'refused' || err.code === 'ai_error') note = err.message + ' These were picked by matching topics instead.';
-        return pickSet(e.subj, topicsOf(e), rest, avoid).then(function (items) { return { items: items, ai: false }; });
+      return linePick(e, rest, avoid).then(function (r) {
+        if (r.items.length) return { items: r.items, lines: true, uncovered: r.uncovered };
+        return pickSet(e.subj, topicsOf(e), rest, avoid).then(function (items) { return { items: items }; });
       }).then(function (r) {
         var items = rev.concat(r.items);
         if (!items.length) throw new Error('No ' + subj(e.subj).subject + ' questions left on those topics.');
         var n = p.sets.filter(function (x) { return x.ev === e.id; }).length;
         p.sets.unshift({ id: uid(), ev: e.id, subj: e.subj, title: (e.title || TYPES[e.type]) + (n ? ' (set ' + (n + 1) + ')' : ''), made: Date.now(),
-          items: items, total: items.reduce(function (a, it) { return a + it.mk; }, 0), ai: r.ai, uncovered: r.uncovered || [], note: note, reviews: rev.length });
+          items: items, total: items.reduce(function (a, it) { return a + it.mk; }, 0), lines: !!r.lines, uncovered: r.uncovered || [], reviews: rev.length });
         savePlan(true);
         if (!extra) render();
       });
@@ -409,7 +417,7 @@
         '<label>' + (e.type === 'list' ? 'Date (optional)' : 'Date') + '<input type="date" name="date" value="' + esc(e.date || '') + '"' + (e.type === 'list' ? '' : ' required') + '></label></div>' +
         '<label class="pl-wide">Name<input name="title" maxlength="80" value="' + esc(e.title) + '" placeholder="' +
           esc({ exam: sm.subject + ' Paper 1', test: sm.subject + ' end of topic test', topic: 'Finish revising…', list: sm.subject + ' topic sheet' }[e.type]) + '"></label>' +
-        '<fieldset class="pl-check"><legend>Topic sheet</legend><p>Upload your topic sheet or checklist (PDF or text), or paste it below. The topics on it are ticked for you, and the AI picks questions that test exactly what each line says.</p>' +
+        '<fieldset class="pl-check"><legend>Topic sheet</legend><p>Upload your topic sheet or checklist (PDF or text), or paste it below. The topics on it are ticked for you, and questions are picked whose wording matches each line.</p>' +
           '<div class="pl-row"><input type="file" name="file" accept=".pdf,.txt,.md,.csv,text/plain,application/pdf"><button type="button" class="pl-btn ghost read">Match pasted text</button></div>' +
           '<textarea name="paste" rows="3" placeholder="…or paste the topic sheet here"></textarea><div class="pl-matched"></div></fieldset>' +
         '<fieldset class="pl-topics"><legend>Topics' + (e.type === 'exam' ? ' (none ticked = the whole course)' : '') + '</legend>' +
@@ -528,22 +536,22 @@
 
   // ------------------------------------------------------------------ the page
   function readiness(e) {
-    var M = S.mastery(e.subj), ts = topicsOf(e), sec = 0, sum = 0;
-    ts.forEach(function (t) { var ms = M[t]; if (S.level(ms) === 'secure') sec++; sum += ms ? Math.min(1, ms.pct) * Math.min(1, ms.n / 3) : 0; });
-    return { pct: ts.length ? sum / ts.length : 0, secure: sec, n: ts.length };
+    var M = S.mastery(e.subj), ts = topicsOf(e), g = 0, m = 0, n = 0;
+    ts.forEach(function (t) { var ms = M[t]; if (ms) { g += ms.pct * ms.n; m += ms.n; n += ms.n; } });
+    return { pct: m ? g / m : 0, done: n };
   }
   function eventCard(e) {
     var sm = subj(e.subj), r = readiness(e), M = S.mastery(e.subj), ts = topicsOf(e), past = e.date && e.date < TODAY;
     var chips = (e.topics && e.topics.length ? ts : []).slice(0, 10).map(function (t) {
-      return '<a class="pl-chip ' + S.level(M[t]) + '" href="/' + e.subj + '/#/practise/' + encodeURIComponent(t) + '" title="Practise ' + esc(topicName(e.subj, t)) + '">' + esc(topicName(e.subj, t)) + '</a>';
+      return '<a class="pl-chip" href="/' + e.subj + '/#/practise/' + encodeURIComponent(t) + '" title="Practise ' + esc(topicName(e.subj, t)) + '">' + esc(topicName(e.subj, t)) + '</a>';
     }).join('') + (ts.length > 10 && e.topics.length ? '<span class="pl-more">and ' + (ts.length - 10) + ' more</span>' : '') + (!e.topics || !e.topics.length ? '<span class="pl-more">The whole course</span>' : '');
     var sets = plan().sets.filter(function (x) { return x.ev === e.id; }).length;
     var c = el('<article class="pl-ev' + (past ? ' past' : '') + '" style="--c:' + esc(sm.color) + '">' +
       '<div class="pl-evtop"><span class="pl-badge">' + TYPES[e.type] + '</span><span class="pl-subj">' + esc(sm.subject) + '</span>' +
       (e.date ? '<span class="pl-when"><b>' + niceDate(e.date) + '</b> · ' + inDays(e.date) + '</span>' : '') + '</div>' +
       '<h3>' + esc(e.title) + '</h3>' +
-      '<div class="pl-ready"><div class="pl-bar"><i style="width:' + Math.round(r.pct * 100) + '%"></i></div><span>' + Math.round(r.pct * 100) + '% ready · ' +
-        r.secure + ' of ' + r.n + ' topics secure</span></div>' +
+      (r.done ? '<div class="pl-ready"><div class="pl-bar"><i style="width:' + Math.round(r.pct * 100) + '%"></i></div><span>' + Math.round(r.pct * 100) + '% of the marks on these topics · ' +
+        r.done + ' question' + (r.done === 1 ? '' : 's') + ' done</span></div>' : '<div class="pl-ready"><span>No questions done on these topics yet</span></div>') +
       '<div class="pl-chips">' + chips + '</div>' +
       '<div class="pl-evact"><button type="button" class="pl-btn pick">' + (sets ? 'Pick more questions' : 'Pick questions') + '</button>' +
       '<button type="button" class="pl-btn ghost edit">Edit</button><button type="button" class="pl-btn ghost del">Delete</button></div></article>');
@@ -565,7 +573,7 @@
     var sm = subj(set.subj), P = S.get(), done = setDone(set);
     var c = el('<article class="pl-set" style="--c:' + esc(sm.color) + '"><div class="pl-evtop"><span class="pl-badge">' + esc(sm.subject) + '</span>' +
       '<span class="pl-when">' + set.items.length + ' questions · ' + set.total + ' marks · ' + done + ' done</span>' +
-      (set.ai ? '<span class="pl-ai">Picked by AI</span>' : '') + '</div>' +
+      (set.lines ? '<span class="pl-ai">Matched line by line</span>' : '') + '</div>' +
       '<h3>' + esc(set.title) + '</h3><ol class="pl-qs">' + set.items.map(function (it) {
         var ok = itemDone(set, it, P);
         var why = (it.why || []).map(function (w) { return '<span class="pl-why">' + (w.point ? '<b>' + esc(w.point) + '</b> ' : '') + esc(w.why) + '</span>'; }).join('');
@@ -576,7 +584,6 @@
       (set.uncovered && set.uncovered.length ? '<details class="pl-unc"><summary>' + set.uncovered.length + ' point' + (set.uncovered.length === 1 ? '' : 's') +
         ' with no past-paper question that really tests ' + (set.uncovered.length === 1 ? 'it' : 'them') + '</summary><ul>' +
         set.uncovered.map(function (u) { return '<li>' + esc(u) + '</li>'; }).join('') + '</ul></details>' : '') +
-      (set.note ? '<p class="pl-note">' + esc(set.note) + '</p>' : '') +
       '<div class="pl-evact"><button type="button" class="pl-btn timed">Do it as a timed paper</button><button type="button" class="pl-btn ghost print">Print it</button>' +
       '<button type="button" class="pl-btn ghost del">Remove</button></div>' +
       '<p class="pl-note">The timed paper and the printout use the full questions; mark yourself as you go and it all counts towards your topics.</p></article>');
@@ -647,7 +654,7 @@
     up.forEach(function (e) { evs.appendChild(eventCard(e)); });
     root.appendChild(planSection());
     if (p.sets.length) {
-      var ss = el('<section><h2>Question sets</h2><p class="pl-note">Picked from your exam board\'s past papers. The AI reads each line of your topic sheet (or the test\'s topics) and picks questions that test exactly that, and questions you got wrong come back first when they\'re due for review.</p><div class="pl-sets"></div></section>');
+      var ss = el('<section><h2>Question sets</h2><p class="pl-note">Picked from your exam board\'s past papers. Each line of your topic sheet (or the test\'s topics) is matched against the questions\' own wording, and questions you got wrong come back first when they\'re due for review.</p><div class="pl-sets"></div></section>');
       p.sets.forEach(function (x) { ss.querySelector('.pl-sets').appendChild(setCard(x)); });
       root.appendChild(ss);
     }
