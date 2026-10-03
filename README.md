@@ -22,6 +22,7 @@ Everything (the home page, every subject and the admin console) needs a sign-in.
 
 - **Accounts to start with:** `JoshB` / `admin` (admin), `JoshB` / `normal` and `test` / `test` (standard). Change these weak passwords in the admin console once the site is up.
 - **Sign-up:** anyone can make a standard account on the login page ("Create an account") with a username and a password of at least 6 characters. Each address can make at most 5 accounts an hour.
+- **After signing in** the home page says "Hello, *name*", and the name then moves to the top right. Hover over it (tap on a phone) to change your password, log out or delete your account. Deleting needs your password, and the last admin account can't be deleted.
 - **Standard accounts** see the site as normal.
 - **Admin accounts** also get an **Admin console** button on the home page (`/admin`):
   - **Content:** change the title, subjects, links and pictures. Uploads are kept in Cloudflare. *Reset to the built-in version* goes back to `hub.json`.

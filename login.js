@@ -39,7 +39,10 @@
       .then(function (res) {
         if (!res.ok) throw new Error(res.d.error || 'Something went wrong. Try again.');
         var next = new URLSearchParams(location.search).get('next') || '/';
-        location.replace(/^\/(?!\/)/.test(next) ? next : '/');
+        if (!/^\/(?!\/)/.test(next)) next = '/';
+        // the home page says hello once, just after signing in
+        if (next === '/') try { sessionStorage.setItem('jbr-hello', '1'); } catch (e3) { /* storage blocked */ }
+        location.replace(next);
       })
       .catch(function (e2) {
         err.textContent = e2.message || 'Something went wrong. Try again.';

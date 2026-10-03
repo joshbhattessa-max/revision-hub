@@ -61,13 +61,16 @@ export async function getAccounts(env) {
 
 export const saveAccounts = (env, list) => env.HUB_KV.put('accounts', JSON.stringify(list));
 
+export async function verifyPassword(account, password) {
+  const { hash } = await hashPassword(String(password || ''), account.salt);
+  return sameBytes(hash, account.hash);
+}
+
 // the same username may have several accounts (JoshB has an admin and a standard one): the password picks
 export async function checkLogin(env, username, password) {
   const name = String(username || '').trim().toLowerCase();
   for (const a of await getAccounts(env)) {
-    if (a.username.toLowerCase() !== name) continue;
-    const { hash } = await hashPassword(String(password || ''), a.salt);
-    if (sameBytes(hash, a.hash)) return a;
+    if (a.username.toLowerCase() === name && await verifyPassword(a, password)) return a;
   }
   return null;
 }
@@ -76,6 +79,8 @@ export function readCookie(request, name) {
   const m = (request.headers.get('cookie') || '').match(new RegExp('(?:^|;\\s*)' + name + '=([^;]+)'));
   return m ? decodeURIComponent(m[1]) : null;
 }
+
+export const clearCookie = () => `${COOKIE}=; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=0`;
 
 export function sessionCookie(token, maxAge) {
   return `${COOKIE}=${token}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=${maxAge}`;
