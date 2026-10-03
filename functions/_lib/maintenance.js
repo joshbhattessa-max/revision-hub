@@ -15,8 +15,10 @@ export async function maintenance(ctx, fresh = false) {
     const r = await ctx.env.ASSETS.fetch(new URL('/maintenance.json', ctx.request.url));
     if (r.ok) file = await r.json();
   } catch (e) { /* no file: off */ }
-  // a countdown set in the admin console ends maintenance by itself; a release (maintenance.json) ends it explicitly
-  const byAdmin = !!(kv && kv.on && !(kv.until && kv.until <= Date.now())), byUpdate = !!(file && file.on);
+  // a countdown ends maintenance by itself the moment it reaches 0, whether an admin set it or a release did
+  const now = Date.now();
+  const byAdmin = !!(kv && kv.on && !(kv.until && kv.until <= now));
+  const byUpdate = !!(file && file.on && !(file.until && file.until <= now));
   const state = {
     on: byAdmin || byUpdate, byAdmin, byUpdate,
     message: (byAdmin && kv.message) || (byUpdate && file.message) || '',
@@ -24,8 +26,10 @@ export async function maintenance(ctx, fresh = false) {
     // earliest the site comes back (ms since 1970); shown as a countdown on the maintenance page
     until: Math.max(Number(byAdmin && kv.until) || 0, Number(byUpdate && file.until) || 0) || null,
   };
-  // don't serve a cached "on" past the moment the admin's countdown ends
-  cache = { at: Date.now() - (byAdmin && kv.until ? Math.max(0, 15000 - (kv.until - Date.now())) : 0), state };
+  // never keep a cached "on" past the moment a countdown ends
+  const ends = [byAdmin && kv.until, byUpdate && file.until].filter(Boolean).map(Number);
+  const soonest = ends.length ? Math.min(...ends) : Infinity;
+  cache = { at: now - Math.max(0, 15000 - (soonest - now)), state };
   return state;
 }
 
@@ -79,12 +83,12 @@ ${state.message ? `<p class="note">${esc(state.message)}</p>` : ''}
 <a class="admin" href="/login?admin=1">Admin sign-in</a>
 </main>
 <script>
-var until = ${state.until ? Number(state.until) : 'null'};
+var until = ${state.until ? `Date.now() + ${Math.max(0, Number(state.until) - Date.now())}` : 'null'};  // server time, so a wrong device clock doesn't matter
 function tick() {
   var el = document.querySelector('.clock-text');
   if (!el || !until) return;
   var left = Math.round((until - Date.now()) / 1000);
-  if (left <= 0) { el.innerHTML = '<b>Finishing checks…</b>'; if (!window.soon) { window.soon = setInterval(check, 4000); } return; }
+  if (left <= 0) { el.innerHTML = '<b>Back now…</b>'; if (!window.soon) { check(); window.soon = setInterval(check, 1000); } return; }
   el.innerHTML = 'Back in about <b>' + Math.floor(left / 60) + ':' + String(left % 60).padStart(2, '0') + '</b>';
 }
 tick(); setInterval(tick, 1000);
