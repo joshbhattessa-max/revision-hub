@@ -320,10 +320,14 @@
     });
   }
   function qLink(s, it) { return '/' + s + '/#/question/' + encodeURIComponent(it.q) + (it.k ? '/' + encodeURIComponent(it.k) : ''); }
+  // done since the set was made (a review question you got wrong before only counts once you've had another go)
+  function itemDone(set, it, P) {
+    return (it.parts || [it.k]).every(function (k) { var r = P.items[set.subj + '|' + (k ? it.q + '/' + k : it.q)]; return r && r.t >= (set.made || 0); });
+  }
   function setDone(set) {
     var P = S.get();
     return set.items.filter(function (it) {
-      return (it.parts || [it.k]).every(function (k) { return P.items[set.subj + '|' + (k ? it.q + '/' + k : it.q)]; });
+      return itemDone(set, it, P);
     }).length;
   }
   // hand a set to the subject site's mock paper (timer, marking, printing)
@@ -563,7 +567,7 @@
       '<span class="pl-when">' + set.items.length + ' questions · ' + set.total + ' marks · ' + done + ' done</span>' +
       (set.ai ? '<span class="pl-ai">Picked by AI</span>' : '') + '</div>' +
       '<h3>' + esc(set.title) + '</h3><ol class="pl-qs">' + set.items.map(function (it) {
-        var ok = (it.parts || [it.k]).every(function (k) { return P.items[set.subj + '|' + (k ? it.q + '/' + k : it.q)]; });
+        var ok = itemDone(set, it, P);
         var why = (it.why || []).map(function (w) { return '<span class="pl-why">' + (w.point ? '<b>' + esc(w.point) + '</b> ' : '') + esc(w.why) + '</span>'; }).join('');
         return '<li class="' + (ok ? 'ok' : '') + '"><a href="' + qLink(set.subj, it) + '">' + esc(it.label) + '</a><span class="pl-mk">' + it.mk + ' mark' + (it.mk === 1 ? '' : 's') + '</span>' +
           (it.review ? '<span class="pl-rv" title="You got this wrong before and it\'s due again">Review · last time ' + it.last + '/' + it.mk + '</span>' : '') +
