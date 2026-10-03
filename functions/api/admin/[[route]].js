@@ -8,7 +8,9 @@
 //   GET    /api/admin/hub    PUT /api/admin/hub {content}    DELETE /api/admin/hub (back to hub.json)
 //   POST   /api/admin/media                  raw image body -> {url}
 //   GET    /api/admin/maintenance    PUT /api/admin/maintenance {on, message}
+//   GET    /api/admin/keys    POST /api/admin/keys {label} -> {key} (shown once)    DELETE /api/admin/keys/:id
 import { forgetMaintenance, maintenance } from '../../_lib/maintenance.js';
+import { getKeys, newKey, saveKeys, sha256 } from '../../_lib/keys.js';
 import { endSessions, getAccounts, hashPassword, hubContent, json, listSessions, randomToken, saveAccounts } from '../../_lib/auth.js';
 
 const ROLES = ['admin', 'user'];
@@ -88,6 +90,22 @@ export async function onRequest(ctx) {
       return json({ error: 'There must always be at least one admin account.' }, 400);
     await saveAccounts(env, list.filter(x => x.id !== a.id));
     await endSessions(env, s => s.accountId === a.id);
+    return json({ ok: true });
+  }
+
+  if (route === 'keys' && method === 'GET') return json((await getKeys(env)).map(({ hash, ...k }) => k));
+  if (route === 'keys' && method === 'POST') {
+    const label = clean(body.label) || 'Agent';
+    const key = newKey(), list = await getKeys(env);
+    list.push({ id: randomToken(6), label, hash: await sha256(key), created: Date.now(), lastUsed: null });
+    await saveKeys(env, list);
+    return json({ key, label });
+  }
+  const keyRoute = route.match(/^keys\/([\w-]+)$/);
+  if (keyRoute && method === 'DELETE') {
+    const list = await getKeys(env);
+    if (!list.some(k => k.id === keyRoute[1])) return json({ error: 'No such key.' }, 404);
+    await saveKeys(env, list.filter(k => k.id !== keyRoute[1]));
     return json({ ok: true });
   }
 

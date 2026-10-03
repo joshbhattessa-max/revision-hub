@@ -62,9 +62,9 @@
       '<div class="user-pop"><div class="user-card" role="menu">' +
       '<div class="user-head"><b>' + esc(me.username) + '</b><span>Signed in until ' + until + '</span></div>' +
       (me.role === 'admin' ? '<a role="menuitem" href="/admin">Admin console</a>' : '') +
-      '<button type="button" role="menuitem" data-act="password">Change password</button>' +
+      (me.viaKey ? '' : '<button type="button" role="menuitem" data-act="password">Change password</button>') +
       '<button type="button" role="menuitem" data-act="logout">Log out</button>' +
-      '<button type="button" role="menuitem" data-act="delete" class="danger">Delete account</button>' +
+      (me.viaKey ? '' : '<button type="button" role="menuitem" data-act="delete" class="danger">Delete account</button>') +
       '</div></div></div>';
   }
 

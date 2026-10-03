@@ -285,6 +285,52 @@
         var u = abox.querySelector('.nu').value.trim(), p = abox.querySelector('.np').value, r = abox.querySelector('.nr').value;
         api('POST', 'accounts', { username: u, password: p, role: r }).then(function () { say('Account added.'); loadAccounts(); }).catch(function (e) { say(e.message, true); });
       });
+      loadKeys();
+    }).catch(function (e) { say(e.message, true); });
+  }
+
+  // access keys: let an agent (e.g. a Claude agent) use the site as a standard account without the login form
+  var pendingKey = null;
+  function showKey(nb, key) {
+    var link = location.origin + '/?key=' + key;
+    nb.innerHTML = '<p><b>Copy this now: it won\'t be shown again.</b></p>' +
+      '<p class="muted">Agents that browse (open web pages): give it this link.</p><input type="text" class="grow keyout" style="width:100%" readonly value="' + esc(link) + '">' +
+      '<p class="muted">Agents or scripts that fetch addresses: add <code>?key=' + esc(key) + '</code> to any address, or send the header <code>Authorization: Bearer ' + esc(key) + '</code>.</p>' +
+      '<button type="button" class="small copy">Copy link</button>';
+    nb.querySelector('.copy').addEventListener('click', function () {
+      nb.querySelector('.keyout').select();
+      (navigator.clipboard ? navigator.clipboard.writeText(link) : Promise.reject()).then(function () { say('Link copied.'); }, function () { document.execCommand('copy'); say('Link copied.'); });
+    });
+  }
+  function loadKeys() {
+    var kbox = document.createElement('div');
+    abox.appendChild(kbox);
+    api('GET', 'keys').then(function (list) {
+      var day = function (t) { return t ? new Date(t).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : 'never'; };
+      kbox.innerHTML = '<h2>Access keys for agents</h2>' +
+        '<p class="muted">For an AI agent (like a Claude agent) or a script. A key works like a standard account, never an admin one. ' +
+        'Treat it like a password: anyone with it can use the site until you revoke it.</p>' +
+        (list.length ? '<div class="tablewrap"><table><thead><tr><th>Name</th><th>Created</th><th>Last used</th><th></th></tr></thead><tbody>' +
+          list.map(function (k) {
+            return '<tr><td>' + esc(k.label) + '</td><td>' + day(k.created) + '</td><td>' + day(k.lastUsed) + '</td>' +
+              '<td><button type="button" class="small danger revoke" data-id="' + esc(k.id) + '">Revoke</button></td></tr>';
+          }).join('') + '</tbody></table></div>' : '') +
+        '<div class="box"><div class="row"><input type="text" class="kl grow" placeholder="Name, e.g. Claude agent" maxlength="40" autocomplete="off">' +
+        '<button type="button" class="btn-main mk">Create key</button></div><div class="newkey"></div></div>';
+      if (pendingKey) showKey(kbox.querySelector('.newkey'), pendingKey);
+      pendingKey = null;
+      kbox.querySelector('.mk').addEventListener('click', function () {
+        api('POST', 'keys', { label: kbox.querySelector('.kl').value.trim() || 'Claude agent' }).then(function (d) {
+          pendingKey = d.key;  // shown once, in the refreshed list
+          loadAccounts();
+        }).catch(function (e) { say(e.message, true); });
+      });
+      Array.prototype.forEach.call(kbox.querySelectorAll('.revoke'), function (b) {
+        b.addEventListener('click', function () {
+          if (!confirm('Revoke this key? Anything using it is signed out straight away.')) return;
+          api('DELETE', 'keys/' + b.getAttribute('data-id')).then(function () { say('Key revoked.'); loadAccounts(); }).catch(function (e) { say(e.message, true); });
+        });
+      });
     }).catch(function (e) { say(e.message, true); });
   }
 

@@ -2,6 +2,7 @@
 import { getSession, json } from './_lib/auth.js';
 import { maintenance, maintenancePage } from './_lib/maintenance.js';
 import { notFoundPage } from './_lib/notfound.js';
+import { keySession } from './_lib/keys.js';
 
 // what the login page itself needs
 const OPEN = new Set(['/login', '/login.html', '/login.js', '/hub.css', '/fonts.css', '/favicon.svg', '/favicon-32.png',
@@ -27,7 +28,12 @@ export async function onRequest(ctx) {
   if (path === '/google4ee74d39786946b2.html') {
     return new Response('google-site-verification: google4ee74d39786946b2.html', { headers: { 'content-type': 'text/html; charset=utf-8' } });
   }
-  const session = await getSession(ctx.env, ctx.request);
+  let session = await getSession(ctx.env, ctx.request), keyCookie = null;
+  // agents can use an access key instead of the login form (a standard, non-admin sign-in)
+  if (!session) {
+    const ks = await keySession(ctx.env, ctx.request, url);
+    if (ks) { session = ks.session; keyCookie = ks.setCookie; }
+  }
   const isLogin = path === '/login' || path === '/login.html';
   const m = await maintenance(ctx);
   if (m.on && !(session && session.role === 'admin')) {
@@ -40,7 +46,7 @@ export async function onRequest(ctx) {
     if (adminLogin) return ctx.next();
   }
   if (OPEN.has(path) || path.startsWith('/fonts/')) {
-    if (session && isLogin) return Response.redirect(url.origin + safeNext(url), 302);
+    if (session && isLogin) return Response.redirect(url.origin + safeNext(url), 302);  // (a key's cookie is set on its next page)
     return ctx.next();
   }
   if (!session) {
@@ -54,10 +60,13 @@ export async function onRequest(ctx) {
   const res = await ctx.next();
   // pages that don't exist get the 404 page (404.html only makes Pages answer 404 instead of the home page)
   if (res.status === 404 && (ctx.request.headers.get('accept') || '').includes('text/html')) {
-    return new Response(notFoundPage(url.pathname), { status: 404, headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store' } });
+    const nf = new Response(notFoundPage(url.pathname), { status: 404, headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store' } });
+    if (keyCookie) nf.headers.append('set-cookie', keyCookie);
+    return nf;
   }
   const out = new Response(res.body, res);
   out.headers.set('cache-control', 'private, no-store');
+  if (keyCookie) out.headers.append('set-cookie', keyCookie);
   return out;
 }
 

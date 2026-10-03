@@ -30,6 +30,15 @@ Everything (the home page, every subject and the admin console) needs a sign-in.
   - **Accounts:** change a password, rename, make admin or standard, sign out everywhere, delete, or add an account.
 - Passwords are stored only as salted PBKDF2 hashes. Ten wrong passwords from one address lock that address out for 15 minutes.
 
+### Access keys for agents
+
+For an AI agent (like a Claude agent) or a script, create a key in **Admin console → Accounts → Access keys for agents**. A key works like a standard account, never an admin one, and is shown once:
+
+- Agents that browse web pages: give them the link `https://<your-hub>/?key=<key>`, which signs them in for 6 hours.
+- Agents or scripts that fetch addresses: add `?key=<key>` to any address, or send `Authorization: Bearer <key>`.
+
+Only a hash of each key is stored. Revoking a key cuts it off immediately.
+
 ### Maintenance mode
 
 The **Maintenance mode** button at the top of the admin console (or its **Maintenance** tab) turns it on or off, with an optional message and countdown. If you set a countdown, the site reopens by itself when it ends. Admins keep using the site as normal while it's on. While it's on, everyone except admins gets a "Down for maintenance" page. That page reloads by itself when the site is back, and has an "Admin sign-in" link. Setting `"on": true` in `maintenance.json` does the same from the repository, which is useful while a big update deploys.

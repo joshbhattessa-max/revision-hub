@@ -4,6 +4,7 @@ import { maintenance } from '../_lib/maintenance.js';
 export async function onRequestGet(ctx) {
   const s = ctx.data.session;
   const out = { username: s.username, role: s.role, expires: s.expires };
+  if (s.viaKey) out.viaKey = true;  // signed in with an access key: no password to change, no account to delete
   // admins can still use the site during maintenance, so tell them it's on
   if (s.role === 'admin') out.maintenance = (await maintenance(ctx)).on;
   return json(out);
