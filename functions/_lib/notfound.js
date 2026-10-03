@@ -1,6 +1,7 @@
 // The 404 page: a giant face-on "404" built from stone blocks. The 0 swings from a tower crane above its
 // empty slot, one builder hammers on the scaffolding and another checks the plans, puzzled.
 import { LOGO_PATHS } from './scene.js';
+import { ICON_LINKS } from './icons.js';
 
 // oblique projection: x right, y up, z into the page (so we see each block's front, top and right side)
 const G = 700, DX = .55, DY = .38;
@@ -146,7 +147,7 @@ export function notFoundPage(path) {
 <meta name="robots" content="noindex"><meta name="color-scheme" content="light dark">
 <title>Page not found · Josh B Revision</title>
 <script>try { var t = localStorage.getItem('hub-theme'); if (t) document.documentElement.setAttribute('data-theme', t); } catch (e) {}</script>
-<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+${ICON_LINKS}
 <link rel="stylesheet" href="/fonts.css">
 <style>
 :root { --bg: #f4f1ea; --ink: #2b2925; --muted: #6b6862; --nf-ground-top: #ddd6c8; --nf-ground-bottom: #e9e4da; --nf-ground-line: #cbc2b1; }

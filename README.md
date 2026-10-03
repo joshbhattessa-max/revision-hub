@@ -32,7 +32,7 @@ Everything (the home page, every subject and the admin console) needs a sign-in.
 
 ### Maintenance mode
 
-The **Maintenance mode** button at the top of the admin console (or its **Maintenance** tab) turns it on or off, with an optional message and countdown. Admins keep using the site as normal while it's on. While it's on, everyone except admins gets a "Down for maintenance" page. That page reloads by itself when the site is back, and has an "Admin sign-in" link. Setting `"on": true` in `maintenance.json` does the same from the repository, which is useful while a big update deploys.
+The **Maintenance mode** button at the top of the admin console (or its **Maintenance** tab) turns it on or off, with an optional message and countdown. If you set a countdown, the site reopens by itself when it ends. Admins keep using the site as normal while it's on. While it's on, everyone except admins gets a "Down for maintenance" page. That page reloads by itself when the site is back, and has an "Admin sign-in" link. Setting `"on": true` in `maintenance.json` does the same from the repository, which is useful while a big update deploys.
 
 ### Setting it up (once)
 

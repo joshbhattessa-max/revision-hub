@@ -3,6 +3,7 @@
 // (switched on by an update while it deploys).
 
 import { SCENE, SCENE_CSS } from './scene.js';
+import { ICON_LINKS } from './icons.js';
 
 let cache = { at: 0, state: null };
 
@@ -14,7 +15,8 @@ export async function maintenance(ctx, fresh = false) {
     const r = await ctx.env.ASSETS.fetch(new URL('/maintenance.json', ctx.request.url));
     if (r.ok) file = await r.json();
   } catch (e) { /* no file: off */ }
-  const byAdmin = !!(kv && kv.on), byUpdate = !!(file && file.on);
+  // a countdown set in the admin console ends maintenance by itself; a release (maintenance.json) ends it explicitly
+  const byAdmin = !!(kv && kv.on && !(kv.until && kv.until <= Date.now())), byUpdate = !!(file && file.on);
   const state = {
     on: byAdmin || byUpdate, byAdmin, byUpdate,
     message: (byAdmin && kv.message) || (byUpdate && file.message) || '',
@@ -22,7 +24,8 @@ export async function maintenance(ctx, fresh = false) {
     // earliest the site comes back (ms since 1970); shown as a countdown on the maintenance page
     until: Math.max(Number(byAdmin && kv.until) || 0, Number(byUpdate && file.until) || 0) || null,
   };
-  cache = { at: Date.now(), state };
+  // don't serve a cached "on" past the moment the admin's countdown ends
+  cache = { at: Date.now() - (byAdmin && kv.until ? Math.max(0, 15000 - (kv.until - Date.now())) : 0), state };
   return state;
 }
 
@@ -36,7 +39,7 @@ export function maintenancePage(state) {
 <meta name="robots" content="noindex"><meta name="color-scheme" content="light dark">
 <title>Down for maintenance · Josh B Revision</title>
 <script>try { var t = localStorage.getItem('hub-theme'); if (t) document.documentElement.setAttribute('data-theme', t); } catch (e) {}</script>
-<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+${ICON_LINKS}
 <style>
 :root { --bg: #f7f7f5; --card: #fff; --ink: #33312e; --muted: #6b6862; --line: #e4e2dd; }
 :root[data-theme="dark"] { --bg: #17171a; --card: #222226; --ink: #ecebe8; --muted: #a3a09a; --line: #34343a; }
@@ -81,15 +84,16 @@ function tick() {
   var el = document.querySelector('.clock-text');
   if (!el || !until) return;
   var left = Math.round((until - Date.now()) / 1000);
-  if (left <= 0) { el.innerHTML = '<b>Finishing checks…</b>'; return; }
+  if (left <= 0) { el.innerHTML = '<b>Finishing checks…</b>'; if (!window.soon) { window.soon = setInterval(check, 4000); } return; }
   el.innerHTML = 'Back in about <b>' + Math.floor(left / 60) + ':' + String(left % 60).padStart(2, '0') + '</b>';
 }
 tick(); setInterval(tick, 1000);
 if (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) { var sc = document.querySelector('.scene'); if (sc && sc.pauseAnimations) sc.pauseAnimations(); }
-setInterval(function () {
+function check() {
   fetch('/api/status', { cache: 'no-store' }).then(function (r) { return r.json(); })
     .then(function (s) { if (!s.maintenance) location.reload(); }).catch(function () {});
-}, 30000);
+}
+setInterval(check, 30000);
 </script>
 </body></html>`;
 }

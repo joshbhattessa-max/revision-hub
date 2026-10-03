@@ -202,7 +202,9 @@
     quick.hidden = false;
     quick.classList.toggle('on', m.on);
     quick.disabled = m.byUpdate && !m.byAdmin;
-    quick.textContent = m.on ? 'Maintenance mode: ON' : 'Maintenance mode: off';
+    quick.textContent = m.on ? 'Maintenance mode: ON' + (m.byAdmin && m.until ? ' until ' + new Date(m.until).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) : '') : 'Maintenance mode: off';
+    clearTimeout(quick.t);
+    if (m.byAdmin && m.until) quick.t = setTimeout(function () { api('GET', 'maintenance').then(function (s) { drawQuick(s); if (!mbox.hidden) drawMaintenance(s); }); }, Math.max(1000, m.until - Date.now() + 1500));
     quick.title = quick.disabled ? 'Switched on by an update being deployed; it turns off when the update is finished'
       : m.on ? 'Click to open the site to everyone again' : 'Click to show everyone except admins the maintenance page';
     quick.onclick = function () {
@@ -224,7 +226,8 @@
       'Admins can still sign in (the page has an "Admin sign-in" link) and use the site as normal.</p>' +
       (m.byUpdate ? '<p class="muted"><b>An update is being deployed</b> and has switched maintenance on by itself. It turns off when the update is finished.</p>' : '') +
       '<label class="lbl">Message on the maintenance page (optional)<input type="text" class="msg" maxlength="300" placeholder="e.g. Adding the 2026 papers. Back by 6pm." value="' + esc(m.message || '') + '"></label>' +
-      '<label class="lbl">Countdown in the corner, in minutes (optional)<input type="text" inputmode="numeric" class="mins" placeholder="e.g. 10" value="' +
+      (m.byAdmin && m.until ? '<p class="muted"><b>Reopens by itself at ' + new Date(m.until).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) + '</b>, when the countdown ends.</p>' : '') +
+      '<label class="lbl">Countdown in minutes (optional): the site reopens by itself when it ends<input type="text" inputmode="numeric" class="mins" placeholder="e.g. 10" value="' +
       (m.until && m.until > Date.now() ? Math.ceil((m.until - Date.now()) / 60000) : '') + '"></label>' +
       '<div class="row"><button type="button" class="small savemsg">Save message and countdown</button>' +
       '<a class="small btn-quiet" href="/" target="_blank" rel="noopener">See the site</a></div></div>';
