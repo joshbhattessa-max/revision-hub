@@ -6,10 +6,11 @@ import { keySession } from './_lib/keys.js';
 
 // what the login page itself needs
 const OPEN = new Set(['/login', '/login.html', '/login.js', '/hub.css', '/fonts.css', '/favicon.svg', '/favicon-32.png',
-  '/apple-touch-icon.png', '/og.png', '/sitemap.xml', '/api/login', '/api/signup', '/api/status']);
+  '/apple-touch-icon.png', '/og.png', '/sitemap.xml', '/api/login', '/api/signup', '/api/status',
+  '/privacy', '/privacy.html', '/terms', '/terms.html', '/consent.js']);
 // what still works for everyone during maintenance (so an admin can sign in)
 const DURING_MAINTENANCE = new Set(['/og.png', '/sitemap.xml', '/login.js', '/hub.css', '/fonts.css', '/favicon.svg', '/favicon-32.png', '/apple-touch-icon.png',
-  '/api/login', '/api/logout', '/api/status']);
+  '/api/login', '/api/logout', '/api/status', '/privacy', '/privacy.html', '/terms', '/terms.html']);
 const ADMIN = p => p === '/admin' || p === '/admin.html' || p === '/admin.js' || p.startsWith('/api/admin/');
 
 const SETUP = `<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
@@ -47,7 +48,7 @@ export async function onRequest(ctx) {
   }
   if (OPEN.has(path) || path.startsWith('/fonts/')) {
     if (session && isLogin) return Response.redirect(url.origin + safeNext(url), 302);  // (a key's cookie is set on its next page)
-    return ctx.next();
+    return withConsent(await ctx.next());
   }
   if (!session) {
     if (path.startsWith('/api/')) return json({ error: 'Signed out' }, 401);
@@ -67,7 +68,13 @@ export async function onRequest(ctx) {
   const out = new Response(res.body, res);
   out.headers.set('cache-control', 'private, no-store');
   if (keyCookie) out.headers.append('set-cookie', keyCookie);
-  return out;
+  return withConsent(out);
+}
+
+// every page (the main site's and the subject sites' it serves) gets the cookie popup, consent.js
+function withConsent(res) {
+  if (res.status !== 200 || !(res.headers.get('content-type') || '').includes('text/html')) return res;
+  return new HTMLRewriter().on('body', { element(e) { e.append('<script src="/consent.js" defer></script>', { html: true }); } }).transform(res);
 }
 
 // only same-site paths, never another site

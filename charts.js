@@ -53,16 +53,40 @@
   }
 
   // ---------------------------------------------------------------- drawing
+  // charts are drawn for the space they get: narrower and a little taller on a phone, so the text stays readable
   var W = 640, H = 230, L = 44, R = 16, T = 40, B = 34;
+  function narrow() { return (window.innerWidth || 1000) < 600; }
+  function size() { if (narrow()) { W = 360; H = 250; L = 38; R = 10; } else { W = 640; H = 230; L = 44; R = 16; } }
+  // redraw when a phone turns sideways (or a window is resized) across the phone/desktop size
+  var redraw = null, wasNarrow = null;
+  function onResize(fn) {
+    redraw = fn; wasNarrow = narrow();
+    if (onResize.on) return;
+    onResize.on = true;
+    var t = null;
+    window.addEventListener('resize', function () {
+      clearTimeout(t);
+      t = setTimeout(function () { if (redraw && narrow() !== wasNarrow) { wasNarrow = narrow(); redraw(); } }, 200);
+    });
+  }
+  // the title, and the subtitle on one line or, if it's too long for the width (on a phone), two
   function frame(title, sub) {
+    var lines = [sub || ''], fit = Math.floor(W / 5.6);
+    if (sub && sub.length > fit) { var cut = sub.lastIndexOf(' ', fit); if (cut < 1) cut = fit; lines = [sub.slice(0, cut), sub.slice(cut + 1)]; }
+    T = lines.length > 1 ? 54 : 40;
     return '<text x="0" y="16" font-size="14" font-weight="700" fill="currentColor">' + esc(title) + '</text>' +
-      (sub ? '<text x="0" y="31" font-size="10.5" fill="currentColor" fill-opacity=".6">' + esc(sub) + '</text>' : '');
+      (sub ? lines.map(function (l, i) { return '<text x="0" y="' + (31 + i * 13) + '" font-size="10.5" fill="currentColor" fill-opacity=".6">' + esc(l) + '</text>'; }).join('') : '');
   }
   function xLabels(bs, X) {
-    var step = Math.max(1, Math.ceil(bs.length / 8)), s = '';
+    var step = Math.max(1, Math.ceil(bs.length / (W < 500 ? 4 : 8))), s = '', pick = [];
+    bs.forEach(function (b, i) { if (!(i % step) || i === bs.length - 1) pick.push(i); });
+    // the last label always shows; the one before it goes if they'd overlap
+    if (pick.length > 1 && X(pick[pick.length - 1]) - X(pick[pick.length - 2]) < 46) pick.splice(pick.length - 2, 1);
     bs.forEach(function (b, i) {
-      if (i % step && i !== bs.length - 1) return;
-      s += '<text x="' + X(i).toFixed(1) + '" y="' + (H - B + 16) + '" font-size="10" text-anchor="middle" fill="currentColor" fill-opacity=".65">' + esc(b.label) + '</text>';
+      if (pick.indexOf(i) < 0) return;
+      // labels at either end line up with the edge instead of hanging over it
+      var x = X(i), anchor = x > W - 26 ? 'end' : x < L + 18 ? 'start' : 'middle';
+      s += '<text x="' + (anchor === 'end' ? W - 2 : anchor === 'start' ? Math.max(2, x - 6) : x).toFixed(1) + '" y="' + (H - B + 16) + '" font-size="10" text-anchor="' + anchor + '" fill="currentColor" fill-opacity=".65">' + esc(b.label) + '</text>';
     });
     return s;
   }
@@ -79,6 +103,7 @@
 
   // lines: series = [{ name, color, vals: [0..1 or null per bucket], n: [count per bucket] }]
   function lineChart(title, sub, bs, series, refs) {
+    size();
     var X = function (i) { return L + (W - L - R) * (bs.length === 1 ? 0.5 : i / (bs.length - 1)); };
     var Y = function (v) { return T + (H - T - B) * (1 - v); };
     var s = frame(title, sub) + yGrid([0, 0.25, 0.5, 0.75, 1], Y, function (v) { return Math.round(v * 100) + '%'; });
@@ -103,6 +128,7 @@
   }
   // stacked bars: series = [{ name, color, vals: [count per bucket] }]
   function barChart(title, sub, bs, series) {
+    size();
     var tot = bs.map(function (b, i) { return series.reduce(function (a, sr) { return a + sr.vals[i]; }, 0); });
     var max = niceMax(Math.max.apply(null, tot.concat([4])));
     var slot = (W - L - R) / bs.length, bw = Math.min(34, slot * 0.7);
@@ -124,6 +150,7 @@
   }
   // mock papers, placed by date: the % you got, with the grade logged when you saved it above each one
   function mockChart(title, sub, w, mocks, colorOf, refs) {
+    size();
     var X = function (t) { return L + (W - L - R) * Math.max(0, Math.min(1, (t - w.from) / ((w.to - w.from) || 1))); };
     var Y = function (v) { return T + (H - T - B) * (1 - v); };
     var s = frame(title, sub) + yGrid([0, 0.25, 0.5, 0.75, 1], Y, function (v) { return Math.round(v * 100) + '%'; });
@@ -139,13 +166,15 @@
       xs.forEach(function (m) {
         s += '<circle cx="' + X(m.t).toFixed(1) + '" cy="' + Y(m.pct).toFixed(1) + '" r="5" fill="' + c + '" stroke="#fff" stroke-width="1.5"><title>' +
           esc(fmt(m.t, 'y') + ': ' + m.got + '/' + m.max + ', ' + Math.round(m.pct * 100) + '%' + (m.grade ? ', grade ' + m.grade : '')) + '</title></circle>';
-        if (m.grade) s += '<text x="' + X(m.t).toFixed(1) + '" y="' + (Y(m.pct) - 9).toFixed(1) + '" font-size="10.5" font-weight="700" text-anchor="middle" fill="currentColor">' + esc(m.grade) + '</text>';
+        var gx = X(m.t), ga = gx > W - 14 ? 'end' : 'middle';
+        if (m.grade) s += '<text x="' + (ga === 'end' ? W - 1 : gx).toFixed(1) + '" y="' + (Y(m.pct) - 9).toFixed(1) + '" font-size="10.5" font-weight="700" text-anchor="' + ga + '" fill="currentColor">' + esc(m.grade) + '</text>';
       });
     });
-    var ticks = buckets(w), step = Math.max(1, Math.ceil(ticks.length / 7));
+    var ticks = buckets(w), step = Math.max(1, Math.ceil(ticks.length / (W < 500 ? 4 : 7)));
     ticks.forEach(function (b, i) {
       if (i % step || b.a < w.from) return;
-      s += '<text x="' + X(b.a).toFixed(1) + '" y="' + (H - B + 16) + '" font-size="10" text-anchor="middle" fill="currentColor" fill-opacity=".65">' + esc(b.label) + '</text>';
+      var tx = X(b.a), ta = tx > W - 26 ? 'end' : 'middle';
+      s += '<text x="' + (ta === 'end' ? W - 2 : tx).toFixed(1) + '" y="' + (H - B + 16) + '" font-size="10" text-anchor="' + ta + '" fill="currentColor" fill-opacity=".65">' + esc(b.label) + '</text>';
     });
     return svg(s);
   }
@@ -211,5 +240,5 @@
   }
 
   window.JBR_CHARTS = { RANGES: RANGES, attempts: attempts, window: window_, buckets: buckets, tally: tally,
-    lineChart: lineChart, barChart: barChart, mockChart: mockChart, card: card, rangeButtons: rangeButtons, savePng: savePng };
+    lineChart: lineChart, barChart: barChart, mockChart: mockChart, card: card, rangeButtons: rangeButtons, savePng: savePng, onResize: onResize };
 })();

@@ -9,6 +9,7 @@
 //   POST   /api/admin/media                  raw image body -> {url}
 //   GET    /api/admin/maintenance    PUT /api/admin/maintenance {on, message}
 //   GET    /api/admin/keys    POST /api/admin/keys {label} -> {key} (shown once)    DELETE /api/admin/keys/:id
+//   GET    /api/admin/usage?days=30           usage statistics (from visitors who accepted them) and cookie choices
 import { forgetMaintenance, maintenance } from '../../_lib/maintenance.js';
 import { getKeys, newKey, saveKeys, sha256 } from '../../_lib/keys.js';
 import { endSessions, getAccounts, hashPassword, hubContent, json, listSessions, randomToken, saveAccounts } from '../../_lib/auth.js';
@@ -41,6 +42,7 @@ export async function onRequest(ctx) {
     return json({ ended: n });
   }
 
+  if (route === 'usage' && method === 'GET') return json(await usage(env, Number(new URL(request.url).searchParams.get('days')) || 30));
   if (route === 'accounts' && method === 'GET') {
     const sessions = await listSessions(env);
     return json((await getAccounts(env)).map(a => ({ id: a.id, username: a.username, role: a.role, label: label(a),
@@ -91,6 +93,7 @@ export async function onRequest(ctx) {
     await saveAccounts(env, list.filter(x => x.id !== a.id));
     await endSessions(env, s => s.accountId === a.id);
     await env.HUB_KV.delete('prog:' + a.id);
+    await env.HUB_KV.delete('consent:' + a.id);
     return json({ ok: true });
   }
 
@@ -148,4 +151,35 @@ export async function onRequest(ctx) {
 function clean(s) { return String(s || '').trim().slice(0, 40); }
 function label(a) {
   return a.username + (a.role === 'admin' ? ' (admin)' : '');
+}
+
+// usage statistics: per day, the visitors (one key each) and their page counts, read from the keys' metadata only;
+// and how many accounts accepted usage statistics or chose essential cookies only
+async function listAll(env, prefix, max = 5000) {
+  const out = [];
+  let cursor;
+  do {
+    const page = await env.HUB_KV.list({ prefix, cursor, limit: 1000 });
+    out.push(...page.keys);
+    cursor = page.list_complete ? null : page.cursor;
+  } while (cursor && out.length < max);
+  return out;
+}
+async function usage(env, days) {
+  days = Math.max(1, Math.min(90, days));
+  const from = new Date(Date.now() - (days - 1) * 86400000).toISOString().slice(0, 10);
+  const byDay = {}, pages = {}, devices = { phone: 0, tablet: 0, computer: 0 }, visitors = new Set();
+  for (const k of await listAll(env, 'use:')) {
+    const [, d, vid] = k.name.split(':');
+    if (d < from || !k.metadata) continue;
+    const m = k.metadata, n = Object.values(m.pv || {}).reduce((a, b) => a + b, 0);
+    const day = byDay[d] || (byDay[d] = { visitors: 0, views: 0 });
+    day.visitors++; day.views += n;
+    visitors.add(vid);
+    if (devices[m.dev] != null) devices[m.dev]++;
+    for (const [p, c] of Object.entries(m.pv || {})) pages[p] = (pages[p] || 0) + c;
+  }
+  const consent = { stats: 0, essential: 0 };
+  for (const k of await listAll(env, 'consent:')) if (k.metadata) consent[k.metadata.stats ? 'stats' : 'essential']++;
+  return { days, from, byDay, pages, devices, visitors: visitors.size, consent };
 }

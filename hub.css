@@ -110,9 +110,20 @@ body, .subject, .card, .theme-toggle { transition: background-color .35s ease, c
 .login-switch a { color: var(--ink); font-weight: 600; }
 .login-about { color: var(--muted); font-size: .78rem; text-align: center; margin: 0; padding-top: 10px; border-top: 1px solid var(--line); line-height: 1.45; }
 .login-note { color: var(--muted); font-size: .8rem; text-align: center; margin: 0; }
+.login-agree, .login-legal { color: var(--muted); font-size: .78rem; text-align: center; margin: 0; }
+.login-legal { margin-top: 4px; }
+footer p { margin: 0 0 8px; }
 
 /* ---- signed-in bar on the home page ---- */
 .top-actions { display: flex; align-items: center; gap: 10px; }
+.top-links { display: flex; gap: 10px; margin-left: auto; }
+.top-links .btn-quiet { text-align: center; white-space: nowrap; }
+/* phones and small tablets: your name and light/dark stay up top; Your progress and Revision planner get a row of their own */
+@media (max-width: 860px) {
+  header.top { flex-wrap: wrap; row-gap: 14px; padding-top: 24px; }
+  .brand { flex: 1 1 0; min-width: 0; }
+  .top-links { order: 3; flex-basis: 100%; margin-left: 0; display: grid; grid-template-columns: 1fr 1fr; }
+}
 .btn-quiet { font: inherit; font-size: .9rem; padding: 8px 14px; border-radius: 999px; border: 1px solid var(--line); background: var(--card);
   color: var(--ink); cursor: pointer; text-decoration: none; box-shadow: var(--shadow); }
 .btn-quiet:hover { border-color: var(--muted); }
@@ -181,6 +192,10 @@ body, .subject, .card, .theme-toggle { transition: background-color .35s ease, c
   .user-chip { max-width: 140px; }
   header.top { align-items: center; }
 }
+@media (max-width: 420px) {
+  .user-name { display: none; }  /* the initial is enough on a small phone */
+  .user-chip { padding-right: 8px; }
+}
 
 /* ---- admin console ---- */
 .admin .tabs { display: flex; gap: 6px; border-bottom: 1px solid var(--line); margin-bottom: 18px; flex-wrap: wrap; }
@@ -207,7 +222,21 @@ body, .subject, .card, .theme-toggle { transition: background-color .35s ease, c
 .admin th, .admin td { text-align: left; padding: 9px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
 .admin th { color: var(--muted); font-weight: 600; font-size: .8rem; }
 .admin .muted { color: var(--muted); font-size: .8rem; }
-.admin .tablewrap { overflow-x: auto; }
+.admin .tablewrap { max-width: 100%; }
+/* phones: each row of an admin table is a card, with each value's column name before it */
+@media (max-width: 640px) {
+  .admin table thead { display: none; }
+  .admin table, .admin tbody, .admin tr, .admin td { display: block; width: 100%; }
+  .admin tr { border: 1px solid var(--line); border-radius: 10px; background: var(--card); padding: 8px 12px; margin-bottom: 10px; }
+  .admin td { border: 0; padding: 3px 0; overflow-wrap: anywhere; }
+  .admin td[data-label]::before { content: attr(data-label) ": "; color: var(--muted); font-size: .8rem; }
+  .admin td:empty { display: none; }
+}
+.u-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; margin: 14px 0 6px; }
+.u-tiles div { border: 1px solid var(--line); border-radius: 12px; background: var(--card); padding: 12px 14px; }
+.u-tiles b { display: block; font-size: 1.6rem; line-height: 1.1; }
+.u-tiles span { color: var(--muted); font-size: .82rem; }
+.u-bar { display: inline-block; height: 8px; width: calc(var(--w) * .6); max-width: 60%; min-width: 2px; background: var(--ink); opacity: .7; border-radius: 4px; margin-right: 8px; vertical-align: middle; }
 .ask { border: 1px solid var(--line); border-radius: 14px; background: var(--card); color: var(--ink); padding: 18px; width: min(380px, 92vw); }
 .ask::backdrop { background: rgba(0, 0, 0, .45); }
 .ask-in { width: 100%; box-sizing: border-box; margin: 6px 0 14px; }
@@ -219,6 +248,8 @@ body, .subject, .card, .theme-toggle { transition: background-color .35s ease, c
 
 /* admin console: maintenance switch in the header */
 .quick-maint.on { background: #d33c3c; border-color: #d33c3c; color: #fff; }
+/* admin console on a phone: its buttons go on a row under the title instead of over it */
+@media (max-width: 600px) { .admin header.top .top-actions { order: 3; flex-basis: 100%; flex-wrap: wrap; } }
 .quick-maint:disabled { opacity: .7; cursor: default; }
 
 /* loading animation: a hook lowers blocks onto a stack (top one in the site colour) */
@@ -355,9 +386,10 @@ body, .subject, .card, .theme-toggle { transition: background-color .35s ease, c
 .pc-legend { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: .75rem; color: var(--muted); margin-top: 6px; }
 .pc-legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 5px; vertical-align: -1px; }
 .pc-save { font: inherit; font-size: .75rem; background: none; border: 0; padding: 6px 0 2px; color: var(--muted); text-decoration: underline; cursor: pointer; }
-.pg-log { margin-top: 22px; overflow-x: auto; }
+.pg-log { margin-top: 22px; }
 .pg-log table { width: 100%; border-collapse: collapse; font-size: .85rem; }
-.pg-log th, .pg-log td { text-align: left; padding: 7px 8px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+.pg-log th, .pg-log td { text-align: left; padding: 7px 8px; border-bottom: 1px solid var(--line); }
+@media (max-width: 480px) { .pg-log table { font-size: .78rem; } .pg-log th, .pg-log td { padding: 6px 4px; } }
 .pg-dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 7px; }
 
 /* ---- questions that match your list fully (planner) ---- */
@@ -375,3 +407,32 @@ body, .subject, .card, .theme-toggle { transition: background-color .35s ease, c
 .pl-mlines ul li.ok a { text-decoration: line-through; color: var(--muted); }
 .pl-mlines ul a { color: var(--ink); }
 .pl-mlines details summary { cursor: pointer; color: var(--muted); font-size: .8rem; margin-top: 3px; }
+
+/* ---- Privacy Policy and Terms ---- */
+.legal main { max-width: 760px; line-height: 1.6; }
+.legal a.brand { text-decoration: none; }
+.legal .lead { font-size: 1.05rem; }
+.legal h2 { font-size: 1.15rem; margin: 30px 0 8px; scroll-margin-top: 16px; }
+.legal p, .legal li { font-size: .95rem; }
+.legal ul { padding-left: 20px; }
+.legal li { margin-bottom: 6px; }
+.legal code { font-size: .85rem; background: var(--card); border: 1px solid var(--line); border-radius: 5px; padding: 1px 5px; }
+.toc { display: flex; flex-wrap: wrap; gap: 6px 8px; margin: 16px 0 6px; }
+.toc a { font-size: .82rem; text-decoration: none; padding: 4px 10px; border: 1px solid var(--line); border-radius: 999px; background: var(--card); }
+.toc a:hover { border-color: var(--muted); }
+.legal-table { width: 100%; border-collapse: collapse; font-size: .88rem; margin: 10px 0 14px; }
+.legal-table th, .legal-table td { text-align: left; vertical-align: top; padding: 9px 10px; border-bottom: 1px solid var(--line); }
+.legal-table th { font-size: .8rem; color: var(--muted); font-weight: 600; }
+.legal-table td:first-child { white-space: nowrap; }
+/* phones: each row becomes a small card instead of a table that would scroll sideways */
+@media (max-width: 640px) {
+  .legal-table thead { display: none; }
+  .legal-table, .legal-table tbody, .legal-table tr, .legal-table td { display: block; width: 100%; }
+  .legal-table tr { border: 1px solid var(--line); border-radius: 10px; background: var(--card); padding: 8px 12px; margin-bottom: 10px; }
+  .legal-table td { border: 0; padding: 3px 0; white-space: normal !important; }
+  .legal-table td:first-child { font-size: .95rem; }
+}
+.legal-foot, .site-foot { display: flex; flex-wrap: wrap; gap: 6px 18px; }
+.legal-foot { margin-top: 40px; padding-top: 16px; border-top: 1px solid var(--line); }
+.site-foot a, .legal-foot a { color: var(--muted); }
+.site-foot a:hover, .legal-foot a:hover { color: var(--ink); }

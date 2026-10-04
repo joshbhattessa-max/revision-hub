@@ -792,7 +792,7 @@
       past.forEach(function (e) { ps.querySelector('.pl-evs').appendChild(eventCard(e)); });
       root.appendChild(ps);
     }
-    root.appendChild(el('<footer>Saved to your account, so it\'s the same on every device. Past papers and mark schemes are © their exam boards.</footer>'));
+    root.appendChild(el('<footer><p>Saved to your account, so it\'s the same on every device. Past papers and mark schemes are © their exam boards.</p><nav class="site-foot" aria-label="About this site"><a href="/privacy">Privacy Policy</a><a href="/terms">Terms and Conditions</a><a href="#" data-cookie-settings>Cookie settings</a></nav></footer>'));
     root.querySelector('.add').addEventListener('click', function () { editor(null); });
     root.querySelector('.list').addEventListener('click', function () {
       editor(null);

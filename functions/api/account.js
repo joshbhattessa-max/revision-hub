@@ -39,5 +39,6 @@ export async function onRequestDelete(ctx) {
   await saveAccounts(ctx.env, list.filter(a => a.id !== account.id));
   await endSessions(ctx.env, s => s.accountId === account.id);
   await ctx.env.HUB_KV.delete('prog:' + account.id);  // and its study progress
+  await ctx.env.HUB_KV.delete('consent:' + account.id);  // and its cookie-choice record
   return json({ ok: true }, 200, { 'set-cookie': clearCookie() });
 }

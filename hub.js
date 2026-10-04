@@ -14,7 +14,8 @@
     var h = (me && me.maintenance ? '<div class="maint-bar">Maintenance mode is on: only admins can use the site right now. <a href="/admin#maintenance">Turn it off</a></div>' : '') +
       '<div class="wrap"><header class="top"><div class="brand">' + JBR_LOGO + '<div><h1>' + esc(data.title) + '</h1>' +
       (data.subtitle ? '<p class="subtitle">' + esc(data.subtitle) + '</p>' : '') + '</div></div>' +
-      '<div class="top-actions">' + (me ? '<a class="btn-quiet" href="/progress">Your progress</a><a class="btn-quiet" href="/planner">Revision planner</a>' : '') +
+      (me ? '<nav class="top-links" aria-label="Your study"><a class="btn-quiet" href="/progress">Your progress</a><a class="btn-quiet" href="/planner">Revision planner</a></nav>' : '') +
+      '<div class="top-actions">' +
       (me && me.role === 'admin' ? '<a class="btn-quiet admin-link" href="/admin">Admin console</a>' : '') +
       (me ? userMenu(me) : '') + TOGGLE + '</div></header>';
 
@@ -41,7 +42,7 @@
       });
       h += '</div>';
     });
-    h += '<footer>Past papers and mark schemes are © their exam boards. For personal revision.</footer></div>';
+    h += '<footer><p>Past papers and mark schemes are © their exam boards. For personal revision.</p><nav class="site-foot" aria-label="About this site"><a href="/privacy">Privacy Policy</a><a href="/terms">Terms and Conditions</a><a href="#" data-cookie-settings>Cookie settings</a></nav></footer></div>';
     document.getElementById('app').innerHTML = h;
     if (me) { wireUserMenu(); hello(me); }
     var btn = document.querySelector('.theme-toggle');
@@ -193,7 +194,8 @@
     setTimeout(function () {
       if (finished) return;
       // fly the name from the middle of the screen to the chip
-      var a = name.getBoundingClientRect(), b = chipName.getBoundingClientRect();
+      // (on a small phone only your initial shows in the corner, so the name flies to that)
+      var a = name.getBoundingClientRect(), b = (chipName.offsetWidth ? chipName : chip.querySelector('.user-av')).getBoundingClientRect();
       var k = b.height / a.height;
       var dx = b.left - a.left, dy = (b.top + b.height / 2) - (a.top + a.height / 2);
       [o.querySelector('.hello-wave'), o.querySelector('.hello-word')].forEach(function (el) {

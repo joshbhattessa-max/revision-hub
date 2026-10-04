@@ -47,11 +47,56 @@
   });
   function show(name) {
     Array.prototype.forEach.call(tabs, function (b) { b.classList.toggle('on', b.getAttribute('data-tab') === name); });
-    ['content', 'sessions', 'accounts', 'maintenance'].forEach(function (n) { document.getElementById('tab-' + n).hidden = n !== name; });
+    ['content', 'sessions', 'accounts', 'maintenance', 'usage'].forEach(function (n) { document.getElementById('tab-' + n).hidden = n !== name; });
     say('');
     if (name === 'sessions') loadSessions();
     if (name === 'accounts') loadAccounts();
     if (name === 'maintenance') loadMaintenance();
+    if (name === 'usage') loadUsage();
+  }
+
+  // on a phone each table row becomes a card, with the column name before each value
+  function labelTables() {
+    Array.prototype.forEach.call(document.querySelectorAll('.admin table:not([data-labelled])'), function (t) {
+      var heads = Array.prototype.map.call(t.querySelectorAll('thead th'), function (th) { return th.textContent; });
+      Array.prototype.forEach.call(t.querySelectorAll('tbody tr'), function (tr) {
+        Array.prototype.forEach.call(tr.children, function (td, i) { if (heads[i]) td.setAttribute('data-label', heads[i]); });
+      });
+      t.setAttribute('data-labelled', '');
+    });
+  }
+  new MutationObserver(labelTables).observe(document.querySelector('.admin'), { childList: true, subtree: true });
+
+  // ------------------------------------------------------------------ usage statistics
+  // only visitors who pressed "Accept all" in the cookie popup are counted, under a random number, never an account
+  var ubox = document.getElementById('tab-usage'), udays = 30;
+  function pageName(p) {
+    var parts = p.split(':'), subj = { chemistry: 'Chemistry', biology: 'Biology', physics: 'Physics', maths: 'Maths', geography: 'Geography', 'computer-science': 'Computer Science', spanish: 'Spanish' };
+    var hub = { home: 'Home page', planner: 'Revision planner', progress: 'Your progress', admin: 'Admin console', privacy: 'Privacy Policy', terms: 'Terms and Conditions', login: 'Sign in' };
+    var route = { home: 'question list', questions: 'question list', question: 'a question', topics: 'My topics', mock: 'mock paper', review: 'Review', practise: 'practising a topic', about: 'About' };
+    return parts.length > 1 ? (subj[parts[0]] || parts[0]) + ' · ' + (route[parts[1]] || parts[1]) : (hub[p] || p);
+  }
+  function loadUsage() {
+    ubox.innerHTML = '<p class="muted">Adding up…</p>';
+    api('GET', 'usage?days=' + udays).then(function (u) {
+      var days = Object.keys(u.byDay).sort().reverse(), views = days.reduce(function (a, d) { return a + u.byDay[d].views; }, 0);
+      var maxV = Math.max.apply(null, days.map(function (d) { return u.byDay[d].views; }).concat([1]));
+      var devTotal = u.devices.phone + u.devices.tablet + u.devices.computer || 1;
+      var pct = function (n) { return Math.round(n / devTotal * 100) + '%'; };
+      var pages = Object.keys(u.pages).sort(function (a, b) { return u.pages[b] - u.pages[a]; }).slice(0, 25);
+      ubox.innerHTML = '<div class="row"><span class="muted grow">From visitors who accepted usage statistics in the cookie popup. Not linked to accounts; kept 90 days.</span>' +
+        '<label class="muted">Show <select class="udays">' + [7, 30, 90].map(function (n) { return '<option value="' + n + '"' + (n === udays ? ' selected' : '') + '>last ' + n + ' days</option>'; }).join('') + '</select></label></div>' +
+        '<div class="u-tiles"><div><b>' + u.visitors + '</b><span>visitors</span></div><div><b>' + views + '</b><span>pages opened</span></div>' +
+        '<div><b>' + pct(u.devices.phone) + '</b><span>on phones</span></div><div><b>' + pct(u.devices.tablet) + '</b><span>on tablets</span></div><div><b>' + pct(u.devices.computer) + '</b><span>on computers</span></div></div>' +
+        '<h2>Each day</h2>' + (days.length ? '<div class="tablewrap"><table><thead><tr><th>Day</th><th>Visitors</th><th>Pages opened</th></tr></thead><tbody>' +
+          days.map(function (d) { var x = u.byDay[d]; return '<tr><td>' + esc(new Date(d + 'T12:00:00').toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })) + '</td><td>' + x.visitors + '</td><td><span class="u-bar" style="--w:' + Math.round(x.views / maxV * 100) + '%"></span>' + x.views + '</td></tr>'; }).join('') +
+          '</tbody></table></div>' : '<p class="muted">Nothing yet in this time.</p>') +
+        '<h2>Most used</h2>' + (pages.length ? '<div class="tablewrap"><table><thead><tr><th>Page</th><th>Times opened</th></tr></thead><tbody>' +
+          pages.map(function (p) { return '<tr><td>' + esc(pageName(p)) + '</td><td>' + u.pages[p] + '</td></tr>'; }).join('') + '</tbody></table></div>' : '<p class="muted">Nothing yet.</p>') +
+        '<h2>Cookie choices</h2><p>' + u.consent.stats + ' account' + (u.consent.stats === 1 ? '' : 's') + ' accepted usage statistics · ' + u.consent.essential + ' chose essential cookies only' +
+        ' <span class="muted">(accounts that haven\'t answered the popup yet aren\'t counted)</span></p>';
+      ubox.querySelector('.udays').addEventListener('change', function (e) { udays = +e.target.value; loadUsage(); });
+    }).catch(function (e) { ubox.innerHTML = ''; say(e.message, true); });
   }
 
   // ------------------------------------------------------------------ content
