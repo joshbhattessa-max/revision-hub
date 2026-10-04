@@ -91,7 +91,9 @@ The hub lives at `jbrevision.co.uk` (bought through Cloudflare Registrar and add
 
 Every deployment of the main site, the subject sites and the email Worker, from the first one (3 October 2026), is in a log the owner's Google Sheet reads (`functions/_lib/deploylog.js`):
 
-- **Where it comes from.** Cloudflare marks each commit it builds with a GitHub check run, holding that deployment's own address. Whenever the log is read (at most every 10 minutes), the site asks GitHub for new ones and adds them. Unchanged repositories cost nothing, and an optional `GITHUB_TOKEN` secret raises GitHub's limit. The deployments from before the log existed were imported with the files each one changed (`POST /api/admin/deploylog`).
+- **Where it comes from.** Cloudflare marks each commit it builds with a GitHub check run, holding that deployment's own address. Whenever the log is read (at most every 10 minutes), the site asks GitHub for new ones and adds them. Unchanged repositories cost nothing.
+  - The subject sites' repositories are private, so the site only sees them if the Pages project has a `GITHUB_TOKEN` secret (a read-only token for those repositories).
+  - Without one, their deployments come in through the import, which the release process runs after each release. The deployments from before the log existed were imported with the files each one changed (`POST /api/admin/deploylog`).
 - **The Google Sheet** has `=IMPORTDATA("https://jbrevision.co.uk/deploys/<key>/log.csv")` in A1, so it fills itself in, newest first. These addresses need no sign-in, because Google fetches them; the key protects them, and only its SHA-256 is kept. `POST /api/admin/deploylog/key` makes a new key, after which the old one stops working and the formula needs the new one.
 - **PDF record** (`/deploys/<key>/<n>.pdf`): made when it's opened. It covers when, which site, the result, the release, the commits it included (back to the previous deployment of the same site) and the files they changed.
 - **This version** (`/v/<n>/`, admins only):

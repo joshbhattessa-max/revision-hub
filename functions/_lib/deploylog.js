@@ -112,22 +112,31 @@ async function gh(env, path, etag) {
   if (env.GITHUB_TOKEN) headers.authorization = 'Bearer ' + env.GITHUB_TOKEN;
   const r = await fetch('https://api.github.com' + path, { headers });
   if (r.status === 304) return { status: 304 };
-  if (!r.ok) throw new Error(r.status === 403 || r.status === 429 ? 'GitHub is limiting requests for now (it tries again later)' : 'GitHub answered ' + r.status);
+  if (!r.ok) {
+    const limited = r.status === 429 || (r.status === 403 && r.headers.get('x-ratelimit-remaining') === '0');
+    throw Object.assign(new Error(limited ? 'GitHub is limiting requests for now (it tries again later)' : 'GitHub answered ' + r.status),
+      { status: r.status, limited });
+  }
   return { status: 200, etag: r.headers.get('etag') || '', data: await r.json() };
 }
 const previewUrl = summary => ((/href='(https:\/\/[0-9a-f]{8}\.[a-z0-9-]+\.pages\.dev)'/.exec(summary || '') || [])[1] || '');
 
 // looks for deployments GitHub knows about and the log doesn't. A repository whose latest commits haven't changed
-// costs nothing (GitHub doesn't count "not modified" answers); `max` caps the requests that do count.
+// costs nothing (GitHub doesn't count "not modified" answers); `max` caps the requests that do count. Private
+// repositories (the subject sites') are only visible with a GITHUB_TOKEN secret; without one they're skipped, and
+// their deployments come in through the import instead (POST deploylog, after each release).
 export async function sync(env, max = 20) {
   const log = await load(env);
   const known = new Set(log.entries.map(e => e.k));
   const before = JSON.stringify(log.gh);
   const found = [], lists = {};
   let calls = 0, error = '';
-  try {
-    for (const src of SOURCES) {
-      const st = log.gh[src.repo] || (log.gh[src.repo] = { etag: '', done: [] });
+  const hidden = [], failed = [];
+  for (const src of SOURCES) {
+    const st = log.gh[src.repo] || (log.gh[src.repo] = { etag: '', done: [] });
+    // a repository GitHub wouldn't show is asked about again a day later (each "not found" counts against the limit)
+    if (!env.GITHUB_TOKEN && st.hidden > Date.now()) { hidden.push(src.repo); continue; }
+    try {
       const list = await gh(env, `/repos/${OWNER}/${src.repo}/commits?sha=${encodeURIComponent(src.branch)}&per_page=20`, st.etag);
       if (list.status === 304) continue;
       calls++;
@@ -154,10 +163,13 @@ export async function sync(env, max = 20) {
       st.done = [...done].slice(-300);
       // until every recent commit is settled, fetch the list again next time rather than trusting "not modified"
       st.etag = open ? '' : list.etag;
+    } catch (e) {
+      if (e.limited) { error = e.message; break; }
+      if (e.status === 404 && !env.GITHUB_TOKEN) { hidden.push(src.repo); st.hidden = Date.now() + 86400e3; }
+      else failed.push(`${src.repo}: ${String(e && e.message || e).slice(0, 80)}`);
     }
-  } catch (e) {
-    error = String(e && e.message || e).slice(0, 200);
   }
+  if (!error) error = [...failed, hidden.length ? `not visible without a GITHUB_TOKEN: ${hidden.join(', ')}` : ''].filter(Boolean).join('; ');
   // what each new deployment included: its commits back to the one before it of the same project
   const last = {};
   for (const e of log.entries) if (e.ok) last[e.proj] = e.sha;
