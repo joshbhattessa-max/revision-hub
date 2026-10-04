@@ -73,10 +73,21 @@
   }
 
   // one checklist line -> { topic, how: 'number' | 'words', sure } or null
-  // the checklist's own title and the "Name: / Class:" line aren't topics
+  // Lines that aren't topics: the sheet's own title, "Name: / Class:", the test's details (week, term, duration, "topics
+  // assessed"), lead-ins ending in a colon ("You should be able to:") and titles in capitals (unless the whole sheet is)
   var HEADING = /\b(check ?list|revision list|topic list|topic sheet|learning objectives)\b|\b(name|class|date|teacher|form)\s*:/i;
-  function matchLine(ix, line) {
-    if (HEADING.test(line)) return null;
+  var DETAILS = /\bweek \d+\b|\b(autumn|spring|summer) (term|half)\b|\bduration\b|\b\d+\s*(mins?|minutes|hours?)\b|\btopics? (assessed|covered|tested|included)\b|\bsummary sheet\b|\byou should be able to\b|\b(cross[- ]?set|end of (topic|unit)|mock) (test|exam)\b|\b(year|yr) \d{1,2}\b/i;
+  function shouting(l) {
+    var letters = l.replace(/[^A-Za-z]/g, '');
+    return letters.length >= 6 && letters.replace(/[^A-Z]/g, '').length / letters.length > 0.85;
+  }
+  // capitals only mean a heading when most of the sheet isn't in capitals
+  function capsAreHeadings(ls) { return ls.filter(shouting).length <= ls.length / 2; }
+  function isHeading(l, caps) {
+    return HEADING.test(l) || DETAILS.test(l) || /:\s*$/.test(l) || (caps !== false && shouting(l));
+  }
+  function matchLine(ix, line, caps) {
+    if (isHeading(line, caps)) return null;
     var n = byNumber(ix, line);
     if (n) return { topic: n, how: 'number', sure: true };
     var r = scoreLine(ix, line);
@@ -95,9 +106,10 @@
 
   function match(meta, text) {
     var ix = meta._ix || (meta._ix = index(meta));
-    return lines(text).map(function (l) { var m = matchLine(ix, l); return { line: l, topic: m ? m.topic : null, how: m ? m.how : null, sure: m ? m.sure : false }; });
+    var ls = lines(text), caps = capsAreHeadings(ls);
+    return ls.map(function (l) { var m = matchLine(ix, l, caps); return { line: l, topic: m ? m.topic : null, how: m ? m.how : null, sure: m ? m.sure : false, heading: isHeading(l, caps) }; });
   }
 
-  var api = { match: match, lines: lines, tokens: tokens, isHeading: function (l) { return HEADING.test(l); } };
+  var api = { match: match, lines: lines, tokens: tokens, isHeading: isHeading, capsAreHeadings: capsAreHeadings };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.JBR_MATCH = api;
 })(this);

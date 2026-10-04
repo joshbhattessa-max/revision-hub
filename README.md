@@ -103,8 +103,14 @@ ratings), **Mock paper** (a fresh paper from the school board's questions, timed
 scheme at the back, with a grade estimate from the board's grade boundaries) and a "How many marks did you get?" row
 under every mark scheme. On the main site, **Your campus** (home page) grows a building per subject as topics become
 secure, and the **Revision planner** (`/planner`) holds exams, class tests and topic deadlines, reads revision
-checklists (PDF or pasted text) to tick the topics they cover, picks question sets from past papers and lays out a
-day-by-day plan (also as a calendar file).
+checklists (PDF or pasted text) to tick the topics they cover (skipping the sheet's headings and test details), and lays
+out a day-by-day plan (also as a calendar file). Each date has:
+
+- **Question sets** (up to 15 questions, picked line by line from the topic sheet, with questions due for review first),
+  listed under the date. *Start* opens the set on its subject site (`#/set/<id>`), one question at a time on the normal
+  question page: Previous and Next stay inside the set, and a strip above the question fills in as you mark each part.
+- **Mock paper**, which hands the date's topics to the subject site's mock paper (`jbr-mock-preset-<subject>` in
+  browser storage), so the paper is built from just those topics.
 
 - Progress lives in the browser and syncs to your account through `/api/progress` (KV key `prog:<account id>`; merged
   item by item, newest wins). Deleting an account deletes its progress.
