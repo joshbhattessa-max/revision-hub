@@ -87,6 +87,19 @@ The hub lives at `jbrevision.co.uk` (bought through Cloudflare Registrar and add
 - The old address, `josh-b-revision.pages.dev` (and its per-deployment `<id>.josh-b-revision.pages.dev` addresses), no longer works: every page there is a "We've moved" popup linking to the same page on `jbrevision.co.uk`, and its API answers `410 Gone` (`functions/_lib/moved.js`).
 - The subject sites point anyone who opens them directly to `jbrevision.co.uk` (their `MAIN_SITE`).
 
+## Deployment log
+
+Every deployment of the main site, the subject sites and the email Worker, from the first one (3 October 2026), is in a log the owner's Google Sheet reads (`functions/_lib/deploylog.js`):
+
+- **Where it comes from.** Cloudflare marks each commit it builds with a GitHub check run, holding that deployment's own address. Whenever the log is read (at most every 10 minutes), the site asks GitHub for new ones and adds them. Unchanged repositories cost nothing, and an optional `GITHUB_TOKEN` secret raises GitHub's limit. The deployments from before the log existed were imported with the files each one changed (`POST /api/admin/deploylog`).
+- **The Google Sheet** has `=IMPORTDATA("https://jbrevision.co.uk/deploys/<key>/log.csv")` in A1, so it fills itself in, newest first. These addresses need no sign-in, because Google fetches them; the key protects them, and only its SHA-256 is kept. `POST /api/admin/deploylog/key` makes a new key, after which the old one stops working and the formula needs the new one.
+- **PDF record** (`/deploys/<key>/<n>.pdf`): made when it's opened. It covers when, which site, the result, the release, the commits it included (back to the previous deployment of the same site) and the files they changed.
+- **This version** (`/v/<n>/`, admins only):
+  - a subject site's deployment comes from the address Cloudflare keeps for it;
+  - the main site's comes from GitHub at that commit, because its old deployments now only show the "we've moved" notice;
+  - a past version can't save anything (requests that change things are refused, and its browser storage stays in that tab);
+  - email Worker builds link to Cloudflare's page for the build.
+
 ## Limits
 
 The hub's forwarding and the subject sites' secret check run on Cloudflare's free plan, which allows 100,000 requests a day across the account. KV, which holds sign-ins, allows 100,000 reads and 1,000 writes a day. Each page in a subject is about 5–15 requests and each is counted twice (hub + subject), so that's still a few thousand pages a day, plenty for a school group.

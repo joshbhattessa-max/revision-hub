@@ -12,8 +12,13 @@
 //   GET    /api/admin/usage?days=30           usage statistics (from visitors who accepted them) and cookie choices
 //   GET    /api/admin/inbox?cursor=            emails to contact@ and what the assistant did, newest first (50 at a time)
 //   GET    /api/admin/inbox/:key    DELETE /api/admin/inbox/:key
+//   GET    /api/admin/deploylog                  the deployment log: how many, the last sync, the latest few
+//   POST   /api/admin/deploylog                  {entries: [...], done: {repo: [shas]}} adds or fills in deployments
+//   POST   /api/admin/deploylog/sync             checks GitHub for new deployments now
+//   POST   /api/admin/deploylog/key              -> {key} (shown once) for the Google Sheet's links; the old one stops working
 import { forgetMaintenance, maintenance } from '../../_lib/maintenance.js';
 import { getKeys, newKey, saveKeys, sha256 } from '../../_lib/keys.js';
+import { SOURCES, load as loadDeploys, sync as syncDeploys, upsert as upsertDeploys } from '../../_lib/deploylog.js';
 import { clearVerifyFlag, endSessions, getAccounts, hashPassword, hubContent, json, listSessions, randomToken, saveAccounts } from '../../_lib/auth.js';
 
 const ROLES = ['admin', 'user'];
@@ -163,7 +168,45 @@ export async function onRequest(ctx) {
     await env.HUB_KV.put('media:' + id, buf, { metadata: { type, size: buf.byteLength, at: Date.now() } });
     return json({ url: '/media/' + id });
   }
+  if (route === 'deploylog' && method === 'GET') {
+    const log = await loadDeploys(env);
+    return json({ count: log.entries.length, sync: await env.HUB_KV.get('deploylog:sync', 'json'), key: !!(await env.HUB_KV.get('deploylog:key')),
+      latest: log.entries.slice(-10) });
+  }
+  if (route === 'deploylog' && method === 'POST') {
+    const log = await loadDeploys(env);
+    for (const [repo, shas] of Object.entries(body.done || {})) {
+      if (!SOURCES.some(s => s.repo === repo) || !Array.isArray(shas)) continue;
+      const st = log.gh[repo] || (log.gh[repo] = { etag: '', done: [] });
+      st.done = [...new Set([...st.done, ...shas.filter(h => /^[0-9a-f]{40}$/.test(h))])].slice(-300);
+    }
+    const items = (Array.isArray(body.entries) ? body.entries : []).map(deployItem);
+    if (items.some(x => !x)) return json({ error: 'An entry is missing something.' }, 400);
+    const added = await upsertDeploys(env, log, items);
+    return json({ ok: true, added, count: log.entries.length });
+  }
+  if (route === 'deploylog/sync' && method === 'POST') return json(await syncDeploys(env));
+  if (route === 'deploylog/key' && method === 'POST') {
+    const key = randomToken(24);
+    await env.HUB_KV.put('deploylog:key', await sha256(key));
+    return json({ key });
+  }
   return json({ error: 'Not found' }, 404);
+}
+
+// a deployment sent to POST deploylog, checked and trimmed (null if something is missing)
+function deployItem(x) {
+  const str = (v, n) => typeof v === 'string' ? v.slice(0, n) : '';
+  const link = v => /^https:\/\/[^\s"<>]+$/.test(v || '') ? v.slice(0, 400) : '';
+  if (!x || !SOURCES.some(s => s.repo === x.repo) || !/^[0-9a-f]{40}$/.test(x.sha || '') || !/^[a-z]+:?[\w-]*$/.test(x.proj || '')
+    || !Number.isFinite(x.at) || !Array.isArray(x.commits)) return null;
+  const commits = x.commits.slice(0, 200).map(c => ({ h: /^[0-9a-f]{40}$/.test(c.h) ? c.h : '', at: Number(c.at) || 0, s: str(c.s, 300), b: str(c.b, 3000) }));
+  const f = x.files;
+  const files = f && Number.isFinite(f.n) ? { n: f.n, a: Number(f.a) || 0, m: Number(f.m) || 0, d: Number(f.d) || 0,
+    list: (Array.isArray(f.list) ? f.list : []).slice(0, 80).map(([st, path]) => [str(st, 1), str(path, 300)]),
+    dirs: (Array.isArray(f.dirs) ? f.dirs : []).slice(0, 20).map(([d, n]) => [str(d, 120), Number(n) || 0]) } : null;
+  return { proj: x.proj.slice(0, 60), site: str(x.site, 80) || x.proj, repo: x.repo, sha: x.sha, at: x.at, ok: x.ok === true,
+    url: link(x.url), dash: link(x.dash), commits, files };
 }
 
 function clean(s) { return String(s || '').trim().slice(0, 40); }

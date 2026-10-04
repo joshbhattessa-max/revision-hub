@@ -14,7 +14,10 @@ const OPEN = new Set(['/login', '/login.html', '/login.js', '/hub.css', '/fonts.
 // what still works for everyone during maintenance (so an admin can sign in)
 const DURING_MAINTENANCE = new Set(['/og.png', '/sitemap.xml', '/login.js', '/hub.css', '/fonts.css', '/favicon.svg', '/favicon-32.png', '/apple-touch-icon.png',
   '/api/login', '/api/logout', '/api/status', '/privacy', '/privacy.html', '/terms', '/terms.html', '/api/inbound']);
-const ADMIN = p => p === '/admin' || p === '/admin.html' || p === '/admin.js' || p.startsWith('/api/admin/');
+const ADMIN = p => p === '/admin' || p === '/admin.html' || p === '/admin.js' || p.startsWith('/api/admin/') || p.startsWith('/v/');
+// the deployment log's CSV and PDF records for the owner's Google Sheet: no sign-in (Google fetches them), the key in
+// the address protects them (functions/deploys/)
+const SHEET = p => p.startsWith('/deploys/');
 // all a new account can reach until it has checked its email address (the page that does it, and leaving)
 const UNCHECKED = p => ['/verify', '/verify.html', '/verify.js', '/api/me', '/api/logout'].includes(p) || p.startsWith('/api/email/');
 
@@ -55,14 +58,14 @@ export async function onRequest(ctx) {
   const m = await maintenance(ctx);
   if (m.on && !(session && session.role === 'admin')) {
     const adminLogin = isLogin && url.searchParams.has('admin');
-    if (!adminLogin && !DURING_MAINTENANCE.has(path) && !path.startsWith('/fonts/')) {
+    if (!adminLogin && !DURING_MAINTENANCE.has(path) && !path.startsWith('/fonts/') && !SHEET(path)) {
       const headers = { 'cache-control': 'no-store', 'retry-after': '120' };
       if (path.startsWith('/api/')) return json({ error: 'Down for maintenance', maintenance: true }, 503, headers);
       return new Response(maintenancePage(m), { status: 503, headers: { ...headers, 'content-type': 'text/html; charset=utf-8' } });
     }
     if (adminLogin) return ctx.next();
   }
-  if (OPEN.has(path) || path.startsWith('/fonts/')) {
+  if (OPEN.has(path) || path.startsWith('/fonts/') || SHEET(path)) {
     if (session && isLogin) return Response.redirect(url.origin + safeNext(url), 302);  // (a key's cookie is set on its next page)
     return withConsent(await fresh(ctx, path));
   }
@@ -77,6 +80,10 @@ export async function onRequest(ctx) {
   if (ADMIN(path) && session.role !== 'admin') {
     return path.startsWith('/api/') ? json({ error: 'Admin only' }, 403) : Response.redirect(url.origin + '/', 302);
   }
+  // a past version of the site (/v/) only reads: nothing it sends can change anything
+  if (!['GET', 'HEAD'].includes(ctx.request.method) && /^\/v\//.test(refererPath(ctx.request, url))) {
+    return json({ error: 'This is a past version of the site, so nothing is saved.' }, 403);
+  }
   ctx.data.session = session;
   const res = await ctx.next();
   // pages that don't exist get the 404 page (404.html only makes Pages answer 404 instead of the home page)
@@ -88,7 +95,8 @@ export async function onRequest(ctx) {
   const out = new Response(res.body, res);
   out.headers.set('cache-control', 'private, no-store');
   if (keyCookie) out.headers.append('set-cookie', keyCookie);
-  return withConsent(out);
+  // (a past version keeps its own pages as they were, without today's cookie popup)
+  return path.startsWith('/v/') ? out : withConsent(out);
 }
 
 // the pages, styles and scripts anyone can open (sign-in, Privacy Policy, Terms, hub.css...) are fetched fresh every
@@ -110,6 +118,10 @@ async function fresh(ctx, path) {
 function withConsent(res) {
   if (res.status !== 200 || !(res.headers.get('content-type') || '').includes('text/html')) return res;
   return new HTMLRewriter().on('body', { element(e) { e.append('<script src="/consent.js?v=2" defer></script>', { html: true }); } }).transform(res);
+}
+
+function refererPath(request, url) {
+  try { const r = new URL(request.headers.get('referer') || ''); return r.origin === url.origin ? r.pathname : ''; } catch (e) { return ''; }
 }
 
 // only same-site paths, never another site
