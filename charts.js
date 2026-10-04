@@ -109,7 +109,7 @@
     var s = frame(title, sub) + yGrid([0, 0.25, 0.5, 0.75, 1], Y, function (v) { return Math.round(v * 100) + '%'; });
     (refs || []).forEach(function (r) {
       s += '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + Y(r.v).toFixed(1) + '" y2="' + Y(r.v).toFixed(1) + '" stroke="currentColor" stroke-opacity=".35" stroke-dasharray="4 4"/>' +
-        '<text x="' + (W - R) + '" y="' + (Y(r.v) - 4).toFixed(1) + '" font-size="9.5" text-anchor="end" fill="currentColor" fill-opacity=".6">' + esc(r.label) + '</text>';
+        '<text x="' + (L + 4) + '" y="' + (Y(r.v) - 4).toFixed(1) + '" font-size="9.5" text-anchor="start" fill="currentColor" fill-opacity=".6">' + esc(r.label) + '</text>';
     });
     series.forEach(function (sr) {
       var seg = [], segs = [];
@@ -156,9 +156,9 @@
     var s = frame(title, sub) + yGrid([0, 0.25, 0.5, 0.75, 1], Y, function (v) { return Math.round(v * 100) + '%'; });
     (refs || []).forEach(function (r) {
       s += '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + Y(r.v).toFixed(1) + '" y2="' + Y(r.v).toFixed(1) + '" stroke="currentColor" stroke-opacity=".35" stroke-dasharray="4 4"/>' +
-        '<text x="' + (W - R) + '" y="' + (Y(r.v) - 4).toFixed(1) + '" font-size="9.5" text-anchor="end" fill="currentColor" fill-opacity=".6">' + esc(r.label) + '</text>';
+        '<text x="' + (L + 4) + '" y="' + (Y(r.v) - 4).toFixed(1) + '" font-size="9.5" text-anchor="start" fill="currentColor" fill-opacity=".6">' + esc(r.label) + '</text>';
     });
-    var by = {};
+    var by = {}, placed = [];
     mocks.forEach(function (m) { (by[m.s] = by[m.s] || []).push(m); });
     Object.keys(by).forEach(function (k) {
       var xs = by[k], c = colorOf(k);
@@ -166,8 +166,11 @@
       xs.forEach(function (m) {
         s += '<circle cx="' + X(m.t).toFixed(1) + '" cy="' + Y(m.pct).toFixed(1) + '" r="5" fill="' + c + '" stroke="#fff" stroke-width="1.5"><title>' +
           esc(fmt(m.t, 'y') + ': ' + m.got + '/' + m.max + ', ' + Math.round(m.pct * 100) + '%' + (m.grade ? ', grade ' + m.grade : '')) + '</title></circle>';
-        var gx = X(m.t), ga = gx > W - 14 ? 'end' : 'middle';
-        if (m.grade) s += '<text x="' + (ga === 'end' ? W - 1 : gx).toFixed(1) + '" y="' + (Y(m.pct) - 9).toFixed(1) + '" font-size="10.5" font-weight="700" text-anchor="' + ga + '" fill="currentColor">' + esc(m.grade) + '</text>';
+        var gx = X(m.t), ga = gx > W - 14 ? 'end' : 'middle', gy = Y(m.pct) - 9;
+        // a grade that would sit on top of another one (mocks a few days apart) goes under its dot instead
+        if (placed.some(function (q) { return Math.abs(q[0] - gx) < 16 && Math.abs(q[1] - gy) < 12; })) gy = Y(m.pct) + 18;
+        placed.push([gx, gy]);
+        if (m.grade) s += '<text x="' + (ga === 'end' ? W - 1 : gx).toFixed(1) + '" y="' + gy.toFixed(1) + '" font-size="10.5" font-weight="700" text-anchor="' + ga + '" fill="currentColor">' + esc(m.grade) + '</text>';
       });
     });
     var ticks = buckets(w), step = Math.max(1, Math.ceil(ticks.length / (W < 500 ? 4 : 7)));
