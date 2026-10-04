@@ -65,6 +65,20 @@ New accounts give an email address when they sign up and have to type in a 6-dig
 - The admin console's Accounts tab shows each address and whether it's checked, and can excuse an account from checking or remove its address.
 - Code: `functions/_lib/email.js`, `functions/api/email/[[route]].js`, `functions/api/reset.js`, `verify.html`/`verify.js`, and the email box and "Forgot your password?" in `login.js`.
 
+## Email assistant (contact@jbrevision.co.uk)
+
+Email Routing sends every email for `contact@` to the **jbr-mail** Worker (`mail-worker/`, deployed by Cloudflare from this repository with root directory `mail-worker`), which passes it to `/api/inbound`. There, Cloudflare's AI (Workers AI, through the Pages project's `AI` binding; free up to a daily allowance) works out what the sender wants, and fixed rules decide what happens:
+
+- **Questions about the site**: answered from the facts in `functions/_lib/assistant.js` (update them when the site changes).
+- **Forgotten password or username**: if the sender's address is the checked email of an account, a one-time reset link (1 hour) is emailed to that same address. Deleting an account: how to do it, plus a reset link.
+- **Change of email**: a link to the current address, then one to the new address (`/confirm`); both must be opened.
+- **Bugs, complaints, data requests, anything unclear, or a sender without a checked account**: a short reply, and an email to the owner with a summary ("Needs you"); Reply goes straight to the sender.
+- **Spam, automatic emails, mailing lists, our own address**: logged only. At most 5 automatic replies to one address a day.
+
+Every email is logged in KV (`mail:…`, kept a year; one-time links are never stored) and shown in the admin console's **Inbox** tab. The AI only suggests; it can't make the site do anything else, and without it (or if it fails) simple word-matching sends anything unclear to the owner. If `/api/inbound` can't be reached, the Worker forwards the email to the owner unchanged.
+
+Setup: the Pages project needs a Workers AI binding named `AI` and a secret `MAIL_SECRET`; the Worker needs the same `MAIL_SECRET` and `OWNER_EMAIL` (a verified Email Routing destination); the `contact` routing rule's action is *Send to a Worker → jbr-mail*.
+
 ## The address
 
 The hub lives at `jbrevision.co.uk` (bought through Cloudflare Registrar and added under the Pages project's *Custom domains*, with `www.jbrevision.co.uk` as well). Every subject is at `jbrevision.co.uk/chemistry/` and so on.

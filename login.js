@@ -107,15 +107,8 @@
       if (code.length !== 6) { err.textContent = 'Type the 6 digits from the email.'; return; }
       busy(true, 'Checking…');
       post('/api/reset', { step: 'check', email: reset.email, code: code }).then(function (d) {
-        if (!d.accounts.length) { setMode('signin', 'No account uses that email address any more.'); return; }
-        reset.token = d.token; reset.accounts = d.accounts;
-        form.acct.innerHTML = d.accounts.map(function (a) {
-          return '<option value="' + esc(a.id) + '">' + esc(a.username) + (a.role === 'admin' ? ' (admin)' : '') + '</option>';
-        }).join('');
-        say('Code checked. Choose a new password' + (d.accounts.length > 1 ? ' for one of your accounts.' : ' for ' + d.accounts[0].username + '.'));
-        fields(d.accounts.length > 1 ? ['acct', 'new', 'again'] : ['new', 'again']);
-        busy(false, 'Set new password');
-        form.newpass.focus();
+        reset.token = d.token;
+        chooseNew(d.accounts, 'Code checked.');
       }).catch(function (e2) { err.textContent = e2.message; busy(false, 'Check code'); form.code.select(); });
     } else {
       if (form.newpass.value.length < 6) { err.textContent = 'Passwords need at least 6 characters.'; return; }
@@ -131,6 +124,29 @@
         .catch(function (e2) { err.textContent = e2.message; busy(false, 'Set new password'); });
     }
   }
+  // the last step: pick the account (if the address has more than one) and type the new password twice
+  function chooseNew(accounts, lead) {
+    if (!accounts.length) { setMode('signin', 'No account uses that email address any more.'); return; }
+    reset.accounts = accounts;
+    form.acct.innerHTML = accounts.map(function (a) {
+      return '<option value="' + esc(a.id) + '">' + esc(a.username) + (a.role === 'admin' ? ' (admin)' : '') + '</option>';
+    }).join('');
+    say(lead + ' Choose a new password' + (accounts.length > 1 ? ' for one of your accounts.' : ' for ' + accounts[0].username + '.'));
+    fields(accounts.length > 1 ? ['acct', 'new', 'again'] : ['new', 'again']);
+    busy(false, 'Set new password');
+    form.newpass.focus();
+  }
+  // a one-time link from an email (…/login?reset=…) goes straight to choosing a new password
+  var link = new URLSearchParams(location.search).get('reset') || '';
+  if (/^[0-9a-f]{64}$/.test(link)) {
+    history.replaceState(null, '', location.pathname);
+    post('/api/reset', { step: 'peek', token: link }).then(function (d) {
+      setMode('forgot');
+      reset = { email: '-', token: link };
+      chooseNew(d.accounts, 'Reset link checked.');
+    }).catch(function (e2) { setMode('signin', e2.message); });
+  }
+
   // six digits typed (or pasted from the email): check straight away
   form.code.addEventListener('input', function () {
     if (name === 'forgot' && reset.email && !reset.token && !btn.disabled && form.code.value.replace(/\D/g, '').length === 6) forgotStep();

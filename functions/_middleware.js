@@ -9,10 +9,11 @@ import { canSend } from './_lib/email.js';
 // what the login page itself needs
 const OPEN = new Set(['/login', '/login.html', '/login.js', '/hub.css', '/fonts.css', '/favicon.svg', '/favicon-32.png',
   '/apple-touch-icon.png', '/og.png', '/sitemap.xml', '/api/login', '/api/signup', '/api/status',
-  '/privacy', '/privacy.html', '/terms', '/terms.html', '/consent.js', '/api/reset']);
+  '/privacy', '/privacy.html', '/terms', '/terms.html', '/consent.js', '/api/reset',
+  '/confirm', '/confirm.html', '/confirm.js', '/api/confirm', '/api/inbound']);
 // what still works for everyone during maintenance (so an admin can sign in)
 const DURING_MAINTENANCE = new Set(['/og.png', '/sitemap.xml', '/login.js', '/hub.css', '/fonts.css', '/favicon.svg', '/favicon-32.png', '/apple-touch-icon.png',
-  '/api/login', '/api/logout', '/api/status', '/privacy', '/privacy.html', '/terms', '/terms.html']);
+  '/api/login', '/api/logout', '/api/status', '/privacy', '/privacy.html', '/terms', '/terms.html', '/api/inbound']);
 const ADMIN = p => p === '/admin' || p === '/admin.html' || p === '/admin.js' || p.startsWith('/api/admin/');
 // all a new account can reach until it has checked its email address (the page that does it, and leaving)
 const UNCHECKED = p => ['/verify', '/verify.html', '/verify.js', '/api/me', '/api/logout'].includes(p) || p.startsWith('/api/email/');
@@ -42,6 +43,8 @@ export async function onRequest(ctx) {
   if (path === '/google4ee74d39786946b2.html') {
     return new Response('google-site-verification: google4ee74d39786946b2.html', { headers: { 'content-type': 'text/html; charset=utf-8' } });
   }
+  // the email Worker's code lives in this repository but isn't part of the site
+  if (path.startsWith('/mail-worker')) return new Response('Not found', { status: 404 });
   let session = await getSession(ctx.env, ctx.request), keyCookie = null;
   // agents can use an access key instead of the login form (a standard, non-admin sign-in)
   if (!session) {

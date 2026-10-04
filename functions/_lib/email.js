@@ -25,17 +25,19 @@ function newCode() {
 }
 const codeHash = (salt, code) => sha256(salt + ':' + String(code || '').replace(/\D/g, ''));
 
-// at most `max` of something per `key` per hour (codes per account, resets per address...)
-export async function overLimit(env, key, max) {
+// at most `max` of something per `key` per hour, or per `seconds` (codes per account, resets per address...)
+export async function overLimit(env, key, max, seconds = 3600) {
   const n = parseInt(await env.HUB_KV.get('elimit:' + key) || '0', 10);
   if (n >= max) return true;
-  await env.HUB_KV.put('elimit:' + key, String(n + 1), { expirationTtl: 3600 });
+  await env.HUB_KV.put('elimit:' + key, String(n + 1), { expirationTtl: seconds });
   return false;
 }
 
 // the whole site's emails for today, so a flood of requests can't use up the free plan
+const today = () => 'emails:' + new Date().toISOString().slice(0, 10);
+async function spentToday(env) { return parseInt(await env.HUB_KV.get(today()) || '0', 10) >= DAILY; }
 async function spend(env) {
-  const k = 'emails:' + new Date().toISOString().slice(0, 10);
+  const k = today();
   const n = parseInt(await env.HUB_KV.get(k) || '0', 10);
   if (n >= DAILY) return false;
   await env.HUB_KV.put(k, String(n + 1), { expirationTtl: 2 * 86400 });
@@ -53,11 +55,19 @@ async function send(env, to, code, reset) {
     `<p style="font-size:15px;line-height:1.5;margin:0 0 14px">Type it in to ${what}. It works for 15 minutes.</p>` +
     `<p style="font-size:13px;line-height:1.5;color:#6b6862;margin:0">If you didn't ask for this, you can ignore this email: nothing changes unless the code is typed in.</p>` +
     `<p style="font-size:13px;color:#6b6862;margin:18px 0 0">JB Revision · <a href="https://jbrevision.co.uk" style="color:#6b6862">jbrevision.co.uk</a></p></div>`;
+  return sendMail(env, { to, subject, text, html });
+}
+
+// any email from the site (codes, the assistant's replies, notes to the owner); counts towards the daily budget
+export async function sendMail(env, { to, subject, text, html, from, replyTo, headers }) {
+  if (!canSend(env)) return false;
+  if (!await spend(env)) return false;
   try {
     const r = await fetch((env.RESEND_API_URL || 'https://api.resend.com') + '/emails', {
       method: 'POST',
       headers: { authorization: 'Bearer ' + env.RESEND_API_KEY, 'content-type': 'application/json' },
-      body: JSON.stringify({ from: env.MAIL_FROM || FROM, to: [to], reply_to: REPLY_TO, subject, text, html }),
+      body: JSON.stringify({ from: from || env.MAIL_FROM || FROM, to: [to], reply_to: replyTo || REPLY_TO, subject, text,
+        html: html || plainHtml(text), ...(headers ? { headers } : {}) }),
     });
     return r.ok;
   } catch (e) {
@@ -65,10 +75,17 @@ async function send(env, to, code, reset) {
   }
 }
 
+// a plain-text email as simple HTML (links to the site stay clickable)
+export function plainHtml(text) {
+  const esc = String(text).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/(https:\/\/jbrevision\.co\.uk[^\s<]*)/g, '<a href="$1" style="color:#33312e">$1</a>');
+  return '<div style="font-family:Inter,Segoe UI,Arial,sans-serif;max-width:560px;font-size:15px;line-height:1.55;color:#33312e;white-space:pre-wrap">' + esc + '</div>';
+}
+
 // email a new code to `email` and keep its hash (never the code) under `key` for 15 minutes; `salt` ties the hash to
 // one account or address. Returns {ok} or {error, status}.
 export async function emailCode(env, key, salt, email, reset = false) {
-  if (!await spend(env)) return { error: 'The site has sent all the emails it can for today. Try again tomorrow.', status: 503 };
+  if (await spentToday(env)) return { error: 'The site has sent all the emails it can for today. Try again tomorrow.', status: 503 };
   const code = newCode();
   if (!await send(env, email, code, reset)) return { error: "The email couldn't be sent. Check the address and try again.", status: 502 };
   await env.HUB_KV.put(key, JSON.stringify({ email, hash: await codeHash(salt, code), tries: 0, at: Date.now() }), { expirationTtl: CODE_SECONDS });

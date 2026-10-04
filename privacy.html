@@ -27,7 +27,7 @@
 </nav>
 
 <h2 id="who">Who runs it</h2>
-<p>JB Revision (jbrevision.co.uk) and its subject sites (ChemQ, BioQ, PhysQ, MathsQ, GeoQ, CSQ and SpanishQ) are run by Josh B, a student, for personal revision. Josh B decides what is kept and why, so he is responsible for your information under UK data protection law (the UK GDPR and the Data Protection Act 2018).</p>
+<p>JB Revision (jbrevision.co.uk) and its subject sites (ChemQ, BioQ, PhysQ, MathsQ, GeoQ, CSQ and SpanishQ) are run by Josh B, a student, for personal revision. Josh B decides what is kept and why, so Josh B is responsible for your information under UK data protection law (the UK GDPR and the Data Protection Act 2018).</p>
 
 <h2 id="what">What's kept</h2>
 <table class="legal-table">
@@ -40,6 +40,7 @@
 <tr><td><b>Your plan</b></td><td>The tests, exams and deadlines you add to the planner, any topic list you paste or upload (just its lines of text), your question sets and your session settings.</td><td>You, in the planner</td></tr>
 <tr><td><b>Your cookie choice</b></td><td>Whether you accepted usage statistics or chose essential cookies only, and when. Kept in a cookie on your device and, if you're signed in, with your account, so there's a record of what you agreed to.</td><td>You, in the cookie popup</td></tr>
 <tr><td><b>Usage statistics</b> (only if you accept)</td><td>Which parts of the site are used (for example "Chemistry · a question" or "Revision planner"), what kind of device (phone, tablet or computer) and the date, under a random visitor number. It isn't linked to your username or account, and no questions, marks or typing are included.</td><td>Your browser, only after you press <i>Accept all</i></td></tr>
+<tr><td><b>Emails you send us</b></td><td>If you email contact@jbrevision.co.uk: your address and name, the subject and text of your email, what the automatic assistant made of it (a one-line summary), and any reply it sent. One-time links in replies aren't kept.</td><td>You, when you email</td></tr>
 <tr><td><b>Security counters</b></td><td>To stop people guessing passwords or making accounts in bulk: a count of wrong passwords and wrong codes from an IP address (kept for 15 minutes), and of accounts made and codes emailed (kept for an hour).</td><td>Your browser's requests</td></tr>
 </tbody></table>
 <p>Topic sheets you upload as a PDF are read <b>inside your browser</b>: the file itself never leaves your device; only the lines of text you keep are saved with your plan. Choosing questions that match your list also happens entirely in your browser.</p>
@@ -65,21 +66,23 @@
 <li><b>Cloudflare</b> hosts the site and its data (Cloudflare Pages and Workers KV). Every visit passes through Cloudflare, which sees your IP address and browser details to deliver the page and protect the site. Cloudflare's own privacy policy applies to that.</li>
 <li><b>Physics &amp; Maths Tutor</b> (pmt.physicsandmathstutor.com). Original papers and mark schemes are PDFs that your browser downloads directly from there, so they see your IP address and browser when you open one, under their own privacy policy.</li>
 <li><b>cdnjs</b> (run by Cloudflare) supplies pdf.js, the free reader that draws mark-scheme pages inside the site.</li>
-<li><b>Resend</b> (resend.com) sends the emails with codes. It gets your email address and the email itself, under its own privacy policy. Resend is based in the United States, so your address may be handled there.</li>
+<li><b>Cloudflare Workers AI</b> reads emails sent to contact@jbrevision.co.uk, to work out what you're asking and answer it from the site's help facts (or pass it to Josh B). It runs on Cloudflare's own servers, and only sees the email you sent.</li>
+<li><b>Resend</b> (resend.com) sends the emails with codes and the assistant's replies. It gets your email address and the email itself, under its own privacy policy. Resend is based in the United States, so your address may be handled there.</li>
 </ul>
-<p>Nothing about you is sold or shared with anyone else, and nothing is sent to any AI service.</p>
+<p>Nothing about you is sold or shared with anyone else, and apart from emails you send to contact@ (read by Cloudflare's AI, above), nothing is sent to any AI service.</p>
 
 <h2 id="why">Why it's kept (the legal reasons)</h2>
 <ul>
 <li><b>To give you the service you signed up for</b>: your account (including your email address, which new accounts need so they can reset a forgotten password), sessions, progress and plan.</li>
-<li><b>Legitimate interests</b>: keeping the site secure (sessions, IP addresses, the security counters) and keeping a record of your cookie choice.</li>
+<li><b>Legitimate interests</b>: keeping the site secure (sessions, IP addresses, the security counters), keeping a record of your cookie choice, and answering emails you send (and keeping a record of them).</li>
 <li><b>Your consent</b>: usage statistics, which only happen if you press <i>Accept all</i>, and stop when you withdraw it.</li>
 </ul>
 
 <h2 id="long">How long it's kept</h2>
 <ul>
 <li>Your account, email address, progress, plan and cookie choice: until you delete your account (or change or remove the email address). Each question keeps only its last 8 attempts.</li>
-<li>Codes emailed to you: 15 minutes, or until they're used.</li>
+<li>Codes emailed to you: 15 minutes, or until they're used. Links the assistant emails you: 1 hour, or until they're used.</li>
+<li>Emails you send to contact@, with what the assistant did: 12 months, then deleted automatically.</li>
 <li>Sign-in sessions, with their IP address, country and device: deleted automatically when they end, after 6 hours, or straight away when you log out.</li>
 <li>Usage statistics: 90 days, then deleted automatically.</li>
 <li>Security counters: 15 minutes (wrong passwords) or 1 hour (new accounts).</li>
