@@ -2,8 +2,8 @@
 
 One web address for everything: a sign-in, then a home page with all the subject sites plus your own links and pictures.
 
-- `https://<your-hub>.pages.dev/` is the home page.
-- `https://<your-hub>.pages.dev/chemistry/` is ChemQ. The same goes for `/biology/`, `/physics/`, `/maths/`, `/geography/`, `/computer-science/` and `/spanish/`.
+- `https://jbrevision.co.uk/` is the home page.
+- `https://jbrevision.co.uk/chemistry/` is ChemQ. The same goes for `/biology/`, `/physics/`, `/maths/`, `/geography/`, `/computer-science/` and `/spanish/`.
 
 The subject sites stay as separate Cloudflare Pages projects. The hub quietly fetches them for you (`functions/[[path]].js`), so you only ever use the hub's address. Your notes and handwriting in each subject are kept separately, as before.
 
@@ -56,9 +56,13 @@ The **Maintenance mode** button at the top of the admin console (or its **Mainte
 
 Until `HUB_KV` is bound, the hub shows a "Sign-in isn't set up yet" page instead of the site. It fails closed, never open.
 
-## Your own domain (optional)
+## The address
 
-You can buy a domain such as `myrevision.co.uk` (about £5–10 a year, e.g. through Cloudflare Registrar). Then in the hub's Pages project go to *Custom domains* → *Set up a domain*. Every subject is then at `myrevision.co.uk/chemistry/` and so on. The free `*.pages.dev` address keeps working either way.
+The hub lives at `jbrevision.co.uk` (bought through Cloudflare Registrar and added under the Pages project's *Custom domains*, with `www.jbrevision.co.uk` as well). Every subject is at `jbrevision.co.uk/chemistry/` and so on.
+
+- `www.jbrevision.co.uk` sends you to `jbrevision.co.uk` (the same page).
+- The old address, `josh-b-revision.pages.dev` (and its per-deployment `<id>.josh-b-revision.pages.dev` addresses), no longer works: every page there is a "We've moved" popup linking to the same page on `jbrevision.co.uk`, and its API answers `410 Gone` (`functions/_lib/moved.js`).
+- The subject sites point anyone who opens them directly to `jbrevision.co.uk` (their `MAIN_SITE`).
 
 ## Limits
 

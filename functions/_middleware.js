@@ -3,6 +3,7 @@ import { getSession, json } from './_lib/auth.js';
 import { maintenance, maintenancePage } from './_lib/maintenance.js';
 import { notFoundPage } from './_lib/notfound.js';
 import { keySession } from './_lib/keys.js';
+import { NEW_SITE, isOldAddress, movedPage } from './_lib/moved.js';
 
 // what the login page itself needs
 const OPEN = new Set(['/login', '/login.html', '/login.js', '/hub.css', '/fonts.css', '/favicon.svg', '/favicon-32.png',
@@ -21,6 +22,15 @@ const SETUP = `<!doctype html><meta charset="utf-8"><meta name="viewport" conten
 export async function onRequest(ctx) {
   const url = new URL(ctx.request.url);
   const path = url.pathname.replace(/\/+$/, '') || '/';
+  // the site has moved to jbrevision.co.uk: www.jbrevision.co.uk goes to the address without www, and the old
+  // address (josh-b-revision.pages.dev) no longer works: every page there is the "we've moved" popup and its API
+  // answers 410 Gone
+  if (url.hostname === 'www.jbrevision.co.uk') return Response.redirect(NEW_SITE + url.pathname + url.search, 301);
+  if (isOldAddress(url.hostname)) {
+    const headers = { 'cache-control': 'no-store', 'x-robots-tag': 'noindex' };
+    if (path.startsWith('/api/')) return json({ error: 'This site has moved to ' + NEW_SITE, moved: NEW_SITE }, 410, headers);
+    return new Response(movedPage(url), { status: 410, headers: { ...headers, 'content-type': 'text/html; charset=utf-8' } });
+  }
   // without its store the sign-in can't work, so nothing is served (fail closed)
   if (!ctx.env.HUB_KV) return new Response(SETUP, { status: 503, headers: { 'content-type': 'text/html; charset=utf-8' } });
 
