@@ -89,6 +89,7 @@
         '<p><b>What they want</b> ' + esc(m.summary || '?') + ' <span class="muted">(' + esc(m.intent || '?') + (m.by ? ', read by ' + esc(m.by) : '') + ')</span></p>' +
         '<p><b>What happened</b> ' + did(m.outcome) + (m.toOwner ? ' <span class="muted">· emailed to you' + (m.ownerEmailed === false ? ' (that email failed)' : '') + '</span>' : '') + '</p>' +
         (m.error ? '<p class="err">' + esc(m.error) + '</p>' : '') +
+        (m.ai ? '<p class="muted">AI: ' + esc(m.ai) + '</p>' : '') +
         '<h3>Their email</h3><pre class="in-text">' + esc(m.text || '') + '</pre>' +
         (m.replies || []).map(function (r) { return '<h3>Reply sent to ' + esc(r.to) + (r.ok ? '' : ' (failed)') + '</h3><pre class="in-text">' + esc(r.text) + '</pre>'; }).join('') +
         '<div class="row"><a class="btn-main" href="mailto:' + esc(m.from) + '?subject=' + encodeURIComponent('Re: ' + (m.subject || '')) + '">Reply</a>' +

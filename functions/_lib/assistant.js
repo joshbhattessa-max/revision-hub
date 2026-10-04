@@ -5,7 +5,9 @@
 // so an email can't talk it into doing anything else. Without the binding, or if the AI fails, simple word-matching
 // takes over and anything unclear goes to the owner.
 
-const MODELS = ['@cf/meta/llama-3.3-70b-instruct-fp8-fast', '@cf/meta/llama-3.1-8b-instruct'];
+// tried in turn until one answers (Cloudflare adds and retires models; MAIL_MODEL on the Pages project goes first)
+const MODELS = ['@cf/meta/llama-3.3-70b-instruct-fp8-fast', '@cf/meta/llama-4-scout-17b-16e-instruct', '@cf/mistralai/mistral-small-3.1-24b-instruct',
+  '@cf/meta/llama-3.1-8b-instruct-fast', '@cf/meta/llama-3.1-8b-instruct'];
 export const INTENTS = ['question', 'password', 'username', 'change_email', 'delete_account', 'bug', 'spam', 'other'];
 
 export const FACTS = `JB Revision (jbrevision.co.uk) is a free revision website run by Josh B, a student.
@@ -52,18 +54,27 @@ Rules:
 Facts about the website:
 ${FACTS}`;
 
+// what happened on the way is kept in `ai` (shown in the admin console's Inbox), so a missing binding or a retired
+// model is easy to spot
 export async function readIntent(env, mail) {
   const email = `From: ${mail.from}\nSubject: ${mail.subject}\n\n${mail.text.slice(0, 4000)}`;
-  if (env.AI) {
+  const notes = [];
+  if (!env.AI) notes.push('no AI binding on the Pages project');
+  else {
     for (const model of [env.MAIL_MODEL, ...MODELS].filter(Boolean)) {
+      const name = model.split('/').pop();
       try {
         const out = await env.AI.run(model, { messages: [{ role: 'system', content: SYSTEM }, { role: 'user', content: email }], max_tokens: 500, temperature: 0.1 });
-        const r = tidy(parse(out && out.response), model);
-        if (r) return r;
-      } catch (e) { /* try the next model, then word-matching */ }
+        const resp = out && (out.response !== undefined ? out.response : out.result && out.result.response);
+        const r = tidy(parse(resp), model);
+        if (r) return { ...r, ai: notes.join('; ') };
+        notes.push(name + ': unreadable answer ' + JSON.stringify(resp === undefined ? out : resp).slice(0, 100));
+      } catch (e) {
+        notes.push(name + ': ' + String(e && e.message || e).slice(0, 140));
+      }
     }
   }
-  return guess(mail);
+  return { ...guess(mail), ai: notes.join('; ') };
 }
 
 function parse(resp) {

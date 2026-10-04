@@ -58,7 +58,7 @@ async function handle(env, mail, entry, owner) {
   if (!mail.from || robot) { entry.intent = 'automatic'; entry.summary = 'An automatic email (no reply sent).'; entry.outcome = 'ignored'; return; }
 
   const r = await readIntent(env, { from: mail.from, subject: mail.subject, text: newPart(mail.text) });
-  Object.assign(entry, { intent: r.intent, summary: r.summary, confidence: r.confidence, by: r.by });
+  Object.assign(entry, { intent: r.intent, summary: r.summary, confidence: r.confidence, by: r.by, ...(r.ai ? { ai: r.ai.slice(0, 600) } : {}) });
   if (r.intent === 'spam' && r.confidence >= 0.6) { entry.outcome = 'ignored'; return; }
 
   // too many automatic replies to this address today: log it and let the owner decide
