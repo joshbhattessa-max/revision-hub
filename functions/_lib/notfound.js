@@ -148,7 +148,7 @@ export function notFoundPage(path) {
 <title>Page not found · JB Revision</title>
 <script>try { var t = localStorage.getItem('hub-theme'); if (t) document.documentElement.setAttribute('data-theme', t); } catch (e) {}</script>
 ${ICON_LINKS}
-<link rel="stylesheet" href="/fonts.css">
+<link rel="stylesheet" href="/fonts.css?v=2">
 <style>
 :root { --bg: #f4f1ea; --ink: #2b2925; --muted: #6b6862; --nf-ground-top: #ddd6c8; --nf-ground-bottom: #e9e4da; --nf-ground-line: #cbc2b1; }
 :root[data-theme="dark"] { --bg: #17171a; --ink: #ecebe8; --muted: #a3a09a; --nf-ground-top: #2a2a2f; --nf-ground-bottom: #1d1d21; --nf-ground-line: #3a3a41; }

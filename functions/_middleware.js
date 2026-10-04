@@ -58,7 +58,7 @@ export async function onRequest(ctx) {
   }
   if (OPEN.has(path) || path.startsWith('/fonts/')) {
     if (session && isLogin) return Response.redirect(url.origin + safeNext(url), 302);  // (a key's cookie is set on its next page)
-    return withConsent(await ctx.next());
+    return withConsent(fresh(await ctx.next()));
   }
   if (!session) {
     if (path.startsWith('/api/')) return json({ error: 'Signed out' }, 401);
@@ -81,10 +81,20 @@ export async function onRequest(ctx) {
   return withConsent(out);
 }
 
+// the pages, styles and scripts anyone can open (sign-in, Privacy Policy, Terms, hub.css...) are fetched fresh every
+// time, like the rest of the site, so an update shows straight away. (On jbrevision.co.uk, Cloudflare would otherwise
+// let browsers keep them for 4 hours; it leaves "private, no-store" alone.) Fonts and pictures still keep.
+function fresh(res) {
+  if (res.status !== 200 || !/text\/(html|css)|javascript|json|xml/.test(res.headers.get('content-type') || '')) return res;
+  const out = new Response(res.body, res);
+  out.headers.set('cache-control', 'private, no-store');
+  return out;
+}
+
 // every page (the main site's and the subject sites' it serves) gets the cookie popup, consent.js
 function withConsent(res) {
   if (res.status !== 200 || !(res.headers.get('content-type') || '').includes('text/html')) return res;
-  return new HTMLRewriter().on('body', { element(e) { e.append('<script src="/consent.js" defer></script>', { html: true }); } }).transform(res);
+  return new HTMLRewriter().on('body', { element(e) { e.append('<script src="/consent.js?v=2" defer></script>', { html: true }); } }).transform(res);
 }
 
 // only same-site paths, never another site
