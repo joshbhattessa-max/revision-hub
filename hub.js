@@ -14,9 +14,9 @@
     var h = (me && me.maintenance ? '<div class="maint-bar">Maintenance mode is on: only admins can use the site right now. <a href="/admin#maintenance">Turn it off</a></div>' : '') +
       '<div class="wrap"><header class="top"><div class="brand">' + JBR_LOGO + '<div><h1>' + esc(data.title) + '</h1>' +
       (data.subtitle ? '<p class="subtitle">' + esc(data.subtitle) + '</p>' : '') + '</div></div>' +
-      (me ? '<nav class="top-links" aria-label="Your study"><a class="btn-quiet" href="/progress">Your progress</a><a class="btn-quiet" href="/planner">Revision planner</a></nav>' : '') +
+      (me ? '<nav class="top-links" aria-label="Your study"><a class="btn-quiet" href="/progress">Your progress</a><a class="btn-quiet" href="/planner">Revision planner</a>' +
+        (me.role === 'admin' ? '<a class="btn-quiet admin-link" href="/admin">Admin console</a>' : '') + '</nav>' : '') +
       '<div class="top-actions">' +
-      (me && me.role === 'admin' ? '<a class="btn-quiet admin-link" href="/admin">Admin console</a>' : '') +
       (me ? userMenu(me) : '') + TOGGLE + '</div></header>';
 
     h += '<h2>Subjects</h2><div class="grid">';

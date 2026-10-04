@@ -671,7 +671,7 @@
         r.done + ' question' + (r.done === 1 ? '' : 's') + ' done</span></div>' : '<div class="pl-ready"><span>No questions done on these topics yet</span></div>') +
       '<div class="pl-chips">' + chips + '</div>' +
       (hasList(e) ? '<div class="pl-match"><button type="button" class="pl-btn ghost mt" aria-expanded="false">Questions that match your list</button><div class="pl-mbox"></div></div>' : '') +
-      '<div class="pl-evact"><button type="button" class="pl-btn pick">' + (sets ? 'Pick more questions' : 'Pick questions') + '</button>' +
+      '<div class="pl-evact"><button type="button" class="pl-btn pick">' + (sets ? 'More questions' : 'Pick questions') + '</button>' +
       '<button type="button" class="pl-btn ghost edit">Edit</button><button type="button" class="pl-btn ghost del">Delete</button></div></article>');
     var mt = c.querySelector('.mt');
     if (mt) {
@@ -713,7 +713,7 @@
       (set.uncovered && set.uncovered.length ? '<details class="pl-unc"><summary>' + set.uncovered.length + ' point' + (set.uncovered.length === 1 ? '' : 's') +
         ' with no past-paper question that really tests ' + (set.uncovered.length === 1 ? 'it' : 'them') + '</summary><ul>' +
         set.uncovered.map(function (u) { return '<li>' + esc(u) + '</li>'; }).join('') + '</ul></details>' : '') +
-      '<div class="pl-evact"><button type="button" class="pl-btn timed">Do it as a timed paper</button><button type="button" class="pl-btn ghost print">Print it</button>' +
+      '<div class="pl-evact"><button type="button" class="pl-btn timed">Timed paper</button><button type="button" class="pl-btn ghost print">Print</button>' +
       '<button type="button" class="pl-btn ghost del">Remove</button></div>' +
       '<p class="pl-note">The timed paper and the printout use the full questions; mark yourself as you go and it all counts towards your topics.</p></article>');
     c.querySelector('.timed').addEventListener('click', function () { asMock(set, 'ready'); });
