@@ -40,5 +40,6 @@ export async function onRequestDelete(ctx) {
   await endSessions(ctx.env, s => s.accountId === account.id);
   await ctx.env.HUB_KV.delete('prog:' + account.id);  // and its study progress
   await ctx.env.HUB_KV.delete('consent:' + account.id);  // and its cookie-choice record
+  await ctx.env.HUB_KV.delete('ecode:' + account.id);  // and any email code waiting for it
   return json({ ok: true }, 200, { 'set-cookie': clearCookie() });
 }

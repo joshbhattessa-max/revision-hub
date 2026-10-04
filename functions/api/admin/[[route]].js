@@ -3,7 +3,7 @@
 //   POST   /api/admin/sessions/end           {id} | {accountId} | {everyoneElse: true}
 //   GET    /api/admin/accounts
 //   POST   /api/admin/accounts               {username, password, role}
-//   PATCH  /api/admin/accounts/:id           {username?, password?, role?}
+//   PATCH  /api/admin/accounts/:id           {username?, password?, role?, excuse?: true, email?: ''}
 //   DELETE /api/admin/accounts/:id
 //   GET    /api/admin/hub    PUT /api/admin/hub {content}    DELETE /api/admin/hub (back to hub.json)
 //   POST   /api/admin/media                  raw image body -> {url}
@@ -12,7 +12,7 @@
 //   GET    /api/admin/usage?days=30           usage statistics (from visitors who accepted them) and cookie choices
 import { forgetMaintenance, maintenance } from '../../_lib/maintenance.js';
 import { getKeys, newKey, saveKeys, sha256 } from '../../_lib/keys.js';
-import { endSessions, getAccounts, hashPassword, hubContent, json, listSessions, randomToken, saveAccounts } from '../../_lib/auth.js';
+import { clearVerifyFlag, endSessions, getAccounts, hashPassword, hubContent, json, listSessions, randomToken, saveAccounts } from '../../_lib/auth.js';
 
 const ROLES = ['admin', 'user'];
 const MAX_IMAGE = 5 * 1024 * 1024;
@@ -46,6 +46,7 @@ export async function onRequest(ctx) {
   if (route === 'accounts' && method === 'GET') {
     const sessions = await listSessions(env);
     return json((await getAccounts(env)).map(a => ({ id: a.id, username: a.username, role: a.role, label: label(a),
+      email: a.email || '', emailVerified: a.emailVerified || null, mustVerify: !!a.mustVerify,
       signedIn: sessions.filter(s => s.accountId === a.id).length, you: a.id === me.accountId })));
   }
   if (route === 'accounts' && method === 'POST') {
@@ -77,7 +78,11 @@ export async function onRequest(ctx) {
       if (String(body.password).length < 4) return json({ error: 'Passwords need at least 4 characters.' }, 400);
       Object.assign(a, await hashPassword(String(body.password)));
     }
+    // excuse a new account from checking its email address, or forget an account's address
+    if (body.excuse) delete a.mustVerify;
+    if (body.email === '') { delete a.email; delete a.emailVerified; }
     await saveAccounts(env, list);
+    if (body.excuse) await clearVerifyFlag(env, a.id);
     // a new password or role signs that account out everywhere (except this browser, if it's your own)
     if (body.password !== undefined || body.role !== undefined || body.username !== undefined)
       await endSessions(env, s => s.accountId === a.id && s.token !== me.token);
@@ -94,6 +99,7 @@ export async function onRequest(ctx) {
     await endSessions(env, s => s.accountId === a.id);
     await env.HUB_KV.delete('prog:' + a.id);
     await env.HUB_KV.delete('consent:' + a.id);
+    await env.HUB_KV.delete('ecode:' + a.id);
     return json({ ok: true });
   }
 

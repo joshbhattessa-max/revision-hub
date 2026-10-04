@@ -111,6 +111,8 @@ export async function createSession(env, account, request) {
   const info = {
     accountId: account.id, username: account.username, role: account.role,
     created: now, expires: now + SESSION_SECONDS * 1000,
+    // a new account that hasn't checked its email address yet can only reach the "check your email" page
+    ...(account.mustVerify ? { mustVerify: true } : {}),
     ip: request.headers.get('cf-connecting-ip') || '', country: (request.cf && request.cf.country) || '',
     device: (request.headers.get('user-agent') || '').slice(0, 160),
   };
@@ -139,6 +141,15 @@ export async function listSessions(env) {
     cursor = page.list_complete ? null : page.cursor;
   } while (cursor);
   return out.sort((a, b) => b.created - a.created);
+}
+
+// once an account has checked its email address, its sessions (on every device) can use the whole site
+export async function clearVerifyFlag(env, accountId) {
+  for (const s of await listSessions(env)) {
+    if (s.accountId !== accountId || !s.mustVerify) continue;
+    const { token, mustVerify, ...info } = s;
+    await env.HUB_KV.put('sess:' + token, JSON.stringify(info), { expiration: Math.floor(info.expires / 1000), metadata: info });
+  }
 }
 
 export async function endSessions(env, test) {

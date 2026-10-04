@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Your email address · JB Revision</title>
+  <meta name="robots" content="noindex">
+  <meta name="color-scheme" content="light dark">
+  <script>try { var t = localStorage.getItem('hub-theme'); if (t) document.documentElement.setAttribute('data-theme', t); } catch (e) {}</script>
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="favicon-32.png" sizes="32x32" type="image/png">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <link rel="stylesheet" href="fonts.css?v=2">
+  <link rel="stylesheet" href="hub.css?v=2">
+</head>
+<body>
+  <main class="login">
+    <form class="login-card verify" novalidate>
+      <img class="login-logo" src="favicon.svg" alt="" width="72" height="72">
+      <h1>Your email address</h1>
+      <p class="login-sub">Loading…</p>
+      <p class="verify-text" hidden></p>
+      <label class="v-email" hidden>Email address <input name="email" type="email" autocomplete="email" inputmode="email" autocapitalize="off" spellcheck="false"></label>
+      <label class="v-code" hidden>6-digit code <input name="code" inputmode="numeric" autocomplete="one-time-code" maxlength="7" pattern="[0-9 ]*"></label>
+      <p class="login-error" role="alert"></p>
+      <button type="submit" hidden>Send code</button>
+      <p class="login-switch verify-links" hidden></p>
+      <p class="login-legal"><a href="/privacy">Privacy Policy</a> · <a href="/terms">Terms</a> · <a href="mailto:contact@jbrevision.co.uk">Contact</a></p>
+    </form>
+  </main>
+  <script src="verify.js"></script>
+</body>
+</html>

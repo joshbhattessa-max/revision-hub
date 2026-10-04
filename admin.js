@@ -290,15 +290,22 @@
 
   // ------------------------------------------------------------------ accounts
   var abox = document.getElementById('tab-accounts');
+  // an account's email address: checked (typed in the code emailed to it), not checked yet, or none
+  function emailCell(a) {
+    if (!a.email) return '<span class="muted">' + (a.mustVerify ? 'none yet' : 'none') + '</span>';
+    return esc(a.email) + ' <span class="' + (a.emailVerified ? 'em-ok' : 'muted') + '">' + (a.emailVerified ? '✓ checked' : 'not checked yet') + '</span>';
+  }
   function loadAccounts() {
     api('GET', 'accounts').then(function (list) {
-      abox.innerHTML = '<div class="tablewrap"><table><thead><tr><th>Account</th><th>Role</th><th>Signed in now</th><th></th></tr></thead><tbody>' +
+      abox.innerHTML = '<div class="tablewrap"><table><thead><tr><th>Account</th><th>Role</th><th>Email</th><th>Signed in now</th><th></th></tr></thead><tbody>' +
         list.map(function (a) {
           return '<tr data-id="' + esc(a.id) + '"><td>' + esc(a.username) + (a.you ? ' <span class="muted">(you)</span>' : '') + '</td>' +
             '<td><select class="role"' + (a.you ? ' disabled' : '') + '><option value="user"' + (a.role === 'user' ? ' selected' : '') + '>Standard</option>' +
-            '<option value="admin"' + (a.role === 'admin' ? ' selected' : '') + '>Admin</option></select></td><td>' + a.signedIn + '</td><td><div class="row">' +
+            '<option value="admin"' + (a.role === 'admin' ? ' selected' : '') + '>Admin</option></select></td><td>' + emailCell(a) + '</td><td>' + a.signedIn + '</td><td><div class="row">' +
             '<button type="button" class="small pw">Change password</button><button type="button" class="small rename">Rename</button>' +
             '<button type="button" class="small out"' + (a.signedIn ? '' : ' disabled') + '>Sign out everywhere</button>' +
+            (a.mustVerify ? '<button type="button" class="small excuse" title="Let this account use the site without checking its email address">Excuse email check</button>' : '') +
+            (a.email ? '<button type="button" class="small noemail">Remove email</button>' : '') +
             (a.you ? '' : '<button type="button" class="small danger del">Delete</button>') + '</div></td></tr>';
         }).join('') + '</tbody></table></div>' +
         '<h2>Add an account</h2><div class="box"><div class="row"><input type="text" class="nu grow" placeholder="Username" autocomplete="off">' +
@@ -316,6 +323,11 @@
         });
         tr.querySelector('.rename').addEventListener('click', function () {
           ask('New username for ' + a.username + ':', a.username).then(function (v) { if (v && v.trim()) patch({ username: v.trim() }, 'Renamed.'); });
+        });
+        var ex = tr.querySelector('.excuse'), ne = tr.querySelector('.noemail');
+        if (ex) ex.addEventListener('click', function () { patch({ excuse: true }, a.username + ' can now use the site without checking an email address.'); });
+        if (ne) ne.addEventListener('click', function () {
+          if (confirm('Remove the email address of ' + a.label + '? They can add one again from the menu under their name.')) patch({ email: '' }, 'Email address removed.');
         });
         tr.querySelector('.out').addEventListener('click', function () {
           api('POST', 'sessions/end', { accountId: id }).then(function (d) { say(d.ended + ' session(s) signed out.'); loadAccounts(); });

@@ -56,6 +56,15 @@ The **Maintenance mode** button at the top of the admin console (or its **Mainte
 
 Until `HUB_KV` is bound, the hub shows a "Sign-in isn't set up yet" page instead of the site. It fails closed, never open.
 
+## Email addresses
+
+New accounts give an email address when they sign up and have to type in a 6-digit code emailed to it before they can use the site (`/verify`). Older accounts are only reminded on the home page ("Add email", or "Not now" for 30 days). With a checked address, "Forgot your password?" on the sign-in page emails a code and lets you choose a new password. Codes work once, for 15 minutes and 5 tries; only a scrambled version is kept.
+
+- Emails go through [Resend](https://resend.com) (free: 100 a day; the site stops at 90). Add the domain `jbrevision.co.uk` in Resend, then put an API key with *Sending access* in the Pages project as the secret `RESEND_API_KEY` (*Settings → Variables and Secrets*). It takes effect at the next deployment.
+- Without that secret nothing is sent, nobody is made to check an address and "Forgot your password?" is hidden: the site works as before.
+- The admin console's Accounts tab shows each address and whether it's checked, and can excuse an account from checking or remove its address.
+- Code: `functions/_lib/email.js`, `functions/api/email/[[route]].js`, `functions/api/reset.js`, `verify.html`/`verify.js`, and the email box and "Forgot your password?" in `login.js`.
+
 ## The address
 
 The hub lives at `jbrevision.co.uk` (bought through Cloudflare Registrar and added under the Pages project's *Custom domains*, with `www.jbrevision.co.uk` as well). Every subject is at `jbrevision.co.uk/chemistry/` and so on.

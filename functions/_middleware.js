@@ -4,15 +4,18 @@ import { maintenance, maintenancePage } from './_lib/maintenance.js';
 import { notFoundPage } from './_lib/notfound.js';
 import { keySession } from './_lib/keys.js';
 import { NEW_SITE, isOldAddress, movedPage } from './_lib/moved.js';
+import { canSend } from './_lib/email.js';
 
 // what the login page itself needs
 const OPEN = new Set(['/login', '/login.html', '/login.js', '/hub.css', '/fonts.css', '/favicon.svg', '/favicon-32.png',
   '/apple-touch-icon.png', '/og.png', '/sitemap.xml', '/api/login', '/api/signup', '/api/status',
-  '/privacy', '/privacy.html', '/terms', '/terms.html', '/consent.js']);
+  '/privacy', '/privacy.html', '/terms', '/terms.html', '/consent.js', '/api/reset']);
 // what still works for everyone during maintenance (so an admin can sign in)
 const DURING_MAINTENANCE = new Set(['/og.png', '/sitemap.xml', '/login.js', '/hub.css', '/fonts.css', '/favicon.svg', '/favicon-32.png', '/apple-touch-icon.png',
   '/api/login', '/api/logout', '/api/status', '/privacy', '/privacy.html', '/terms', '/terms.html']);
 const ADMIN = p => p === '/admin' || p === '/admin.html' || p === '/admin.js' || p.startsWith('/api/admin/');
+// all a new account can reach until it has checked its email address (the page that does it, and leaving)
+const UNCHECKED = p => ['/verify', '/verify.html', '/verify.js', '/api/me', '/api/logout'].includes(p) || p.startsWith('/api/email/');
 
 const SETUP = `<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Setup needed</title><body style="font:16px/1.5 system-ui,sans-serif;max-width:560px;margin:60px auto;padding:0 16px">
@@ -63,6 +66,10 @@ export async function onRequest(ctx) {
   if (!session) {
     if (path.startsWith('/api/')) return json({ error: 'Signed out' }, 401);
     return Response.redirect(`${url.origin}/login?next=${encodeURIComponent(url.pathname + url.search)}`, 302);
+  }
+  if (session.mustVerify && canSend(ctx.env) && !UNCHECKED(path)) {
+    if (path.startsWith('/api/')) return json({ error: 'Check your email address first.', verify: true }, 403);
+    return Response.redirect(`${url.origin}/verify?next=${encodeURIComponent(url.pathname + url.search)}`, 302);
   }
   if (ADMIN(path) && session.role !== 'admin') {
     return path.startsWith('/api/') ? json({ error: 'Admin only' }, 403) : Response.redirect(url.origin + '/', 302);

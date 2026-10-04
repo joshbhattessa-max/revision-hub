@@ -17,7 +17,7 @@
       (me ? '<nav class="top-links" aria-label="Your study"><a class="btn-quiet" href="/progress">Your progress</a><a class="btn-quiet" href="/planner">Revision planner</a>' +
         (me.role === 'admin' ? '<a class="btn-quiet admin-link" href="/admin">Admin console</a>' : '') + '</nav>' : '') +
       '<div class="top-actions">' +
-      (me ? userMenu(me) : '') + TOGGLE + '</div></header>';
+      (me ? userMenu(me) : '') + TOGGLE + '</div></header>' + emailNudge(me);
 
     h += '<h2>Subjects</h2><div class="grid">';
     (data.sites || []).forEach(function (s) {
@@ -44,7 +44,7 @@
     });
     h += '<footer><p>Past papers and mark schemes are © their exam boards. For personal revision.</p><nav class="site-foot" aria-label="About this site"><a href="/privacy">Privacy Policy</a><a href="/terms">Terms and Conditions</a><a href="#" data-cookie-settings>Cookie settings</a><a href="mailto:contact@jbrevision.co.uk">Contact</a></nav></footer></div>';
     document.getElementById('app').innerHTML = h;
-    if (me) { wireUserMenu(); hello(me); }
+    if (me) { wireUserMenu(); hello(me); wireNudge(); }
     var btn = document.querySelector('.theme-toggle');
     btn.addEventListener('click', function () { toggleTheme(btn); });
     syncToggle();
@@ -64,6 +64,7 @@
       '<div class="user-pop"><div class="user-card" role="menu">' +
       '<div class="user-head"><b>' + esc(me.username) + '</b><span>Signed in until ' + until + '</span></div>' +
       (me.role === 'admin' ? '<a role="menuitem" href="/admin">Admin console</a>' : '') +
+      (me.email ? '<a role="menuitem" href="/verify?next=/">' + (me.email.verified ? 'Change email' : 'Add email') + '</a>' : '') +
       (me.viaKey ? '' : '<button type="button" role="menuitem" data-act="password">Change password</button>') +
       '<button type="button" role="menuitem" data-act="logout">Log out</button>' +
       (me.viaKey ? '' : '<button type="button" role="menuitem" data-act="delete" class="danger">Delete account</button>') +
@@ -83,6 +84,22 @@
       if (!b) return;
       setOpen(false); box.classList.add('shut');
       ({ password: changePassword, logout: logOut, delete: deleteAccount })[b.getAttribute('data-act')]();
+    });
+  }
+
+  // a reminder for accounts made before email addresses were asked for; "Not now" hides it for 30 days
+  var LATER = 'jbr-email-later';
+  function emailNudge(me) {
+    if (!me || !me.email || me.email.verified) return '';
+    try { if (Date.now() - Number(localStorage.getItem(LATER) || 0) < 30 * 864e5) return ''; } catch (e) { /* storage blocked */ }
+    return '<div class="email-nudge" role="note"><span>Add your email address so you can reset your password if you ever forget it.</span>' +
+      '<a class="btn-quiet" href="/verify?next=/">Add email</a><button type="button" class="btn-quiet nudge-later">Not now</button></div>';
+  }
+  function wireNudge() {
+    var b = document.querySelector('.nudge-later');
+    if (b) b.addEventListener('click', function () {
+      try { localStorage.setItem(LATER, String(Date.now())); } catch (e) { /* storage blocked */ }
+      b.parentNode.remove();
     });
   }
 

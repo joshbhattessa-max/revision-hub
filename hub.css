@@ -447,3 +447,24 @@ footer p { margin: 0 0 8px; }
 .legal-foot { margin-top: 40px; padding-top: 16px; border-top: 1px solid var(--line); }
 .site-foot a, .legal-foot a { color: var(--muted); }
 .site-foot a:hover, .legal-foot a:hover { color: var(--ink); }
+
+/* email addresses: the extra rows on the sign-in page, the "check your email" page and the reminder on the home page */
+.login-card [hidden] { display: none !important; }
+.login-card { min-width: 0; }
+.login-card input, .login-card select { width: 100%; min-width: 0; box-sizing: border-box; }
+.login-hint, .verify-text { margin: 0; font-size: .9rem; color: var(--muted); text-align: center; line-height: 1.45; }
+.verify-text b { color: var(--ink); overflow-wrap: anywhere; }
+.login-forgot { margin: -4px 0 0; text-align: center; font-size: .85rem; }
+.login-forgot a, .verify-links a { color: var(--ink); }
+.login-card select { font: inherit; font-weight: 400; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line);
+  background: var(--bg); color: var(--ink); }
+.f-code input, .v-code input { font-size: 1.35rem; letter-spacing: .3em; text-align: center; font-variant-numeric: tabular-nums; }
+.verify-links { line-height: 1.8; }
+.verify-links a.wait { color: var(--muted); pointer-events: none; text-decoration: none; }
+.em-ok { color: #23824a; font-weight: 600; white-space: nowrap; }
+:root[data-theme="dark"] .em-ok { color: #6fcf8a; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .em-ok { color: #6fcf8a; } }
+.email-nudge { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 0 0 24px; padding: 12px 14px; background: var(--card);
+  border: 1px solid var(--line); border-left: 4px solid #17A398; border-radius: 12px; font-size: .92rem; }
+.email-nudge span { flex: 1 1 260px; }
+@media (max-width: 480px) { .email-nudge .btn-quiet { flex: 1 1 0; } }

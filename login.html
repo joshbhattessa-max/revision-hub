@@ -30,10 +30,17 @@
       <img class="login-logo" src="favicon.svg" alt="" width="72" height="72">
       <h1>JB Revision</h1>
       <p class="login-sub">Sign in</p>
-      <label>Username <input name="username" autocomplete="username" autocapitalize="off" spellcheck="false" required></label>
-      <label>Password <input name="password" type="password" autocomplete="current-password" required></label>
+      <p class="login-hint" hidden></p>
+      <label class="f-user">Username <input name="username" autocomplete="username" autocapitalize="off" spellcheck="false" required></label>
+      <label class="f-email" hidden>Email address <input name="email" type="email" autocomplete="email" inputmode="email" autocapitalize="off" spellcheck="false"></label>
+      <label class="f-pass">Password <input name="password" type="password" autocomplete="current-password" required></label>
+      <label class="f-code" hidden>6-digit code <input name="code" inputmode="numeric" autocomplete="one-time-code" maxlength="7"></label>
+      <label class="f-acct" hidden>Account <select name="acct"></select></label>
+      <label class="f-new" hidden>New password <input name="newpass" type="password" autocomplete="new-password" placeholder="At least 6 characters"></label>
+      <label class="f-again" hidden>New password again <input name="again" type="password" autocomplete="new-password"></label>
       <p class="login-error" role="alert"></p>
       <button type="submit">Sign in</button>
+      <p class="login-forgot" hidden><a href="#forgot">Forgot your password?</a></p>
       <p class="login-switch"><span>New here?</span> <a href="#signup">Create an account</a></p>
       <p class="login-note">You stay signed in for 6 hours.</p>
       <p class="login-agree" hidden>By creating an account you agree to the <a href="/terms">Terms and Conditions</a> and the <a href="/privacy">Privacy Policy</a>.</p>
