@@ -77,7 +77,7 @@ Email Routing sends every email for `contact@` to the **jbr-mail** Worker (`mail
 
 Every email is logged in KV (`mail:…`, kept a year; one-time links are never stored) and shown in the admin console's **Inbox** tab. The AI only suggests; it can't make the site do anything else, and without it (or if it fails) simple word-matching sends anything unclear to the owner. If `/api/inbound` can't be reached, the Worker forwards the email to the owner unchanged.
 
-Setup: the Pages project needs a Workers AI binding named `AI` and a secret `MAIL_SECRET`; the Worker needs the same `MAIL_SECRET` and `OWNER_EMAIL` (a verified Email Routing destination); the `contact` routing rule's action is *Send to a Worker → jbr-mail*.
+Setup: the Pages project needs a Workers AI binding named `AI` and a secret `MAIL_SECRET`; the Worker needs the same `MAIL_SECRET` and `OWNER_EMAIL` (a verified Email Routing destination), added as type *Secret* (`keep_vars` in `mail-worker/wrangler.toml` also keeps *Text* ones through deploys); the `contact` routing rule's action is *Send to a Worker → jbr-mail*. If the site can't take an email, the Worker forwards it to `OWNER_EMAIL` with an `X-JBR-Assistant` header saying why; with no `OWNER_EMAIL` it bounces it back to the sender.
 
 ## The address
 

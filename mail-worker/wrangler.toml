@@ -1,7 +1,9 @@
 # The email Worker for contact@jbrevision.co.uk (see index.js). Deployed by Cloudflare from this folder of the
 # revision-hub repository (Workers & Pages → jbr-mail → Settings → Build: root directory "mail-worker").
-# Its two secrets are set in the dashboard and aren't touched by deploys.
+# Its two settings (MAIL_SECRET, OWNER_EMAIL) are set in the dashboard. Type "Secret" is never touched by deploys;
+# keep_vars stops a deploy wiping them if they were added as type "Text".
 name = "jbr-mail"
 main = "index.js"
 compatibility_date = "2026-10-01"
 workers_dev = false
+keep_vars = true
