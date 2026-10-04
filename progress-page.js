@@ -60,7 +60,7 @@
             '</td><td>' + Math.round(m.pct * 100) + '%</td><td>' + esc(m.grade || '–') + '</td></tr>';
         }).join('') + '</tbody></table></section>'));
     }
-    root.appendChild(el('<footer><p>Only the questions you\'ve done and the mock papers you\'ve handed in are saved, to your account. Each question keeps its last 8 attempts.</p><nav class="site-foot" aria-label="About this site"><a href="/privacy">Privacy Policy</a><a href="/terms">Terms and Conditions</a><a href="#" data-cookie-settings>Cookie settings</a></nav></footer>'));
+    root.appendChild(el('<footer><p>Only the questions you\'ve done and the mock papers you\'ve handed in are saved, to your account. Each question keeps its last 8 attempts.</p><nav class="site-foot" aria-label="About this site"><a href="/privacy">Privacy Policy</a><a href="/terms">Terms and Conditions</a><a href="#" data-cookie-settings>Cookie settings</a><a href="mailto:contact@jbrevision.co.uk">Contact</a></nav></footer>'));
     app.innerHTML = '';
     app.appendChild(root);
     window.scrollTo(0, y);
