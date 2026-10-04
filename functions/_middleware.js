@@ -33,7 +33,8 @@ export async function onRequest(ctx) {
   // address (josh-b-revision.pages.dev) no longer works: every page there is the "we've moved" popup and its API
   // answers 410 Gone
   if (url.hostname === 'www.jbrevision.co.uk') return Response.redirect(NEW_SITE + url.pathname + url.search, 301);
-  if (isOldAddress(url.hostname)) {
+  // (the email Worker may hand emails over at the old address: that one endpoint still works there, with its secret)
+  if (isOldAddress(url.hostname) && path !== '/api/inbound') {
     const headers = { 'cache-control': 'no-store', 'x-robots-tag': 'noindex' };
     if (path.startsWith('/api/')) return json({ error: 'This site has moved to ' + NEW_SITE, moved: NEW_SITE }, 410, headers);
     return new Response(movedPage(url), { status: 410, headers: { ...headers, 'content-type': 'text/html; charset=utf-8' } });

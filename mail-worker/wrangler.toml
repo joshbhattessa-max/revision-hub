@@ -7,3 +7,9 @@ main = "index.js"
 compatibility_date = "2026-10-01"
 workers_dev = false
 keep_vars = true
+# requests to jbrevision.co.uk go through Cloudflare's front door like anyone else's, so they reach the site
+compatibility_flags = ["global_fetch_strictly_public"]
+
+# what happened to each email shows under Workers & Pages → jbr-mail → Logs
+[observability]
+enabled = true
