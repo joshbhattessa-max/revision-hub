@@ -686,7 +686,7 @@
       past.forEach(function (e) { ps.querySelector('.pl-evs').appendChild(eventCard(e)); });
       root.appendChild(ps);
     }
-    root.appendChild(el('<footer><p>Saved to your account, so it\'s the same on every device. Past papers and mark schemes are © their exam boards.</p><nav class="site-foot" aria-label="About this site"><a href="/privacy">Privacy Policy</a><a href="/terms">Terms and Conditions</a><a href="#" data-cookie-settings>Cookie settings</a><a href="mailto:contact@jbrevision.co.uk">Contact</a></nav></footer>'));
+    root.appendChild(el('<footer><p>Saved to your account, so it\'s the same on every device. Past papers and mark schemes are © their exam boards.</p><nav class="site-foot" aria-label="About this site"><a href="/privacy">Privacy Policy</a><a href="/terms">Terms and Conditions</a><a href="#" data-cookie-settings>Cookie settings</a><span class="foot-email">contact@jbrevision.co.uk</span></nav></footer>'));
     root.querySelector('.add').addEventListener('click', function () { editor(null); });
     var cal = root.querySelector('.cal');
     if (cal) cal.addEventListener('click', ics);

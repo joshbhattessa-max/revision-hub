@@ -42,7 +42,7 @@
       });
       h += '</div>';
     });
-    h += '<footer><p>Past papers and mark schemes are © their exam boards. For personal revision.</p><nav class="site-foot" aria-label="About this site"><a href="/privacy">Privacy Policy</a><a href="/terms">Terms and Conditions</a><a href="#" data-cookie-settings>Cookie settings</a><a href="mailto:contact@jbrevision.co.uk">Contact</a></nav></footer></div>';
+    h += '<footer><p>Past papers and mark schemes are © their exam boards. For personal revision.</p><nav class="site-foot" aria-label="About this site"><a href="/privacy">Privacy Policy</a><a href="/terms">Terms and Conditions</a><a href="#" data-cookie-settings>Cookie settings</a><span class="foot-email">contact@jbrevision.co.uk</span></nav></footer></div>';
     document.getElementById('app').innerHTML = h;
     if (me) { wireUserMenu(); hello(me); wireNudge(); }
     var btn = document.querySelector('.theme-toggle');

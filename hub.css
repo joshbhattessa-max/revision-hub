@@ -487,6 +487,9 @@ a.pl-chip:hover { border-color: var(--ink); }
 .legal-foot { margin-top: 40px; padding-top: 16px; border-top: 1px solid var(--line); }
 .site-foot a, .legal-foot a { color: var(--muted); }
 .site-foot a:hover, .legal-foot a:hover { color: var(--ink); }
+/* the contact address is shown, not linked: one tap selects all of it to copy */
+.foot-email { color: var(--muted); user-select: all; -webkit-user-select: all; }
+.email { font-weight: 600; user-select: all; -webkit-user-select: all; }
 
 /* email addresses: the extra rows on the sign-in page, the "check your email" page and the reminder on the home page */
 .login-card [hidden] { display: none !important; }
