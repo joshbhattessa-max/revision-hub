@@ -58,7 +58,7 @@ async function send(env, to, code, reset) {
   return sendMail(env, { to, subject, text, html });
 }
 
-// any email from the site (codes, the assistant's replies, notes to the owner); counts towards the daily budget
+// any email from the site (the 6-digit codes); counts towards the daily budget
 export async function sendMail(env, { to, subject, text, html, from, replyTo, headers }) {
   if (!canSend(env)) return false;
   if (!await spend(env)) return false;

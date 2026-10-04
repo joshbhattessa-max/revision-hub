@@ -47,59 +47,12 @@
   });
   function show(name) {
     Array.prototype.forEach.call(tabs, function (b) { b.classList.toggle('on', b.getAttribute('data-tab') === name); });
-    ['content', 'sessions', 'accounts', 'maintenance', 'usage', 'inbox'].forEach(function (n) { document.getElementById('tab-' + n).hidden = n !== name; });
+    ['content', 'sessions', 'accounts', 'maintenance', 'usage'].forEach(function (n) { document.getElementById('tab-' + n).hidden = n !== name; });
     say('');
     if (name === 'sessions') loadSessions();
     if (name === 'accounts') loadAccounts();
     if (name === 'maintenance') loadMaintenance();
     if (name === 'usage') loadUsage();
-    if (name === 'inbox') loadInbox();
-  }
-
-  // ------------------------------------------------------------------ inbox: emails to contact@ and what the assistant did
-  var ibox = document.getElementById('tab-inbox');
-  var DID = { answered: ['Answered', 'ok'], 'sent-reset-link': ['Sent a reset link', 'ok'], 'sent-email-change-link': ['Sent an email-change link', 'ok'],
-    'to-owner': ['Passed to you', 'you'], ignored: ['Ignored (spam or automatic)', 'muted'], error: ['Problem: passed to you', 'you'] };
-  function did(o) { var d = DID[o] || [o || '?', 'muted']; return '<span class="in-tag in-' + d[1] + '">' + esc(d[0]) + '</span>'; }
-  function when(t) { return new Date(t).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }); }
-  function loadInbox(cursor) {
-    api('GET', 'inbox' + (cursor ? '?cursor=' + encodeURIComponent(cursor) : '')).then(function (d) {
-      var rows = d.items.map(function (m) {
-        return '<tr data-key="' + esc(m.key) + '"><td>' + when(m.at) + '</td><td>' + esc(m.from) + '</td><td>' + esc(m.subject || '(no subject)') + '</td><td>' + did(m.outcome) +
-          '</td><td><button type="button" class="small open">Open</button></td></tr>';
-      }).join('');
-      var head = '<div class="box"><p class="muted">Emails sent to contact@jbrevision.co.uk, newest first. The assistant answers what it can and emails you the rest ("Passed to you"). Each one is kept for a year.</p></div>';
-      var table = d.items.length ? '<div class="tablewrap"><table><thead><tr><th>When</th><th>From</th><th>Subject</th><th>What happened</th><th></th></tr></thead><tbody>' + rows + '</tbody></table></div>'
-        : '<p class="muted">No emails yet.</p>';
-      if (!cursor) ibox.innerHTML = head + table + '<div class="in-more"></div><div class="in-detail"></div>';
-      else ibox.querySelector('.in-more').insertAdjacentHTML('beforebegin', table);
-      var more = ibox.querySelector('.in-more');
-      more.innerHTML = d.cursor ? '<button type="button" class="small">Older emails</button>' : '';
-      if (d.cursor) more.querySelector('button').addEventListener('click', function () { loadInbox(d.cursor); });
-      Array.prototype.forEach.call(ibox.querySelectorAll('tr[data-key] .open'), function (b) {
-        b.onclick = function () { openMail(b.closest('tr').getAttribute('data-key')); };
-      });
-    }).catch(function (e) { say(e.message, true); });
-  }
-  function openMail(key) {
-    var box = ibox.querySelector('.in-detail');
-    api('GET', 'inbox/' + key).then(function (m) {
-      box.innerHTML = '<h2>' + esc(m.subject || '(no subject)') + '</h2><div class="box in-mail">' +
-        '<p><b>From</b> ' + esc(m.name ? m.name + ' <' + m.from + '>' : m.from) + ' · ' + when(m.at) + '</p>' +
-        '<p><b>What they want</b> ' + esc(m.summary || '?') + ' <span class="muted">(' + esc(m.intent || '?') + (m.by ? ', read by ' + esc(m.by) : '') + ')</span></p>' +
-        '<p><b>What happened</b> ' + did(m.outcome) + (m.toOwner ? ' <span class="muted">· emailed to you' + (m.ownerEmailed === false ? ' (that email failed)' : '') + '</span>' : '') + '</p>' +
-        (m.error ? '<p class="err">' + esc(m.error) + '</p>' : '') +
-        (m.ai ? '<p class="muted">AI: ' + esc(m.ai) + '</p>' : '') +
-        '<h3>Their email</h3><pre class="in-text">' + esc(m.text || '') + '</pre>' +
-        (m.replies || []).map(function (r) { return '<h3>Reply sent to ' + esc(r.to) + (r.ok ? '' : ' (failed)') + '</h3><pre class="in-text">' + esc(r.text) + '</pre>'; }).join('') +
-        '<div class="row"><a class="btn-main" href="mailto:' + esc(m.from) + '?subject=' + encodeURIComponent('Re: ' + (m.subject || '')) + '">Reply</a>' +
-        '<button type="button" class="small danger in-del">Delete from the log</button></div></div>';
-      box.querySelector('.in-del').addEventListener('click', function () {
-        if (!confirm('Delete this email from the log?')) return;
-        api('DELETE', 'inbox/' + key).then(function () { say('Deleted.'); loadInbox(); });
-      });
-      box.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }).catch(function (e) { say(e.message, true); });
   }
 
   // on a phone each table row becomes a card, with the column name before each value

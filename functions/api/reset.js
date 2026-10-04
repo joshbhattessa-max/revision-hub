@@ -4,7 +4,6 @@
 //                                                        which addresses have accounts.
 //   POST /api/reset {step: 'check', email, code}         -> {token, accounts: [{id, username, role}]}
 //   POST /api/reset {step: 'set', token, id, password}   the new password; that account is signed out everywhere
-//   POST /api/reset {step: 'peek', token}                 -> {accounts} for a reset link emailed by the assistant
 import { endSessions, getAccounts, hashPassword, json, noteFailure, randomToken, saveAccounts, tooManyFailures } from '../_lib/auth.js';
 import { canSend, checkCode, cleanEmail, emailCode, overLimit, validEmail } from '../_lib/email.js';
 import { sha256 } from '../_lib/keys.js';
@@ -36,13 +35,6 @@ export async function onRequestPost({ env, request }) {
     const token = randomToken();
     await env.HUB_KV.put('rtok:' + token, JSON.stringify({ ids: who.map(a => a.id) }), { expirationTtl: 600 });
     return json({ token, accounts: who.map(a => ({ id: a.id, username: a.username, role: a.role })) });
-  }
-
-  if (body.step === 'peek') {
-    const t = /^[0-9a-f]{64}$/.test(String(body.token)) && await env.HUB_KV.get('rtok:' + body.token, 'json');
-    if (!t) return json({ error: 'This link has already been used or has run out. Use "Forgot your password?" to get a new one.' }, 400);
-    const list = await getAccounts(env);
-    return json({ accounts: list.filter(a => t.ids.includes(a.id)).map(a => ({ id: a.id, username: a.username, role: a.role })) });
   }
 
   if (body.step === 'set') {

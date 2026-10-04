@@ -136,17 +136,6 @@
     busy(false, 'Set new password');
     form.newpass.focus();
   }
-  // a one-time link from an email (…/login?reset=…) goes straight to choosing a new password
-  var link = new URLSearchParams(location.search).get('reset') || '';
-  if (/^[0-9a-f]{64}$/.test(link)) {
-    history.replaceState(null, '', location.pathname);
-    post('/api/reset', { step: 'peek', token: link }).then(function (d) {
-      setMode('forgot');
-      reset = { email: '-', token: link };
-      chooseNew(d.accounts, 'Reset link checked.');
-    }).catch(function (e2) { setMode('signin', e2.message); });
-  }
-
   // six digits typed (or pasted from the email): check straight away
   form.code.addEventListener('input', function () {
     if (name === 'forgot' && reset.email && !reset.token && !btn.disabled && form.code.value.replace(/\D/g, '').length === 6) forgotStep();

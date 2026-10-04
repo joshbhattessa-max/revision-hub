@@ -10,8 +10,6 @@
 //   GET    /api/admin/maintenance    PUT /api/admin/maintenance {on, message}
 //   GET    /api/admin/keys    POST /api/admin/keys {label} -> {key} (shown once)    DELETE /api/admin/keys/:id
 //   GET    /api/admin/usage?days=30           usage statistics (from visitors who accepted them) and cookie choices
-//   GET    /api/admin/inbox?cursor=            emails to contact@ and what the assistant did, newest first (50 at a time)
-//   GET    /api/admin/inbox/:key    DELETE /api/admin/inbox/:key
 //   GET    /api/admin/deploylog                  the deployment log: how many, the last sync, the latest few
 //   POST   /api/admin/deploylog                  {entries: [...], done: {repo: [shas]}} adds or fills in deployments
 //   POST   /api/admin/deploylog/sync             checks GitHub for new deployments now
@@ -49,16 +47,6 @@ export async function onRequest(ctx) {
     return json({ ended: n });
   }
 
-  if (route === 'inbox' && method === 'GET') {
-    const page = await env.HUB_KV.list({ prefix: 'mail:', limit: 50, cursor: new URL(request.url).searchParams.get('cursor') || undefined });
-    return json({ items: page.keys.map(k => ({ key: k.name, ...(k.metadata || {}) })), cursor: page.list_complete ? null : page.cursor });
-  }
-  const mailKey = decodeURIComponent(route).match(/^inbox\/(mail:[\w:]+)$/);
-  if (mailKey && method === 'GET') {
-    const m = await env.HUB_KV.get(mailKey[1], 'json');
-    return m ? json(m) : json({ error: 'Not found.' }, 404);
-  }
-  if (mailKey && method === 'DELETE') { await env.HUB_KV.delete(mailKey[1]); return json({ ok: true }); }
   if (route === 'usage' && method === 'GET') return json(await usage(env, Number(new URL(request.url).searchParams.get('days')) || 30));
   if (route === 'accounts' && method === 'GET') {
     const sessions = await listSessions(env);

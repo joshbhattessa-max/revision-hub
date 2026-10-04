@@ -9,11 +9,10 @@ import { canSend } from './_lib/email.js';
 // what the login page itself needs
 const OPEN = new Set(['/login', '/login.html', '/login.js', '/hub.css', '/fonts.css', '/favicon.svg', '/favicon-32.png',
   '/apple-touch-icon.png', '/og.png', '/sitemap.xml', '/api/login', '/api/signup', '/api/status',
-  '/privacy', '/privacy.html', '/terms', '/terms.html', '/consent.js', '/api/reset',
-  '/confirm', '/confirm.html', '/confirm.js', '/api/confirm', '/api/inbound']);
+  '/privacy', '/privacy.html', '/terms', '/terms.html', '/consent.js', '/api/reset']);
 // what still works for everyone during maintenance (so an admin can sign in)
 const DURING_MAINTENANCE = new Set(['/og.png', '/sitemap.xml', '/login.js', '/hub.css', '/fonts.css', '/favicon.svg', '/favicon-32.png', '/apple-touch-icon.png',
-  '/api/login', '/api/logout', '/api/status', '/privacy', '/privacy.html', '/terms', '/terms.html', '/api/inbound']);
+  '/api/login', '/api/logout', '/api/status', '/privacy', '/privacy.html', '/terms', '/terms.html']);
 const ADMIN = p => p === '/admin' || p === '/admin.html' || p === '/admin.js' || p.startsWith('/api/admin/') || p.startsWith('/v/');
 // the deployment log's CSV and PDF records for the owner's Google Sheet: no sign-in (Google fetches them), the key in
 // the address protects them (functions/deploys/)
@@ -33,8 +32,7 @@ export async function onRequest(ctx) {
   // address (josh-b-revision.pages.dev) no longer works: every page there is the "we've moved" popup and its API
   // answers 410 Gone
   if (url.hostname === 'www.jbrevision.co.uk') return Response.redirect(NEW_SITE + url.pathname + url.search, 301);
-  // (the email Worker may hand emails over at the old address: that one endpoint still works there, with its secret)
-  if (isOldAddress(url.hostname) && path !== '/api/inbound') {
+  if (isOldAddress(url.hostname)) {
     const headers = { 'cache-control': 'no-store', 'x-robots-tag': 'noindex' };
     if (path.startsWith('/api/')) return json({ error: 'This site has moved to ' + NEW_SITE, moved: NEW_SITE }, 410, headers);
     return new Response(movedPage(url), { status: 410, headers: { ...headers, 'content-type': 'text/html; charset=utf-8' } });
@@ -47,8 +45,6 @@ export async function onRequest(ctx) {
   if (path === '/google4ee74d39786946b2.html') {
     return new Response('google-site-verification: google4ee74d39786946b2.html', { headers: { 'content-type': 'text/html; charset=utf-8' } });
   }
-  // the email Worker's code lives in this repository but isn't part of the site
-  if (path.startsWith('/mail-worker')) return new Response('Not found', { status: 404 });
   let session = await getSession(ctx.env, ctx.request), keyCookie = null;
   // agents can use an access key instead of the login form (a standard, non-admin sign-in)
   if (!session) {

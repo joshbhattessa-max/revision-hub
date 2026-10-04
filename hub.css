@@ -469,11 +469,3 @@ footer p { margin: 0 0 8px; }
 .email-nudge span { flex: 1 1 260px; }
 @media (max-width: 480px) { .email-nudge .btn-quiet { flex: 1 1 0; } }
 
-/* admin console: the Inbox tab (emails to contact@ and what the assistant did) */
-.in-tag { display: inline-block; font-size: .78rem; font-weight: 600; border-radius: 999px; padding: 2px 9px; white-space: nowrap; }
-.in-ok { background: #e6f4ea; color: #23824a; } .in-you { background: #fdeee0; color: #a85a12; } .in-muted { background: var(--bg); color: var(--muted); }
-:root[data-theme="dark"] .in-ok { background: #1d3325; color: #6fcf8a; } :root[data-theme="dark"] .in-you { background: #3a2a1a; color: #f0b072; }
-@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .in-ok { background: #1d3325; color: #6fcf8a; } :root:not([data-theme="light"]) .in-you { background: #3a2a1a; color: #f0b072; } }
-.in-mail p { margin: 0 0 8px; } .in-mail h3 { font-size: .95rem; margin: 14px 0 6px; }
-.in-text { white-space: pre-wrap; overflow-wrap: anywhere; font: inherit; font-size: .9rem; background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; margin: 0 0 8px; max-height: 360px; overflow: auto; }
-.in-more { margin: 10px 0; }
