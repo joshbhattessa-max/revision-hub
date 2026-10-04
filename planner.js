@@ -629,7 +629,7 @@
 
   // ------------------------------------------------------------------ calendar file
   function ics() {
-    var p = plan(), lines = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Josh B Revision//Planner//EN', 'CALSCALE:GREGORIAN'];
+    var p = plan(), lines = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//JB Revision//Planner//EN', 'CALSCALE:GREGORIAN'];
     var stamp = new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d+/, '');
     function ev(id, date, title, desc) {
       var dt = date.replace(/-/g, ''), next = addDays(date, 1).replace(/-/g, '');

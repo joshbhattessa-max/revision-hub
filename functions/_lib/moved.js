@@ -203,7 +203,7 @@ export function movedPage(url) {
   return `<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="robots" content="noindex"><meta name="color-scheme" content="light dark">
-<title>We've moved to jbrevision.co.uk · Josh B Revision</title>
+<title>We've moved to jbrevision.co.uk · JB Revision</title>
 <script>try { var t = localStorage.getItem('hub-theme'); if (t) document.documentElement.setAttribute('data-theme', t); } catch (e) {}</script>
 <link rel="icon" href="${ICON_SVG}" type="image/svg+xml">
 <link rel="icon" href="${NEW_SITE}/favicon-32.png" sizes="32x32" type="image/png">
@@ -240,7 +240,7 @@ a:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
 ${SCENE}
 <p class="tag">New address</p>
 <h1 id="mv-title">We've moved!</h1>
-<p>Josh B Revision has a new home at <b>jbrevision.co.uk</b>. This old address doesn't work any more, so please use the new one from now on and update your bookmarks.</p>
+<p>Josh B Revision is now <b>JB Revision</b>, with a new home at <b>jbrevision.co.uk</b>. This old address doesn't work any more, so please use the new one from now on and update your bookmarks.</p>
 <a class="go" id="go" href="${esc(to)}">Go to jbrevision.co.uk <span aria-hidden="true">→</span></a>
 <p class="note">You'll need to sign in once on the new site. Your progress is saved to your account, so it's all still there.</p>
 </main>

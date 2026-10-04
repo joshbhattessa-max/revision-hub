@@ -145,7 +145,7 @@ export function notFoundPage(path) {
   return `<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="robots" content="noindex"><meta name="color-scheme" content="light dark">
-<title>Page not found · Josh B Revision</title>
+<title>Page not found · JB Revision</title>
 <script>try { var t = localStorage.getItem('hub-theme'); if (t) document.documentElement.setAttribute('data-theme', t); } catch (e) {}</script>
 ${ICON_LINKS}
 <link rel="stylesheet" href="/fonts.css">

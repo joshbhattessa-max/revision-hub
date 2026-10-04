@@ -20,7 +20,7 @@
     form.password.setAttribute('autocomplete', mode.pw);
     form.password.placeholder = m === 'signup' ? 'At least 6 characters' : '';
     form.querySelector('.login-agree').hidden = m !== 'signup';
-    document.title = m === 'signup' ? 'Create an account · Josh B Revision' : 'Josh B Revision · GCSE and IGCSE past-paper questions';
+    document.title = m === 'signup' ? 'Create an account · JB Revision' : 'JB Revision · GCSE and IGCSE past-paper questions';
     err.textContent = '';
     form.username.focus();
   }

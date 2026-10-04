@@ -97,7 +97,7 @@
       '<label class="jbr-ck-opt"><input type="checkbox" checked disabled><div><b>Essential</b><span>Keep you signed in and remember this choice. The site can\'t work without them, so they\'re always on.</span></div></label>' +
       '<label class="jbr-ck-opt"><input type="checkbox" class="jbr-ck-stats"' + (cur && cur.stats ? ' checked' : '') + '><div><b>Usage statistics</b><span>Count which parts of the site are used and on what kind of device, under a random visitor number, never your name. Kept for 90 days.</span></div></label>' +
       '</div><div class="jbr-ck-btns"><button type="button" class="save">Save my choices</button><button type="button" class="alt all">Accept all</button></div>' :
-      '<h2>Cookies on Josh B Revision</h2>' +
+      '<h2>Cookies on JB Revision</h2>' +
       '<p>Essential cookies keep you signed in and save your progress. With your permission, we\'d also like to count which parts of the site are used, and on what kind of device, to make it better. That\'s anonymous: never your name or your answers. <a href="/privacy#cookies">Privacy Policy</a></p>' +
       '<div class="jbr-ck-btns"><button type="button" class="all">Accept all</button><button type="button" class="alt ess">Essential only</button><button type="button" class="link set">Settings</button></div>';
     document.body.appendChild(box);

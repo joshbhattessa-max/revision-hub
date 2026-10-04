@@ -41,7 +41,7 @@ export function maintenancePage(state) {
   return `<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="robots" content="noindex"><meta name="color-scheme" content="light dark">
-<title>Down for maintenance · Josh B Revision</title>
+<title>Down for maintenance · JB Revision</title>
 <script>try { var t = localStorage.getItem('hub-theme'); if (t) document.documentElement.setAttribute('data-theme', t); } catch (e) {}</script>
 ${ICON_LINKS}
 <style>
@@ -77,7 +77,7 @@ ${state.until ? `<div class="clock" role="timer" aria-live="off"><svg viewBox="0
 <main>
 ${SCENE}
 <h1>Down for maintenance</h1>
-<p>Josh B Revision is being updated with new questions and fixes. It'll be back in a few minutes, and this page will reload by itself when it is.</p>
+<p>JB Revision is being updated with new questions and fixes. It'll be back in a few minutes, and this page will reload by itself when it is.</p>
 ${state.message ? `<p class="note">${esc(state.message)}</p>` : ''}
 <button type="button" onclick="location.reload()">Try again</button>
 <a class="admin" href="/login?admin=1">Admin sign-in</a>
