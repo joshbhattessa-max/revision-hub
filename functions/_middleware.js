@@ -58,7 +58,7 @@ export async function onRequest(ctx) {
   }
   if (OPEN.has(path) || path.startsWith('/fonts/')) {
     if (session && isLogin) return Response.redirect(url.origin + safeNext(url), 302);  // (a key's cookie is set on its next page)
-    return withConsent(fresh(await ctx.next()));
+    return withConsent(await fresh(ctx, path));
   }
   if (!session) {
     if (path.startsWith('/api/')) return json({ error: 'Signed out' }, 401);
@@ -83,9 +83,14 @@ export async function onRequest(ctx) {
 
 // the pages, styles and scripts anyone can open (sign-in, Privacy Policy, Terms, hub.css...) are fetched fresh every
 // time, like the rest of the site, so an update shows straight away. (On jbrevision.co.uk, Cloudflare would otherwise
-// let browsers keep them for 4 hours; it leaves "private, no-store" alone.) Fonts and pictures still keep.
-function fresh(res) {
-  if (res.status !== 200 || !/text\/(html|css)|javascript|json|xml/.test(res.headers.get('content-type') || '')) return res;
+// let browsers keep them for 4 hours; it leaves "private, no-store" alone.) The whole file is always sent, never
+// "not changed since your copy", so a copy Cloudflare kept from before is replaced too. Fonts and pictures still keep.
+async function fresh(ctx, path) {
+  if (path.startsWith('/fonts/') || /\.(png|svg|ico|woff2?)$/.test(path)) return ctx.next();
+  const headers = new Headers(ctx.request.headers);
+  headers.delete('if-none-match');
+  headers.delete('if-modified-since');
+  const res = await ctx.next(new Request(ctx.request, { headers }));
   const out = new Response(res.body, res);
   out.headers.set('cache-control', 'private, no-store');
   return out;
