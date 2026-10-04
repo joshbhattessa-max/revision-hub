@@ -359,3 +359,19 @@ body, .subject, .card, .theme-toggle { transition: background-color .35s ease, c
 .pg-log table { width: 100%; border-collapse: collapse; font-size: .85rem; }
 .pg-log th, .pg-log td { text-align: left; padding: 7px 8px; border-bottom: 1px solid var(--line); white-space: nowrap; }
 .pg-dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 7px; }
+
+/* ---- questions that match your list fully (planner) ---- */
+.pl-match { margin: 4px 0 10px; }
+.pl-mbox:empty { display: none; }
+.pl-mbox { margin-top: 10px; border-top: 1px solid var(--line); padding-top: 10px; }
+.pl-msum { font-size: .85rem; margin: 0 0 8px; }
+.pl-mlines { margin: 10px 0 0; padding-left: 20px; font-size: .85rem; }
+.pl-mlines > li { margin-bottom: 10px; }
+.pl-mline { display: flex; gap: 10px; align-items: baseline; justify-content: space-between; }
+.pl-mline span { font-weight: 600; }
+.pl-mline em { font-style: normal; color: var(--muted); font-size: .75rem; white-space: nowrap; }
+.pl-mlines ul { margin: 4px 0 0; padding-left: 16px; }
+.pl-mlines ul li { padding: 2px 0; }
+.pl-mlines ul li.ok a { text-decoration: line-through; color: var(--muted); }
+.pl-mlines ul a { color: var(--ink); }
+.pl-mlines details summary { cursor: pointer; color: var(--muted); font-size: .8rem; margin-top: 3px; }

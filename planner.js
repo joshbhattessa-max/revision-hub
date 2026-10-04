@@ -327,6 +327,121 @@
       });
     });
   }
+  // ------------------------------------------------------------------ questions that match your list fully
+  // Every question part of the school's board, with its wording (the question's opening lines plus the part itself).
+  var PARTS = {};
+  function partsOf(s) {
+    if (PARTS[s]) return Promise.resolve(PARTS[s]);
+    return Promise.all([loadPick(s), loadText(s)]).then(function (r) {
+      var tl = subj(s).topics, out = [];
+      r[0].forEach(function (e) {
+        var tx = r[1][e[0]] || {}, stem = tx['*'] ? tx['*'].split('(a)')[0] : '';
+        (e[6].length ? e[6] : [[null, '', e[1], []]]).forEach(function (p) {
+          var own = p[0] ? tx[p[0]] || '' : tx['*'] || '';
+          if (!own && !stem) return;
+          out.push({ id: p[0] ? e[0] + '/' + p[0] : e[0], e: e, p: p, w: words(stem + ' ' + own), o: p[0] && own ? words(own) : null,
+            tps: (p[3] || []).map(function (i) { return tl[i] && tl[i][0]; }).filter(Boolean) });
+        });
+      });
+      // how many parts each word is in: words in more than 1 in 5 (like "gas" in chemistry) don't have to match
+      var df = {};
+      out.forEach(function (c) { Object.keys(c.w).forEach(function (k) { df[k] = (df[k] || 0) + 1; }); });
+      out.common = {};
+      Object.keys(df).forEach(function (k) { if (df[k] > out.length * 0.2) out.common[k] = 1; });
+      PARTS[s] = out;
+      return out;
+    });
+  }
+  // For each line of your list: the parts whose wording has every key word in it (and, if none do, the ones that
+  // miss just one), newest papers first.
+  function fullMatches(e) {
+    var lines = (e.checklist && e.checklist.lines || []).map(function (x) { return x.line; }).filter(function (l) { return !MATCH.isHeading(l); });
+    return partsOf(e.subj).then(function (parts) {
+      var P = S.get();
+      var out = lines.map(function (line) {
+        var all = Object.keys(words(line)), keys = all.filter(function (k) { return !parts.common[k]; });
+        if (!keys.length) keys = all;
+        if (!keys.length) return null;
+        var full = [], close = [], best = [];
+        parts.forEach(function (c) {
+          // a part of a longer question has to say at least one of the key words itself, not just its opening lines
+          if (c.o && !keys.some(function (k) { return c.o[k]; })) return;
+          var hit = 0;
+          for (var i = 0; i < keys.length; i++) if (c.w[keys[i]]) hit++;
+          if (hit === keys.length) full.push(c);
+          else if (hit === keys.length - 1 && keys.length >= 3) close.push(c);
+          else if (hit >= Math.max(2, Math.ceil(keys.length / 2))) best.push({ c: c, hit: hit });
+        });
+        var order = function (a, b) { return b.e[2] - a.e[2] || (a.e[0] < b.e[0] ? -1 : 1); };
+        full.sort(order); close.sort(order);
+        best.sort(function (a, b) { return b.hit - a.hit || order(a.c, b.c); });
+        return { line: line, keys: keys, full: full, close: close.slice(0, 8), best: best.slice(0, 8).map(function (x) { x.c.hit = x.hit; return x.c; }) };
+      }).filter(Boolean);
+      var seen = {};
+      out.forEach(function (l) { l.full.forEach(function (c) { seen[c.id] = 1; }); });
+      out.done = function (c) { return !!P.items[e.subj + '|' + c.id]; };
+      out.total = Object.keys(seen).length;
+      return out;
+    });
+  }
+  function partLabel(c) { return c.e[4] + ' · Q' + c.e[5] + (c.p[1] ? ' ' + c.p[1] : ''); }
+  function partLink(s, c) { return '/' + s + '/#/question/' + encodeURIComponent(c.e[0]) + (c.p[0] ? '/' + encodeURIComponent(c.p[0]) : ''); }
+  // the matches, line by line, under a date's card
+  function drawMatches(e, box) {
+    box.innerHTML = '<p class="pl-note">Finding the questions that match your list…</p>';
+    fullMatches(e).then(function (res) {
+      if (!res.length) { box.innerHTML = '<p class="pl-note">Add your list to this date (Edit, then upload or paste it) to see the questions that match it.</p>'; return; }
+      var hit = res.filter(function (l) { return l.full.length; }).length;
+      box.innerHTML = '<p class="pl-msum"><b>' + res.total + ' question part' + (res.total === 1 ? '' : 's') + '</b> match your list fully, covering ' + hit + ' of its ' + res.length +
+        ' line' + (res.length === 1 ? '' : 's') + '. A full match has every key word of the line in the question.</p>' +
+        (res.total ? '<div class="pl-evact"><button type="button" class="pl-btn mkset">Make a practice set from them</button><span class="pl-note">up to 4 per line, newest first</span></div>' : '') +
+        '<ol class="pl-mlines">' + res.map(function (l) {
+          var list = function (cs) {
+            return '<ul>' + cs.slice(0, 25).map(function (c) {
+              return '<li class="' + (res.done(c) ? 'ok' : '') + '"><a href="' + partLink(e.subj, c) + '">' + esc(partLabel(c)) + '</a><span class="pl-mk">' + (c.p[2] || c.e[1]) + ' mark' + ((c.p[2] || c.e[1]) === 1 ? '' : 's') + '</span></li>';
+            }).join('') + (cs.length > 25 ? '<li class="pl-more">and ' + (cs.length - 25) + ' more</li>' : '') + '</ul>';
+          };
+          return '<li><div class="pl-mline"><span>' + esc(l.line) + '</span><em>' + (l.full.length ? l.full.length + ' full match' + (l.full.length === 1 ? '' : 'es') : 'no full match') + '</em></div>' +
+            (l.full.length ? list(l.full) : l.close.length ? '<details><summary>' + l.close.length + ' close match' + (l.close.length === 1 ? '' : 'es') + ' (missing one key word)</summary>' + list(l.close) + '</details>' :
+              l.best.length ? '<details><summary>' + l.best.length + ' partial match' + (l.best.length === 1 ? '' : 'es') + ' (' + l.best[0].hit + ' of the ' + l.keys.length + ' key words: ' + esc(l.keys.join(', ')) + ')</summary>' + list(l.best) + '</details>' :
+              '<p class="pl-note">No past-paper question on your board asks about this.</p>') + '</li>';
+        }).join('') + '</ol>';
+      var mk = box.querySelector('.mkset');
+      if (mk) mk.addEventListener('click', function () {
+        // the matching parts, grouped by question, in the order of your list
+        var items = [], byQ = {};
+        res.forEach(function (l) {
+          l.full.slice(0, 4).forEach(function (c) {
+            var it = byQ[c.e[0]];
+            if (!it) { it = byQ[c.e[0]] = { q: c.e[0], k: c.p[0], parts: c.p[0] ? [] : null, mk: 0, full: c.e[1], label: c.e[4] + ' · Q' + c.e[5], tp: [], why: [], all: c.e[6] }; items.push(it); }
+            if (c.p[0] && it.parts.indexOf(c.p[0]) >= 0) return;
+            if (c.p[0]) it.parts.push(c.p[0]);
+            it.mk += c.p[2] || c.e[1];
+            c.tps.forEach(function (t) { if (it.tp.indexOf(t) < 0) it.tp.push(t); });
+            it.why.push({ point: l.line.slice(0, 140), why: 'full match' });
+          });
+        });
+        items.forEach(function (it) {
+          if (it.parts) {
+            var order = it.all.map(function (x) { return x[0]; });
+            it.parts.sort(function (a, b) { return order.indexOf(a) - order.indexOf(b); });
+            it.k = it.parts[0];
+            if (it.parts.length < it.all.length) it.label += ' ' + it.parts.map(function (k) { return it.all[order.indexOf(k)][1]; }).join(', ');
+            else it.parts = null;
+          }
+          delete it.all;
+        });
+        var p = plan();
+        p.sets.unshift({ id: uid(), ev: e.id, subj: e.subj, title: (e.title || TYPES[e.type]) + ': full matches', made: Date.now(), items: items,
+          total: items.reduce(function (a, it) { return a + it.mk; }, 0), lines: true, uncovered: res.filter(function (l) { return !l.full.length; }).map(function (l) { return l.line; }), reviews: 0 });
+        savePlan(true); render();
+        var first = document.querySelector('.pl-set');
+        if (first) first.scrollIntoView({ block: 'start', behavior: 'smooth' });
+      });
+    }, function (err) { box.innerHTML = '<p class="pl-err">' + esc(err.message) + '</p>'; });
+  }
+  var openMatches = {};
+
   function qLink(s, it) { return '/' + s + '/#/question/' + encodeURIComponent(it.q) + (it.k ? '/' + encodeURIComponent(it.k) : ''); }
   // done since the set was made (a review question you got wrong before only counts once you've had another go)
   function itemDone(set, it, P) {
@@ -500,6 +615,7 @@
       var p = plan(), i = p.events.map(function (x) { return x.id; }).indexOf(e.id);
       if (i >= 0) p.events[i] = e; else p.events.push(e);
       var pick = !existing && f.querySelector('[name=pick]') && f.querySelector('[name=pick]').checked;
+      if (hasList(e)) openMatches[e.id] = true;
       savePlan(true);
       d.close();
       if (pick) { busy('Picking questions…'); makeSet(e).catch(function (x) { alert(x.message); render(); }); } else render();
@@ -540,6 +656,7 @@
     ts.forEach(function (t) { var ms = M[t]; if (ms) { g += ms.pct * ms.n; m += ms.n; n += ms.n; } });
     return { pct: m ? g / m : 0, done: n };
   }
+  function hasList(e) { return !!(e.checklist && e.checklist.lines && e.checklist.lines.length); }
   function eventCard(e) {
     var sm = subj(e.subj), r = readiness(e), M = S.mastery(e.subj), ts = topicsOf(e), past = e.date && e.date < TODAY;
     var chips = (e.topics && e.topics.length ? ts : []).slice(0, 10).map(function (t) {
@@ -553,8 +670,20 @@
       (r.done ? '<div class="pl-ready"><div class="pl-bar"><i style="width:' + Math.round(r.pct * 100) + '%"></i></div><span>' + Math.round(r.pct * 100) + '% of the marks on these topics · ' +
         r.done + ' question' + (r.done === 1 ? '' : 's') + ' done</span></div>' : '<div class="pl-ready"><span>No questions done on these topics yet</span></div>') +
       '<div class="pl-chips">' + chips + '</div>' +
+      (hasList(e) ? '<div class="pl-match"><button type="button" class="pl-btn ghost mt" aria-expanded="false">Questions that match your list</button><div class="pl-mbox"></div></div>' : '') +
       '<div class="pl-evact"><button type="button" class="pl-btn pick">' + (sets ? 'Pick more questions' : 'Pick questions') + '</button>' +
       '<button type="button" class="pl-btn ghost edit">Edit</button><button type="button" class="pl-btn ghost del">Delete</button></div></article>');
+    var mt = c.querySelector('.mt');
+    if (mt) {
+      var mbox = c.querySelector('.pl-mbox');
+      var show = function (on) {
+        openMatches[e.id] = on; mt.setAttribute('aria-expanded', on ? 'true' : 'false');
+        mt.textContent = on ? 'Hide the matching questions' : 'Questions that match your list';
+        if (on) drawMatches(e, mbox); else mbox.innerHTML = '';
+      };
+      mt.addEventListener('click', function () { show(!openMatches[e.id]); });
+      if (openMatches[e.id]) show(true);
+    }
     c.querySelector('.pick').addEventListener('click', function (ev) {
       ev.target.disabled = true; ev.target.textContent = 'Picking…';
       makeSet(e).catch(function (x) { alert(x.message); render(); });
@@ -646,7 +775,7 @@
     var past = p.events.filter(function (e) { return e.date && e.date < TODAY; }).sort(function (a, b) { return a.date < b.date ? 1 : -1; }).slice(0, 4);
     var root = el('<div class="wrap pl"><header class="top"><div class="brand">' +
       '<div><a class="pl-back" href="/">← All subjects</a><h1>Revision planner</h1><p class="subtitle">Your exams, class tests and topic deadlines, and a plan to get ready for them.</p></div></div></header>' +
-      '<div class="pl-top"><button type="button" class="pl-btn add">Add a date</button><button type="button" class="pl-btn ghost list">Pick questions from a topic sheet</button>' +
+      '<div class="pl-top"><button type="button" class="pl-btn add">Add a date</button><button type="button" class="pl-btn ghost list">Add a test and its list</button>' +
       (p.events.length ? '<button type="button" class="pl-btn ghost cal">Add to my calendar</button>' : '') + '<span class="pl-busy" aria-live="polite"></span></div>' +
       '<section><h2>Coming up</h2><div class="pl-evs"></div></section></div>');
     var evs = root.querySelector('.pl-evs');
@@ -667,7 +796,7 @@
     root.querySelector('.add').addEventListener('click', function () { editor(null); });
     root.querySelector('.list').addEventListener('click', function () {
       editor(null);
-      var r = document.querySelector('.pl-dialog [name=type][value=list]');
+      var r = document.querySelector('.pl-dialog [name=type][value=test]');
       if (r) { r.checked = true; r.dispatchEvent(new Event('change')); }
     });
     var cal = root.querySelector('.cal');
