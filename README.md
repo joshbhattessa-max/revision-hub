@@ -99,9 +99,8 @@ The hub's forwarding and the subject sites' secret check run on Cloudflare's fre
 ## Study tools
 
 Every subject site has **My topics** (a heatmap of how secure each topic is, from your self-marking, plus red/amber/green
-ratings), **Mock paper** (a paper you build yourself from the school board's questions, timed on screen or printed with
-the mark scheme at the back, with a grade estimate from the board's grade boundaries) and a "How many marks did you get?"
-row under every mark scheme. On the main site, **Your campus** (home page) grows a building per subject as topics become
+ratings), **Mock paper** (a paper you build yourself from the school board's questions, timed on screen or printed, with
+a grade estimate from the board's grade boundaries) and a "How many marks did you get?" row under every mark scheme. On the main site, **Your campus** (home page) grows a building per subject as topics become
 secure, and the **Revision planner** (`/planner`) holds exams, class tests and topic deadlines, reads revision
 checklists (PDF or pasted text) to tick the topics they cover (skipping the sheet's headings and test details), and lays
 out a day-by-day plan (also as a calendar file). Each date has:
@@ -117,6 +116,19 @@ weakest topics"), pick the length (30 to 110 marks, or your own), the time (exam
 the difficulty, which years' papers to use, and whether to leave out questions you've done. It then picks just the
 question parts that test those points, so a paper can be (b) and (d) of one question and (c) of another. Your last
 choices are remembered.
+
+**Printing a mock** (`#/mock/print`) makes a PDF in the browser and opens it in a new tab, where the browser's PDF viewer
+prints or saves it. The mark scheme goes at the back, or in a PDF of its own (the choice is remembered).
+
+- **Layout.** It's laid out like the board's own papers, with our details instead of theirs (date made, time allowed,
+  paper reference such as `4CH1/M3`, which spec points, total marks). Pearson Edexcel subjects get the Edexcel front cover,
+  "do not write in this area" margins and page frames. AQA subjects get the AQA front cover (candidate box, "For
+  Examiner's Use" table, the multiple-choice advice box, no-calculator sign for computer science) and boxed pages.
+- **Footer.** Every page has "JB Revision" in its footer.
+- **Questions and mark schemes.** Questions are cut only at blank gaps between lines. A mark scheme that was never cut
+  out per question comes in as the page of the board's mark-scheme PDF it's on.
+- **Code.** `assets/js/mockpdf.js` uses jsPDF (`assets/js/vendor`, MIT licence) and Latin-1 subsets of Source Sans 3 and
+  Barlow (`assets/fonts`, SIL Open Font License), which are loaded only when someone prints.
 
 - **Spec points** come from `data/spec-points.js` in each subject site, made by `examq_cop/tools/build_spec_points.py`
   (run it after `build_study_meta.py`). The sciences use the spec's numbered statements (1.1, 1.5C …); maths, geography
