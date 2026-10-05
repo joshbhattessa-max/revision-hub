@@ -124,6 +124,8 @@ prints or saves it. The mark scheme goes at the back, or in a PDF of its own (th
   paper reference such as `4CH1/M3`, which spec points, total marks). Pearson Edexcel subjects get the Edexcel front cover,
   "do not write in this area" margins and page frames. AQA subjects get the AQA front cover (candidate box, "For
   Examiner's Use" table, the multiple-choice advice box, no-calculator sign for computer science) and boxed pages.
+- **Resource page.** Where the real papers have one, it comes on page 2, taken from the board's own June 2024 paper
+  (`assets/resources/`): the periodic table (chemistry), the formulae page (physics) and the formulae sheet (maths).
 - **Footer.** Every page has "JB Revision" in its footer.
 - **Questions and mark schemes.** Questions are cut only at blank gaps between lines. A mark scheme that was never cut
   out per question comes in as the page of the board's mark-scheme PDF it's on.
