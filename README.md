@@ -99,9 +99,9 @@ The hub's forwarding and the subject sites' secret check run on Cloudflare's fre
 ## Study tools
 
 Every subject site has **My topics** (a heatmap of how secure each topic is, from your self-marking, plus red/amber/green
-ratings), **Mock paper** (a fresh paper from the school board's questions, timed on screen or printed with the mark
-scheme at the back, with a grade estimate from the board's grade boundaries) and a "How many marks did you get?" row
-under every mark scheme. On the main site, **Your campus** (home page) grows a building per subject as topics become
+ratings), **Mock paper** (a paper you build yourself from the school board's questions, timed on screen or printed with
+the mark scheme at the back, with a grade estimate from the board's grade boundaries) and a "How many marks did you get?"
+row under every mark scheme. On the main site, **Your campus** (home page) grows a building per subject as topics become
 secure, and the **Revision planner** (`/planner`) holds exams, class tests and topic deadlines, reads revision
 checklists (PDF or pasted text) to tick the topics they cover (skipping the sheet's headings and test details), and lays
 out a day-by-day plan (also as a calendar file). Each date has:
@@ -111,6 +111,19 @@ out a day-by-day plan (also as a calendar file). Each date has:
   question page: Previous and Next stay inside the set, and a strip above the question fills in as you mark each part.
 - **Mock paper**, which hands the date's topics to the subject site's mock paper (`jbr-mock-preset-<subject>` in
   browser storage), so the paper is built from just those topics.
+
+The mock paper builder (`#/mock`) lets you tick whole areas, topics or single spec points (with a search box and "My
+weakest topics"), pick the length (30 to 110 marks, or your own), the time (exam pace, your own minutes or no timer),
+the difficulty, which years' papers to use, and whether to leave out questions you've done. It then picks just the
+question parts that test those points, so a paper can be (b) and (d) of one question and (c) of another. Your last
+choices are remembered.
+
+- **Spec points** come from `data/spec-points.js` in each subject site, made by `examq_cop/tools/build_spec_points.py`
+  (run it after `build_study_meta.py`). The sciences use the spec's numbered statements (1.1, 1.5C …); maths, geography
+  and computer science use their numbered points; Spanish has none, so its points are its topics.
+- **Which part tests which point** is worked out from the words each part shares with the statements of its own
+  topics, rarer words counting for more. It's free and gives the same answer every run (no AI), and is right for most
+  parts, with the odd near miss.
 
 - Progress lives in the browser and syncs to your account through `/api/progress` (KV key `prog:<account id>`; merged
   item by item, newest wins). Deleting an account deletes its progress.
