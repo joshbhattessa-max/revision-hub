@@ -44,8 +44,11 @@ export async function keySession(env, request, url) {
     const h = await sha256(raw);
     const k = list.find(x => x.hash === h);
     if (!k) return null;
-    // note when it was last used (at most once an hour, to spare the store's daily write limit)
-    if (!k.lastUsed || Date.now() - k.lastUsed > 3600e3) { k.lastUsed = Date.now(); await saveKeys(env, list); }
+    // note when it was last used (at most once an hour, to spare the store's daily write limit), in the key's own
+    // record: rewriting the whole list here could put back a key revoked a moment ago (the store is only eventually
+    // consistent, so this request may have read a copy of the list from before the revocation)
+    const used = Number(await env.HUB_KV.get('keyused:' + k.id)) || 0;
+    if (Date.now() - used > 3600e3) await env.HUB_KV.put('keyused:' + k.id, String(Date.now()));
     const expires = Date.now() + SESSION_SECONDS * 1000;
     const payload = `${k.id}.${expires}`;
     const cookie = `${KEY_COOKIE}=${payload}.${await hmac(env, payload)}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=${SESSION_SECONDS}`;

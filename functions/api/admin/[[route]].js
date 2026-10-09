@@ -108,7 +108,11 @@ export async function onRequest(ctx) {
     return json({ ok: true });
   }
 
-  if (route === 'keys' && method === 'GET') return json((await getKeys(env)).map(({ hash, ...k }) => k));
+  if (route === 'keys' && method === 'GET') {
+    const list = await getKeys(env);
+    const used = await Promise.all(list.map(k => env.HUB_KV.get('keyused:' + k.id)));
+    return json(list.map(({ hash, ...k }, i) => ({ ...k, lastUsed: Number(used[i]) || k.lastUsed || null })));
+  }
   if (route === 'keys' && method === 'POST') {
     const label = clean(body.label) || 'Agent';
     const key = newKey(), list = await getKeys(env);
@@ -121,6 +125,7 @@ export async function onRequest(ctx) {
     const list = await getKeys(env);
     if (!list.some(k => k.id === keyRoute[1])) return json({ error: 'No such key.' }, 404);
     await saveKeys(env, list.filter(k => k.id !== keyRoute[1]));
+    await env.HUB_KV.delete('keyused:' + keyRoute[1]);
     return json({ ok: true });
   }
 
