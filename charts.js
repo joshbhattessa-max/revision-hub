@@ -20,6 +20,7 @@
     Object.keys(P.items || {}).forEach(function (k) {
       var v = P.items[k];
       if (!v || (subj && v.s !== subj)) return;
+      if (window.JBR_PROGRESS && window.JBR_PROGRESS.mine && !window.JBR_PROGRESS.mine(k)) return;   // another programming language
       (v.h || [[v.t, v.g]]).forEach(function (x) { out.push({ t: x[0], g: x[1], m: v.m, s: v.s, tp: v.tp || [] }); });
     });
     return out.sort(function (a, b) { return a.t - b.t; });

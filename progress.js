@@ -37,12 +37,28 @@ window.JBR_PROGRESS = (function () {
       .then(function (remote) { if (remote && remote.v === 1) { P = merge(load(), remote); try { localStorage.setItem(KEY, JSON.stringify(P)); } catch (e) { /* blocked */ } } done && done(P); },
         function () { done && done(P); });
   }
+  // computer science is done in one programming language (chosen on the subject site, C# unless changed): progress on
+  // another language's programming papers doesn't count. AQA Paper 1A/1B/1C = C#/Python/VB.NET; Edexcel International
+  // GCSE Paper 2A/2B/2C = Python/C#/Java; every other paper is for all.
+  function lang() { try { var l = localStorage.getItem('jbr-cs-lang'); return /^(cs|py|vb|java)$/.test(l) ? l : 'cs'; } catch (e) { return 'cs'; } }
+  function langOf(qid) {
+    var m = /^aqan-1([abc])fh-/.exec(qid || '');
+    if (m) return { a: 'cs', b: 'py', c: 'vb' }[m[1]];
+    m = /^edigcse-2([abc])fh-/.exec(qid || '');
+    return m ? { a: 'py', b: 'cs', c: 'java' }[m[1]] : null;
+  }
+  // does this record (key "<subject>|<question>[/<part>]") count for you?
+  function mine(k) {
+    if (k.indexOf('computer-science|') !== 0) return true;
+    var l = langOf(k.slice(k.indexOf('|') + 1));
+    return !l || l === lang();
+  }
   // how secure each topic of a subject is: share of marks over the latest 8 attempts that touched it
   function mastery(subj) {
     var by = {};
     Object.keys(P.items).forEach(function (k) {
       var v = P.items[k];
-      if (v.s !== subj) return;
+      if (v.s !== subj || !mine(k)) return;
       (v.tp || []).forEach(function (t) { (by[t] = by[t] || []).push(v); });
     });
     var out = {};
@@ -66,5 +82,5 @@ window.JBR_PROGRESS = (function () {
     var due = h[h.length - 1][0] + GAPS[rightSince] * 864e5;
     return { due: due, now: due <= Date.now(), step: rightSince };
   }
-  return { get: function () { return P; }, save: save, pull: pull, mastery: mastery, review: review, flush: push };
+  return { get: function () { return P; }, save: save, pull: pull, mastery: mastery, review: review, flush: push, mine: mine, langOf: langOf, lang: lang };
 })();

@@ -62,6 +62,7 @@
     var M = {}, lastSeen = {};
     evs.forEach(function (e) { if (!M[e.subj]) M[e.subj] = S.mastery(e.subj); });
     Object.keys(P.items).forEach(function (k) {
+      if (!S.mine(k)) return;
       var v = P.items[k], d = -Math.floor((Date.now() - v.t) / 864e5);
       (v.tp || []).forEach(function (t) { var key = v.s + '|' + t; if (lastSeen[key] == null || d > lastSeen[key]) lastSeen[key] = d; });
     });
@@ -108,7 +109,11 @@
     return fetch('/study/' + s + '.json', { credentials: 'same-origin' }).then(function (r) {
       if (!r.ok) throw new Error('Could not load the ' + subj(s).subject + ' questions.');
       return r.json();
-    }).then(function (j) { PICK[s] = j.q; return j.q; });
+    }).then(function (j) {
+      // computer science: only your programming language's papers (and those for all)
+      PICK[s] = s === 'computer-science' ? j.q.filter(function (e) { var l = S.langOf(e[0]); return !l || l === S.lang(); }) : j.q;
+      return PICK[s];
+    });
   }
   function hash(str) { var h = 2166136261; for (var i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); } return (h >>> 0) / 4294967295; }
 
@@ -164,7 +169,7 @@
     Q.forEach(function (e) { byId[e[0]] = e; });
     var due = Object.keys(P.items).map(function (k) {
       var v = P.items[k];
-      if (v.s !== s || !(v.tp || []).some(function (t) { return T[t]; })) return null;
+      if (v.s !== s || !S.mine(k) || !(v.tp || []).some(function (t) { return T[t]; })) return null;
       var r = S.review(v);
       return r && r.now ? { k: k, v: v, due: r.due } : null;
     }).filter(Boolean).sort(function (a, b) { return a.due - b.due; });
