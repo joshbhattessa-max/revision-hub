@@ -13,7 +13,12 @@ function merge(a, b) {
   for (const x of [a, b]) {
     if (!x || x.v !== 1) continue;
     for (const [k, v] of Object.entries(x.items || {})) if (v && (!out.items[k] || v.t > out.items[k].t)) out.items[k] = v;
-    for (const m of x.mocks || []) if (m && !out.mocks.some(y => y.id === m.id)) out.mocks.push(m);
+    for (const m of x.mocks || []) {
+      if (!m) continue;
+      const had = out.mocks.find(y => y.id === m.id);
+      if (!had) out.mocks.push(m);
+      else if (!had.grade && m.grade) had.grade = m.grade;   // a grade worked out later fills the gap
+    }
     if (x.plan && (!out.plan || (x.plan.t || 0) > (out.plan.t || 0))) out.plan = x.plan;
     out.t = Math.max(out.t, x.t || 0);
   }
