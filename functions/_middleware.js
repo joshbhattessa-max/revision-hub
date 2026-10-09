@@ -17,6 +17,9 @@ const ADMIN = p => p === '/admin' || p === '/admin.html' || p === '/admin.js' ||
 // the deployment log's CSV and PDF records for the owner's Google Sheet: no sign-in (Google fetches them), the key in
 // the address protects them (functions/deploys/)
 const SHEET = p => p.startsWith('/deploys/');
+// a printed mock paper kept for an hour (functions/print/): a phone's PDF viewer fetches it without the site's cookies;
+// its random address protects it
+const PRINT = p => /^\/print\/[0-9a-f]{32}(\.pdf)?$/.test(p);
 // all a new account can reach until it has checked its email address (the page that does it, and leaving)
 const UNCHECKED = p => ['/verify', '/verify.html', '/verify.js', '/api/me', '/api/logout'].includes(p) || p.startsWith('/api/email/');
 
@@ -62,6 +65,7 @@ export async function onRequest(ctx) {
     }
     if (adminLogin) return ctx.next();
   }
+  if (PRINT(path)) return ctx.next();
   if (OPEN.has(path) || path.startsWith('/fonts/') || SHEET(path)) {
     if (session && isLogin) return Response.redirect(url.origin + safeNext(url), 302);  // (a key's cookie is set on its next page)
     return withConsent(await fresh(ctx, path));

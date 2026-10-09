@@ -50,6 +50,9 @@ h2 { font-size: 1.15rem; font-weight: 600; margin: 32px 0 12px; display: flex; a
 .subject .name { font-weight: 600; }
 .subject .stats { color: var(--muted); font-size: .85rem; margin-top: 2px; }
 .subject.off { opacity: .55; pointer-events: none; }
+.subject.soon { cursor: default; filter: grayscale(1); opacity: .5; }
+.subject.soon:hover { transform: none; box-shadow: none; }
+.subject.soon .stats { font-weight: 600; letter-spacing: .02em; }
 
 .card { display: flex; flex-direction: column; background: var(--card); border: 1px solid var(--line); border-radius: 12px; overflow: hidden;
   box-shadow: var(--shadow); text-decoration: none; }
