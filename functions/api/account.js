@@ -1,6 +1,7 @@
 // The signed-in person's own account (the menu under their name on the home page).
 //   POST   /api/account   {current, password}   change password; signs out their other devices
 //   DELETE /api/account   {password}            delete the account and sign it out everywhere
+import { forget as forgetActivity } from '../_lib/activity.js';
 import { clearCookie, endSessions, getAccounts, hashPassword, json, noteFailure, saveAccounts, tooManyFailures, verifyPassword } from '../_lib/auth.js';
 
 async function mine(ctx, password) {
@@ -41,5 +42,6 @@ export async function onRequestDelete(ctx) {
   await ctx.env.HUB_KV.delete('prog:' + account.id);  // and its study progress
   await ctx.env.HUB_KV.delete('consent:' + account.id);  // and its cookie-choice record
   await ctx.env.HUB_KV.delete('ecode:' + account.id);  // and any email code waiting for it
+  await forgetActivity(ctx.env, account.id);  // and its activity (the pages it opened)
   return json({ ok: true }, 200, { 'set-cookie': clearCookie() });
 }

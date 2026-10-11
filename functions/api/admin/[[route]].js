@@ -10,6 +10,8 @@
 //   GET    /api/admin/maintenance    PUT /api/admin/maintenance {on, message}
 //   GET    /api/admin/keys    POST /api/admin/keys {label} -> {key} (shown once)    DELETE /api/admin/keys/:id
 //   GET    /api/admin/usage?days=30           usage statistics (from visitors who accepted them) and cookie choices
+//   GET    /api/admin/activity                 each account: the page it's on now and when it was last active
+//   GET    /api/admin/activity/:id?days=7       one account: its timeline, the exam papers it opened, its handed-in mocks
 //   GET    /api/admin/deploylog                  the deployment log: how many, the last sync, the latest few
 //   POST   /api/admin/deploylog                  {entries: [...], done: {repo: [shas]}} adds or fills in deployments
 //   POST   /api/admin/deploylog/sync             checks GitHub for new deployments now
@@ -17,6 +19,7 @@
 import { forgetMaintenance, maintenance } from '../../_lib/maintenance.js';
 import { getKeys, newKey, saveKeys, sha256 } from '../../_lib/keys.js';
 import { SOURCES, load as loadDeploys, sync as syncDeploys, upsert as upsertDeploys } from '../../_lib/deploylog.js';
+import { KEEP_DAYS, SITES, db as activityDb, forget as forgetActivity, schema as activitySchema } from '../../_lib/activity.js';
 import { clearVerifyFlag, endSessions, getAccounts, hashPassword, hubContent, json, listSessions, randomToken, saveAccounts } from '../../_lib/auth.js';
 
 const ROLES = ['admin', 'user'];
@@ -47,6 +50,9 @@ export async function onRequest(ctx) {
     return json({ ended: n });
   }
 
+  if (route === 'activity' && method === 'GET') return json(await activityList(env));
+  const actRoute = route.match(/^activity\/([\w:-]+)$/);
+  if (actRoute && method === 'GET') return json(await activityOf(env, actRoute[1], Number(new URL(request.url).searchParams.get('days')) || 7));
   if (route === 'usage' && method === 'GET') return json(await usage(env, Number(new URL(request.url).searchParams.get('days')) || 30));
   if (route === 'accounts' && method === 'GET') {
     const sessions = await listSessions(env);
@@ -105,6 +111,7 @@ export async function onRequest(ctx) {
     await env.HUB_KV.delete('prog:' + a.id);
     await env.HUB_KV.delete('consent:' + a.id);
     await env.HUB_KV.delete('ecode:' + a.id);
+    await forgetActivity(env, a.id);
     return json({ ok: true });
   }
 
@@ -236,4 +243,56 @@ async function usage(env, days) {
   const consent = { stats: 0, essential: 0 };
   for (const k of await listAll(env, 'consent:')) if (k.metadata) consent[k.metadata.stats ? 'stats' : 'essential']++;
   return { days, from, byDay, pages, devices, visitors: visitors.size, consent };
+}
+
+// Activity (functions/_lib/activity.js): every account with the page it's on now and when it was last active, newest
+// first, then the accounts that haven't been seen yet
+async function activityList(env) {
+  const d = activityDb(env), accounts = await getAccounts(env);
+  if (!d) return { setup: false, people: [] };
+  await activitySchema(d);
+  // old rows go once a day, when the console looks
+  const today = new Date().toISOString().slice(0, 10);
+  if ((await env.HUB_KV.get('activity:trimmed')) !== today) {
+    await d.prepare('DELETE FROM events WHERE t < ?').bind(Date.now() - KEEP_DAYS * 86400000).run();
+    await d.prepare('DELETE FROM presence WHERE t < ?').bind(Date.now() - KEEP_DAYS * 86400000).run();
+    await env.HUB_KV.put('activity:trimmed', today, { expirationTtl: 2 * 86400 });
+  }
+  const since = Date.now() - 86400000;
+  const [{ results: seen }, { results: counts }] = await d.batch([
+    d.prepare('SELECT account, username, t, since, site, page, title, device FROM presence ORDER BY t DESC'),
+    d.prepare('SELECT account, COUNT(*) AS n FROM events WHERE t >= ? GROUP BY account').bind(since),
+  ]);
+  const day = Object.fromEntries(counts.map(c => [c.account, c.n]));
+  const people = seen.map(p => {
+    const a = accounts.find(x => x.id === p.account);
+    return { ...p, username: a ? a.username : p.username, role: a ? a.role : (p.account.startsWith('key:') ? 'key' : 'gone'), today: day[p.account] || 0 };
+  });
+  for (const a of accounts) if (!people.some(p => p.account === a.id)) people.push({ account: a.id, username: a.username, role: a.role, t: null, today: 0 });
+  return { setup: true, sites: SITES, keepDays: KEEP_DAYS, people };
+}
+
+// one account: its pages in the last few days (newest first, up to 1,000), the exam papers it opened questions from,
+// and, from its progress, the mocks it handed in and how many questions it marked in each subject
+async function activityOf(env, account, days) {
+  const d = activityDb(env);
+  if (!d) return { setup: false };
+  await activitySchema(d);
+  days = Math.max(1, Math.min(KEEP_DAYS, days));
+  const from = Date.now() - days * 86400000;
+  const [{ results: events }, { results: papers }] = await d.batch([
+    d.prepare('SELECT t, site, page, title, paper FROM events WHERE account = ? AND t >= ? ORDER BY t DESC LIMIT 1000').bind(account, from),
+    d.prepare(`SELECT paper, site, COUNT(*) AS views, COUNT(DISTINCT page) AS questions, MIN(t) AS first, MAX(t) AS last
+      FROM events WHERE account = ? AND t >= ? AND paper != '' GROUP BY paper, site ORDER BY last DESC`).bind(account, from),
+  ]);
+  const prog = account.startsWith('key:') ? null : await env.HUB_KV.get('prog:' + account, 'json');
+  const marked = {};
+  for (const v of Object.values((prog && prog.items) || {})) {
+    if (!v || !v.s) continue;
+    const m = marked[v.s] || (marked[v.s] = { n: 0, last: 0 });
+    m.n++; m.last = Math.max(m.last, v.t || 0);
+  }
+  const mocks = ((prog && prog.mocks) || []).filter(m => m && m.t >= from).reverse().map(m => ({ t: m.t, s: m.s, board: m.board || '',
+    qual: (m.paper && m.paper.qual) || '', got: m.got, max: m.max, pct: m.pct, grade: m.grade || '', used: m.used, minutes: m.minutes }));
+  return { setup: true, days, events, papers, mocks, marked };
 }

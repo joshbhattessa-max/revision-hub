@@ -242,6 +242,16 @@ footer p { margin: 0 0 8px; }
 .u-tiles b { display: block; font-size: 1.6rem; line-height: 1.1; }
 .u-tiles span { color: var(--muted); font-size: .82rem; }
 .u-bar { display: inline-block; height: 8px; width: calc(var(--w) * .6); max-width: 60%; min-width: 2px; background: var(--ink); opacity: .7; border-radius: 4px; margin-right: 8px; vertical-align: middle; }
+.act-live { color: #2E9E4F; font-weight: 600; }
+.admin tr.act-sel td { background: var(--card); }
+.admin .act-detail h2 { margin: 0; }
+.admin .act-head { margin-top: 28px; padding-top: 16px; border-top: 2px solid var(--ink); }
+.admin .act-detail h3 { margin: 22px 0 6px; font-size: 1rem; }
+.admin .act-detail h4 { margin: 16px 0 4px; font-size: .9rem; }
+.act-tl { list-style: none; margin: 0; padding: 0; font-size: .9rem; }
+.act-tl li { display: flex; gap: 12px; padding: 5px 0; border-bottom: 1px solid var(--line); }
+.act-tl time { color: var(--muted); font-variant-numeric: tabular-nums; flex: none; width: 3.2em; }
+.act-tl a { color: inherit; overflow-wrap: anywhere; }
 .ask { border: 1px solid var(--line); border-radius: 14px; background: var(--card); color: var(--ink); padding: 18px; width: min(380px, 92vw); }
 .ask::backdrop { background: rgba(0, 0, 0, .45); }
 .ask-in { width: 100%; box-sizing: border-box; margin: 6px 0 14px; }

@@ -47,9 +47,10 @@
   });
   function show(name) {
     Array.prototype.forEach.call(tabs, function (b) { b.classList.toggle('on', b.getAttribute('data-tab') === name); });
-    ['content', 'sessions', 'accounts', 'maintenance', 'usage'].forEach(function (n) { document.getElementById('tab-' + n).hidden = n !== name; });
+    ['content', 'sessions', 'activity', 'accounts', 'maintenance', 'usage'].forEach(function (n) { document.getElementById('tab-' + n).hidden = n !== name; });
     say('');
     if (name === 'sessions') loadSessions();
+    if (name === 'activity') loadActivity(); else stopActivity();
     if (name === 'accounts') loadAccounts();
     if (name === 'maintenance') loadMaintenance();
     if (name === 'usage') loadUsage();
@@ -66,6 +67,100 @@
     });
   }
   new MutationObserver(labelTables).observe(document.querySelector('.admin'), { childList: true, subtree: true });
+
+  // ------------------------------------------------------------------ activity
+  // what each account opens and when (activity.js on every signed-in page -> /api/activity, kept in the ACTIVITY_DB
+  // database); the list refreshes itself every 30 seconds while this tab is open
+  var actbox = document.getElementById('tab-activity'), adays = 7, aopen = null, atimer = null, asites = {};
+  function ago(t) {
+    var s = Math.round((Date.now() - t) / 1000);
+    if (s < 60) return 'just now';
+    if (s < 3600) return Math.floor(s / 60) + ' min ago';
+    if (s < 86400) return Math.floor(s / 3600) + ' h ago';
+    return when(t);
+  }
+  function hhmm(t) { return new Date(t).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }); }
+  function subjectName(k) { return asites[k] || { chemq: 'Chemistry' }[k] || k || ''; }
+  // "ChemQ: GCSE Chemistry - AQA June 2023 - Paper 1 - 01.2" on /chemistry/ -> "Chemistry · GCSE Chemistry - AQA ..."
+  function pageLabel(x) {
+    var t = String(x.title || '').trim();
+    if (!x.site && /^JB Revision( · .*)?$/.test(t)) t = 'Home page';
+    t = t.replace(/ · JB Revision$/, '').replace(/^[A-Za-z]{2,12}Q\s*[:\-]\s*/, '').trim() || x.page || '';
+    return x.site ? subjectName(x.site) + ' · ' + t : t;
+  }
+  function stopActivity() { clearInterval(atimer); atimer = null; }
+  function loadActivity() {
+    if (!actbox.querySelector('.act-list')) actbox.innerHTML = '<div class="act-list"><p class="muted">Loading…</p></div><div class="act-detail"></div>';
+    drawActivity();
+    stopActivity();
+    atimer = setInterval(function () { if (!document.hidden) drawActivity(); }, 30000);
+  }
+  function drawActivity() {
+    var list = actbox.querySelector('.act-list');
+    api('GET', 'activity').then(function (a) {
+      if (!a.setup) {
+        stopActivity();
+        list.innerHTML = '<h2>Activity needs setting up</h2><p>It\'s kept in a free Cloudflare D1 database. Once:</p><ol>' +
+          '<li>In the Cloudflare dashboard go to <i>Storage &amp; Databases</i> → <i>D1 SQL database</i> → <i>Create</i>, and name it <code>hub-activity</code>.</li>' +
+          '<li>In the hub\'s Pages project go to <i>Settings</i> → <i>Bindings</i> → <i>Add</i> → <i>D1 database</i>. Name it <code>ACTIVITY_DB</code> and pick <code>hub-activity</code>.</li>' +
+          '<li>Go to <i>Deployments</i> and press <i>Retry deployment</i> on the latest one.</li></ol><p class="muted">The tables are made by themselves the first time someone opens a page.</p>';
+        return;
+      }
+      asites = a.sites || {};
+      var people = a.people, on = people.filter(function (p) { return p.t && Date.now() - p.t < 3 * 60000; }).length;
+      list.innerHTML = '<div class="row"><span class="muted grow">' + on + ' active in the last 3 minutes. Pages opened by each signed-in account; kept ' + a.keepDays + ' days. Refreshes every 30 seconds.</span>' +
+        '<button type="button" class="btn-quiet act-refresh">Refresh</button></div>' +
+        '<div class="tablewrap"><table><thead><tr><th>Person</th><th>On now / last on</th><th>Last active</th><th>Pages today</th><th>Device</th><th></th></tr></thead><tbody>' +
+        people.map(function (p) {
+          var live = p.t && Date.now() - p.t < 3 * 60000;
+          return '<tr' + (aopen === p.account ? ' class="act-sel"' : '') + '><td><b>' + esc(p.username) + '</b>' +
+            (p.role === 'admin' ? ' <span class="muted">admin</span>' : p.role === 'key' ? ' <span class="muted">agent key</span>' : p.role === 'gone' ? ' <span class="muted">deleted</span>' : '') + '</td>' +
+            '<td>' + (p.t ? '<a href="' + esc(p.page) + '" target="_blank" rel="noopener">' + esc(pageLabel(p)) + '</a>' +
+              (live && p.since ? '<br><span class="muted">for ' + Math.max(1, Math.round((Date.now() - p.since) / 60000)) + ' min</span>' : '') : '<span class="muted">Not seen yet</span>') + '</td>' +
+            '<td>' + (p.t ? (live ? '<span class="act-live">● Online</span>' : esc(ago(p.t))) : '') + '</td>' +
+            '<td>' + (p.today || '') + '</td><td>' + (p.device ? esc(device(p.device)) : '') + '</td>' +
+            '<td>' + (p.t ? '<button type="button" class="btn-quiet act-open" data-id="' + esc(p.account) + '" data-name="' + esc(p.username) + '">Timeline</button>' : '') + '</td></tr>';
+        }).join('') + '</tbody></table></div>';
+      list.querySelector('.act-refresh').addEventListener('click', drawActivity);
+      Array.prototype.forEach.call(list.querySelectorAll('.act-open'), function (b) {
+        b.addEventListener('click', function () { openPerson(b.getAttribute('data-id'), b.getAttribute('data-name'), true); });
+      });
+    }).catch(function (e) { say(e.message, true); });
+  }
+  function openPerson(id, name, scroll) {
+    aopen = id;
+    Array.prototype.forEach.call(actbox.querySelectorAll('.act-open'), function (b) { b.closest('tr').classList.toggle('act-sel', b.getAttribute('data-id') === id); });
+    var box = actbox.querySelector('.act-detail');
+    box.innerHTML = '<p class="muted">Loading ' + esc(name) + '…</p>';
+    api('GET', 'activity/' + encodeURIComponent(id) + '?days=' + adays).then(function (a) {
+      var head = '<div class="row act-head"><h2 class="grow">' + esc(name) + '</h2><label class="muted">Show <select class="act-days">' +
+        [1, 7, 30, 90].map(function (n) { return '<option value="' + n + '"' + (n === adays ? ' selected' : '') + '>' + (n === 1 ? 'the last day' : 'last ' + n + ' days') + '</option>'; }).join('') +
+        '</select></label><button type="button" class="btn-quiet act-close">Close</button></div>';
+      var papers = '<h3>Exam papers</h3>' + (a.papers.length ? '<div class="tablewrap"><table><thead><tr><th>Paper</th><th>Subject</th><th>Questions opened</th><th>First</th><th>Last</th></tr></thead><tbody>' +
+        a.papers.map(function (p) { return '<tr><td>' + esc(p.paper) + '</td><td>' + esc(subjectName(p.site)) + '</td><td>' + p.questions + '</td><td>' + esc(when(p.first)) + '</td><td>' + esc(when(p.last)) + '</td></tr>'; }).join('') +
+        '</tbody></table></div>' : '<p class="muted">No question pages opened in this time.</p>');
+      var mocks = '<h3>Mocks handed in</h3>' + (a.mocks.length ? '<div class="tablewrap"><table><thead><tr><th>When</th><th>Subject</th><th>Board</th><th>Score</th><th>Grade</th><th>Time used</th></tr></thead><tbody>' +
+        a.mocks.map(function (m) { return '<tr><td>' + esc(when(m.t)) + '</td><td>' + esc(subjectName(m.s)) + '</td><td>' + esc(m.board) + '</td><td>' + esc(m.got) + ' / ' + esc(m.max) + (m.pct != null ? ' (' + esc(m.pct) + '%)' : '') + '</td><td>' + esc(m.grade) + '</td><td>' + (m.used != null ? esc(m.used) + ' min' + (m.minutes ? ' of ' + esc(m.minutes) : '') : '') + '</td></tr>'; }).join('') +
+        '</tbody></table></div>' : '<p class="muted">None in this time.</p>');
+      var subs = Object.keys(a.marked);
+      var marked = '<h3>Questions marked (all time)</h3>' + (subs.length ? '<p>' + subs.map(function (s) { return esc(subjectName(s)) + ': <b>' + a.marked[s].n + '</b>' + (a.marked[s].last ? ' <span class="muted">(last ' + esc(ago(a.marked[s].last)) + ')</span>' : ''); }).join(' · ') + '</p>' : '<p class="muted">None yet.</p>');
+      // the timeline, a day at a time, newest first
+      var byDay = [], cur = null;
+      a.events.forEach(function (e) {
+        var d = new Date(e.t).toDateString();
+        if (!cur || cur.d !== d) byDay.push(cur = { d: d, t: e.t, list: [] });
+        cur.list.push(e);
+      });
+      var timeline = '<h3>Timeline</h3>' + (byDay.length ? byDay.map(function (g) {
+        return '<h4>' + esc(new Date(g.t).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' })) + ' <span class="muted">' + g.list.length + ' page' + (g.list.length === 1 ? '' : 's') + '</span></h4>' +
+          '<ol class="act-tl">' + g.list.map(function (e) { return '<li><time>' + esc(hhmm(e.t)) + '</time><a href="' + esc(e.page) + '" target="_blank" rel="noopener">' + esc(pageLabel(e)) + '</a></li>'; }).join('') + '</ol>';
+      }).join('') + (a.events.length >= 1000 ? '<p class="muted">Showing the latest 1,000 pages.</p>' : '') : '<p class="muted">Nothing in this time.</p>');
+      box.innerHTML = head + papers + mocks + marked + timeline;
+      box.querySelector('.act-days').addEventListener('change', function (e) { adays = +e.target.value; openPerson(id, name); });
+      box.querySelector('.act-close').addEventListener('click', function () { aopen = null; box.innerHTML = ''; drawActivity(); });
+      if (scroll) box.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }).catch(function (e) { box.innerHTML = ''; say(e.message, true); });
+  }
 
   // ------------------------------------------------------------------ usage statistics
   // only visitors who pressed "Accept all" in the cookie popup are counted, under a random number, never an account

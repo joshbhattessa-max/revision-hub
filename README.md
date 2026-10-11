@@ -30,6 +30,18 @@ Everything (the home page, every subject and the admin console) needs a sign-in.
   - **Accounts:** change a password, rename, make admin or standard, sign out everywhere, delete, or add an account.
 - Passwords are stored only as salted PBKDF2 hashes. Ten wrong passwords from one address lock that address out for 15 minutes.
 
+### Activity (who's doing what)
+
+The admin console's **Activity** tab shows every account with the page it's on now, when it was last active (online if within 3 minutes) and how many pages it opened today. **Timeline** shows one person's pages a day at a time, the exam papers they opened questions from, the mocks they handed in and how many questions they've marked. It refreshes every 30 seconds.
+
+Every signed-in page gets `activity.js` (added by the middleware), which sends `/api/activity` the page's address and title when it opens and a heartbeat once a minute while it's on screen. It's kept for 90 days in a Cloudflare D1 database (KV's free plan only allows 1,000 writes a day). To set it up once:
+
+1. Cloudflare dashboard → *Storage & Databases* → *D1 SQL database* → *Create*, named `hub-activity`.
+2. The hub's Pages project → *Settings* → *Bindings* → *Add* → *D1 database*: name `ACTIVITY_DB`, pick `hub-activity`.
+3. *Deployments* → *Retry deployment*. The tables are made by themselves.
+
+Without the binding nothing is recorded and the tab shows these steps. Deleting an account deletes its activity. Code: `activity.js`, `functions/api/activity.js`, `functions/_lib/activity.js`, and the Activity tab in `admin.js`.
+
 ### Access keys for agents
 
 For an AI agent (like a Claude agent) or a script, create a key in **Admin console → Accounts → Access keys for agents**. A key works like a standard account, never an admin one, and is shown once:
