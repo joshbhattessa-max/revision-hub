@@ -27,10 +27,10 @@ export async function onRequestPost({ env, request }) {
   }
 
   if (body.step === 'check') {
-    if (await tooManyFailures(env, request)) return json({ error: 'Too many attempts. Try again in 15 minutes.' }, 429);
     const email = cleanEmail(body.email);
+    if (await tooManyFailures(env, request, email)) return json({ error: 'Too many attempts. Try again in 15 minutes.' }, 429);
     const r = await checkCode(env, 'rcode:' + await sha256(email), email, body.code);
-    if (!r.ok) { await noteFailure(env, request); return json({ error: r.error }, r.status); }
+    if (!r.ok) { await noteFailure(env, request, email); return json({ error: r.error }, r.status); }
     const who = (await getAccounts(env)).filter(a => a.email === email && a.emailVerified);
     const token = randomToken();
     await env.HUB_KV.put('rtok:' + token, JSON.stringify({ ids: who.map(a => a.id) }), { expirationTtl: 600 });

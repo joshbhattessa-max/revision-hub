@@ -7,7 +7,8 @@ export const COOKIE = 'jbr_session';
 const ITER = 10000;
 const OLD_ITER = 100000; // accounts saved before the change; upgraded at their next sign-in
 
-// first-run accounts (hashes only); the admin console changes them from then on
+// the first accounts (hashes only). Their passwords were published in the README, so while an account still has
+// one of these hashes it can't sign in (see checkLogin); a new deployment starts with the admin one only.
 const SEED_ACCOUNTS = [
   {
     "id": "a1",
@@ -71,11 +72,31 @@ export async function getAccounts(env) {
     if (changed) await saveAccounts(env, list);
     return list;
   }
-  await env.HUB_KV.put('accounts', JSON.stringify(SEED_ACCOUNTS));
-  return SEED_ACCOUNTS;
+  const first = SEED_ACCOUNTS.filter(a => a.role === 'admin');
+  await env.HUB_KV.put('accounts', JSON.stringify(first));
+  return first;
 }
 
 export const saveAccounts = (env, list) => env.HUB_KV.put('accounts', JSON.stringify(list));
+
+// All accounts are one KV value, so two changes at the same moment (a class signing up together) could each save a
+// list without the other's change. This applies a change, waits for anyone else's save to land, and checks the change
+// is still there, applying it again if not. done(list) says whether the change is in a list.
+export async function changeAccounts(env, change, done, tries = 6) {
+  for (let i = 0; i < tries; i++) {
+    const list = await getAccounts(env);
+    if (!done(list)) {
+      const r = await change(list);
+      if (r && r.stop) return r;
+      await saveAccounts(env, list);
+    }
+    await new Promise(ok => setTimeout(ok, 700 + Math.random() * 600));
+    if (done(await getAccounts(env))) return { ok: true };
+  }
+  return { ok: false };
+}
+
+const startingPassword = a => SEED_ACCOUNTS.some(s => s.id === a.id && s.hash === a.hash);
 
 export async function verifyPassword(account, password) {
   const { hash } = await hashPassword(String(password || ''), account.salt, account.iter || OLD_ITER);
@@ -87,7 +108,15 @@ export async function checkLogin(env, username, password) {
   const name = String(username || '').trim().toLowerCase();
   const list = await getAccounts(env);
   for (const a of list) {
-    if (a.username.toLowerCase() !== name || !await verifyPassword(a, password)) continue;
+    if (a.username.toLowerCase() !== name) continue;
+    if (startingPassword(a)) {
+      // a published starting password never signs in; for the admin, the ADMIN_PASSWORD secret replaces it once
+      const set = String(env.ADMIN_PASSWORD || '');
+      if (a.role !== 'admin' || set.length < 8 || !sameBytes(String(password || ''), set)) continue;
+      Object.assign(a, await hashPassword(set)); await saveAccounts(env, list);
+      return a;
+    }
+    if (!await verifyPassword(a, password)) continue;
     if (a.iter !== ITER) { Object.assign(a, await hashPassword(String(password))); await saveAccounts(env, list); }
     return a;
   }
@@ -160,17 +189,26 @@ export async function endSessions(env, test) {
   return n;
 }
 
-// at most 10 wrong passwords per address every 15 minutes
-export async function tooManyFailures(env, request) {
+// Every 15 minutes, at most 10 wrong attempts at one account (who: its username, id or email) from one address,
+// and 60 at any accounts from one address. A school shares one address, so one pupil's typos can't lock out the class.
+const PER_ACCOUNT = 10, PER_ADDRESS = 60;
+const failKeys = (request, who) => {
   const ip = request.headers.get('cf-connecting-ip') || 'unknown';
-  const n = parseInt(await env.HUB_KV.get('fail:' + ip) || '0', 10);
-  return n >= 10;
+  return ['fail:' + ip, 'fail:' + ip + '|' + String(who || '').trim().toLowerCase().slice(0, 100)];
+};
+
+export async function tooManyFailures(env, request, who) {
+  const [all, one] = failKeys(request, who);
+  const [a, o] = await Promise.all([all, one].map(k => env.HUB_KV.get(k)));
+  return parseInt(a || '0', 10) >= PER_ADDRESS || parseInt(o || '0', 10) >= PER_ACCOUNT;
 }
 
-export async function noteFailure(env, request) {
-  const ip = request.headers.get('cf-connecting-ip') || 'unknown';
-  const n = parseInt(await env.HUB_KV.get('fail:' + ip) || '0', 10) + 1;
-  await env.HUB_KV.put('fail:' + ip, String(n), { expirationTtl: 900 });
+export async function noteFailure(env, request, who) {
+  for (const k of failKeys(request, who)) {
+    const n = parseInt(await env.HUB_KV.get(k) || '0', 10) + 1;
+    // KV takes one write a second per key, so a burst of wrong passwords mustn't turn into an error page
+    await env.HUB_KV.put(k, String(n), { expirationTtl: 900 }).catch(() => {});
+  }
 }
 
 export const json = (data, status = 200, headers = {}) =>
