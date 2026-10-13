@@ -7,8 +7,7 @@ export const COOKIE = 'jbr_session';
 const ITER = 10000;
 const OLD_ITER = 100000; // accounts saved before the change; upgraded at their next sign-in
 
-// the first accounts (hashes only). Their passwords were published in the README, so while an account still has
-// one of these hashes it can't sign in (see checkLogin); a new deployment starts with the admin one only.
+// first-run accounts (hashes only); the admin console changes them from then on
 const SEED_ACCOUNTS = [
   {
     "id": "a1",
@@ -72,9 +71,8 @@ export async function getAccounts(env) {
     if (changed) await saveAccounts(env, list);
     return list;
   }
-  const first = SEED_ACCOUNTS.filter(a => a.role === 'admin');
-  await env.HUB_KV.put('accounts', JSON.stringify(first));
-  return first;
+  await env.HUB_KV.put('accounts', JSON.stringify(SEED_ACCOUNTS));
+  return SEED_ACCOUNTS;
 }
 
 export const saveAccounts = (env, list) => env.HUB_KV.put('accounts', JSON.stringify(list));
@@ -96,8 +94,6 @@ export async function changeAccounts(env, change, done, tries = 6) {
   return { ok: false };
 }
 
-const startingPassword = a => SEED_ACCOUNTS.some(s => s.id === a.id && s.hash === a.hash);
-
 export async function verifyPassword(account, password) {
   const { hash } = await hashPassword(String(password || ''), account.salt, account.iter || OLD_ITER);
   return sameBytes(hash, account.hash);
@@ -108,15 +104,7 @@ export async function checkLogin(env, username, password) {
   const name = String(username || '').trim().toLowerCase();
   const list = await getAccounts(env);
   for (const a of list) {
-    if (a.username.toLowerCase() !== name) continue;
-    if (startingPassword(a)) {
-      // a published starting password never signs in; for the admin, the ADMIN_PASSWORD secret replaces it once
-      const set = String(env.ADMIN_PASSWORD || '');
-      if (a.role !== 'admin' || set.length < 8 || !sameBytes(String(password || ''), set)) continue;
-      Object.assign(a, await hashPassword(set)); await saveAccounts(env, list);
-      return a;
-    }
-    if (!await verifyPassword(a, password)) continue;
+    if (a.username.toLowerCase() !== name || !await verifyPassword(a, password)) continue;
     if (a.iter !== ITER) { Object.assign(a, await hashPassword(String(password))); await saveAccounts(env, list); }
     return a;
   }

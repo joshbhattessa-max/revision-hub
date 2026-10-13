@@ -20,7 +20,7 @@ Before you start, the seven subject sites should already be on Cloudflare (chemq
 
 Everything (the home page, every subject and the admin console) needs a sign-in. A sign-in lasts 6 hours.
 
-- **The first admin account:** a new deployment starts with one admin account, `JoshB`, which has no password anyone knows. To sign in to it, add a secret called `ADMIN_PASSWORD` (8 or more characters) in the Pages project's *Settings → Variables and Secrets*, redeploy, and sign in as `JoshB` with it. That becomes the account's password, so delete the secret afterwards. The first accounts' old starting passwords were public, so any account still using one can't sign in.
+- **Accounts to start with:** `JoshB` / `admin` (admin), `JoshB` / `normal` and `test` / `test` (standard). Change these weak passwords in the admin console once the site is up.
 - **Wrong passwords:** each address gets 10 wrong attempts at one account, and 60 in all, every 15 minutes. A school shares one address, so one pupil's typos don't lock out the class.
 - **Sign-up:** anyone can make a standard account on the login page ("Create an account") with a username and a password of at least 6 characters. Each address can make at most 40 accounts an hour (enough for a class on one school network).
 - **After signing in** the home page says "Hello, *name*", and the name then moves to the top right. Hover over it (tap on a phone) to change your password, log out or delete your account. Deleting needs your password, and the last admin account can't be deleted.
