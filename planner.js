@@ -127,10 +127,11 @@
       topics.forEach(function (t) { w[t] = need(M[t]); });
       var cands = Q.map(function (e) {
         if (avoid[e[0]]) return null;
-        var rel = e[6].filter(function (p) { return p[3].some(function (i) { return tl[i] && T[tl[i][0]]; }); });
+        // a part counts for its main topic only (the first, strongest one), as on the subject sites
+        var rel = e[6].filter(function (p) { return p[3].length && tl[p[3][0]] && T[tl[p[3][0]][0]]; });
         if (!rel.length) return null;
         var tps = {};
-        rel.forEach(function (p) { p[3].forEach(function (i) { if (tl[i] && T[tl[i][0]]) tps[tl[i][0]] = 1; }); });
+        rel.forEach(function (p) { tps[tl[p[3][0]][0]] = 1; });
         var mk = rel.reduce(function (a, p) { return a + (p[2] || 0); }, 0) || e[1];
         var tried = rel.filter(function (p) { return P.items[s + '|' + (p[0] ? e[0] + '/' + p[0] : e[0])]; }).length / rel.length;
         return { e: e, rel: rel, mk: mk, tps: Object.keys(tps), tried: tried, whole: rel.length === e[6].length };
@@ -169,7 +170,7 @@
     Q.forEach(function (e) { byId[e[0]] = e; });
     var due = Object.keys(P.items).map(function (k) {
       var v = P.items[k];
-      if (v.s !== s || !S.mine(k) || !(v.tp || []).some(function (t) { return T[t]; })) return null;
+      if (v.s !== s || !S.mine(k) || !(v.tp && T[v.tp[0]])) return null;
       var r = S.review(v);
       return r && r.now ? { k: k, v: v, due: r.due } : null;
     }).filter(Boolean).sort(function (a, b) { return a.due - b.due; });
@@ -213,8 +214,8 @@
     if (lines.length) return lines.slice(0, 120);
     return topicsOf(e).map(function (t) { return topicName(e.subj, t); }).slice(0, 120);
   }
-  // A shortlist of question parts to choose from: for each point, the parts whose wording shares the most
-  // words with it (on the date's topics, or anywhere if they share a lot), taken in turn so every point gets some.
+  // A shortlist of question parts to choose from: for each point, the parts on the date's topics whose wording shares
+  // the most words with it, taken in turn so every point gets some.
   function shortlist(s, topics, points, Q, X, avoid) {
     var T = {}, tl = subj(s).topics, P = S.get(), M = 160;
     topics.forEach(function (t) { T[t] = 1; });
@@ -224,7 +225,7 @@
       var tx = X[e[0]] || {}, list = e[6].length ? e[6] : [[null, '', e[1], []]];
       list.forEach(function (p) {
         var id = p[0] ? e[0] + '/' + p[0] : e[0], tps = (p[3] || []).map(function (i) { return tl[i] && tl[i][0]; }).filter(Boolean);
-        var onTopic = tps.some(function (t) { return T[t]; }), wording = tx[p[0] || '*'] || (p[0] ? '' : tx['*']) || '';
+        var onTopic = !!(tps.length && T[tps[0]]), wording = tx[p[0] || '*'] || (p[0] ? '' : tx['*']) || '';
         var stemText = tx['*'] ? tx['*'].split('(a)')[0].slice(0, 150) : '';
         if (p[0] && wording && stemText.length > 25 && wording.length < 200) wording = stemText + ' … ' + wording;
         var w = words(wording), done = P.items[s + '|' + id];
@@ -237,8 +238,7 @@
       return parts.map(function (c) {
         var hit = 0;
         keys.forEach(function (k) { if (c.w[k]) hit++; });
-        if (!hit && !c.on) return null;
-        if (!c.on && hit < 2) return null;
+        if (!c.on) return null;
         return { c: c, sc: hit / Math.sqrt(keys.length || 1) * 2 + c.base };
       }).filter(Boolean).sort(function (a, b) { return b.sc - a.sc; }).slice(0, 40);
     });
