@@ -1,9 +1,9 @@
 // Anyone on the login page can make a standard account (never an admin) and is signed straight in. New accounts give
 // an email address and, once the site can send emails, have to type in the code emailed to it before using the site.
-import { createSession, getAccounts, hashPassword, json, randomToken, saveAccounts, sessionCookie, SESSION_SECONDS } from '../_lib/auth.js';
+import { changeAccounts, createSession, hashPassword, json, randomToken, sessionCookie, SESSION_SECONDS } from '../_lib/auth.js';
 import { canSend, cleanEmail, emailCode, validEmail } from '../_lib/email.js';
 
-const MAX_PER_HOUR = 5; // new accounts per address
+const MAX_PER_HOUR = 40; // new accounts per address (a school shares one, so a class must fit)
 
 export async function onRequestPost({ env, request }) {
   const ip = request.headers.get('cf-connecting-ip') || 'unknown';
@@ -21,12 +21,13 @@ export async function onRequestPost({ env, request }) {
   if (password.length > 200) return json({ error: 'That password is too long.' }, 400);
   if (!validEmail(email)) return json({ error: "Enter your email address. We'll send it a code to check it's yours." }, 400);
 
-  const list = await getAccounts(env);
-  if (list.some(a => a.username.toLowerCase() === username.toLowerCase()))
-    return json({ error: 'That username is taken. Pick another one.' }, 409);
   const account = { id: 'a' + randomToken(6), username, role: 'user', email, mustVerify: true, ...(await hashPassword(password)) };
-  list.push(account);
-  await saveAccounts(env, list);
+  const saved = await changeAccounts(env, list => {
+    if (list.some(a => a.username.toLowerCase() === username.toLowerCase())) return { stop: true, taken: true };
+    list.push(account);
+  }, list => list.some(a => a.id === account.id));
+  if (saved.taken) return json({ error: 'That username is taken. Pick another one.' }, 409);
+  if (!saved.ok) return json({ error: "Lots of people are signing up right now. Try again in a minute." }, 503);
   await env.HUB_KV.put('signup:' + ip, String(made + 1), { expirationTtl: 3600 });
 
   const token = await createSession(env, account, request);

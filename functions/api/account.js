@@ -6,12 +6,12 @@ import { clearCookie, endSessions, getAccounts, hashPassword, json, noteFailure,
 
 async function mine(ctx, password) {
   const { env, request, data } = ctx;
-  if (await tooManyFailures(env, request)) return { error: json({ error: 'Too many attempts. Try again in 15 minutes.' }, 429) };
+  if (await tooManyFailures(env, request, data.session.accountId)) return { error: json({ error: 'Too many attempts. Try again in 15 minutes.' }, 429) };
   const list = await getAccounts(env);
   const account = list.find(a => a.id === data.session.accountId);
   if (!account) return { error: json({ error: 'This account no longer exists.' }, 404) };
   if (!await verifyPassword(account, password)) {
-    await noteFailure(env, request);
+    await noteFailure(env, request, data.session.accountId);
     return { error: json({ error: 'Your current password is wrong.' }, 403) };
   }
   return { list, account };
