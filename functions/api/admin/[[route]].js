@@ -20,7 +20,7 @@ import { forgetMaintenance, maintenance } from '../../_lib/maintenance.js';
 import { getKeys, newKey, saveKeys, sha256 } from '../../_lib/keys.js';
 import { SOURCES, load as loadDeploys, sync as syncDeploys, upsert as upsertDeploys } from '../../_lib/deploylog.js';
 import { KEEP_DAYS, SITES, db as activityDb, forget as forgetActivity, schema as activitySchema } from '../../_lib/activity.js';
-import { clearVerifyFlag, endSessions, getAccounts, hashPassword, hubContent, json, listSessions, randomToken, saveAccounts } from '../../_lib/auth.js';
+import { clearVerifyFlag, endSessions, getAccounts, hashPassword, hubContent, json, listSessions, randomToken, saveAccounts, setNoteFlag } from '../../_lib/auth.js';
 
 const ROLES = ['admin', 'user'];
 const MAX_IMAGE = 5 * 1024 * 1024;
@@ -55,8 +55,8 @@ export async function onRequest(ctx) {
   if (actRoute && method === 'GET') return json(await activityOf(env, actRoute[1], Number(new URL(request.url).searchParams.get('days')) || 7));
   if (route === 'usage' && method === 'GET') return json(await usage(env, Number(new URL(request.url).searchParams.get('days')) || 30));
   if (route === 'accounts' && method === 'GET') {
-    const sessions = await listSessions(env);
-    return json((await getAccounts(env)).map(a => ({ id: a.id, username: a.username, role: a.role, label: label(a),
+    const [sessions, notes] = await Promise.all([listSessions(env), listNotes(env)]);
+    return json((await getAccounts(env)).map(a => ({ note: notes[a.id] || null, id: a.id, username: a.username, role: a.role, label: label(a),
       email: a.email || '', emailVerified: a.emailVerified || null, mustVerify: !!a.mustVerify,
       signedIn: sessions.filter(s => s.accountId === a.id).length, you: a.id === me.accountId })));
   }
@@ -99,6 +99,24 @@ export async function onRequest(ctx) {
       await endSessions(env, s => s.accountId === a.id && s.token !== me.token);
     return json({ ok: true });
   }
+  // a message shown to an account once, on its next page (or next sign-in): set it, or take it back
+  const noteRoute = route.match(/^accounts\/([\w-]+)\/note$/);
+  if (noteRoute && method === 'PUT') {
+    const a = (await getAccounts(env)).find(x => x.id === noteRoute[1]);
+    if (!a) return json({ error: 'No such account.' }, 404);
+    const text = String(body.text || '').trim().slice(0, 2000);
+    if (!text) return json({ error: 'Write a message.' }, 400);
+    const rec = { text, t: Date.now() };
+    await env.HUB_KV.put('note:' + a.id, JSON.stringify(rec), { metadata: { t: rec.t, len: text.length } });
+    await setNoteFlag(env, a.id, true);
+    return json({ ok: true });
+  }
+  if (noteRoute && method === 'GET') return json(await env.HUB_KV.get('note:' + noteRoute[1], 'json'));
+  if (noteRoute && method === 'DELETE') {
+    await env.HUB_KV.delete('note:' + noteRoute[1]);
+    await setNoteFlag(env, noteRoute[1], false);
+    return json({ ok: true });
+  }
   if (acct && method === 'DELETE') {
     const list = await getAccounts(env);
     const a = list.find(x => x.id === acct[1]);
@@ -111,6 +129,7 @@ export async function onRequest(ctx) {
     await env.HUB_KV.delete('prog:' + a.id);
     await env.HUB_KV.delete('consent:' + a.id);
     await env.HUB_KV.delete('ecode:' + a.id);
+    await env.HUB_KV.delete('note:' + a.id);
     await forgetActivity(env, a.id);
     return json({ ok: true });
   }
@@ -207,6 +226,18 @@ function deployItem(x) {
     dirs: (Array.isArray(f.dirs) ? f.dirs : []).slice(0, 20).map(([d, n]) => [str(d, 120), Number(n) || 0]) } : null;
   return { proj: x.proj.slice(0, 60), site: str(x.site, 80) || x.proj, repo: x.repo, sha: x.sha, at: x.at, ok: x.ok === true,
     url: link(x.url), dash: link(x.dash), commits, files };
+}
+
+// every account's message from the admin console in one listing: when it was set, and when it was read
+async function listNotes(env) {
+  const out = {};
+  let cursor;
+  do {
+    const page = await env.HUB_KV.list({ prefix: 'note:', cursor });
+    for (const k of page.keys) out[k.name.slice(5)] = k.metadata || {};
+    cursor = page.list_complete ? null : page.cursor;
+  } while (cursor);
+  return out;
 }
 
 function clean(s) { return String(s || '').trim().slice(0, 40); }

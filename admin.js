@@ -394,11 +394,14 @@
     api('GET', 'accounts').then(function (list) {
       abox.innerHTML = '<div class="tablewrap"><table><thead><tr><th>Account</th><th>Role</th><th>Email</th><th>Signed in now</th><th></th></tr></thead><tbody>' +
         list.map(function (a) {
-          return '<tr data-id="' + esc(a.id) + '"><td>' + esc(a.username) + (a.you ? ' <span class="muted">(you)</span>' : '') + '</td>' +
+          return '<tr data-id="' + esc(a.id) + '"><td>' + esc(a.username) + (a.you ? ' <span class="muted">(you)</span>' : '') +
+            (a.note ? '<br><span class="muted">' + (a.note.seen ? 'Message read ' + when(a.note.seen) : 'Message waiting (sent ' + when(a.note.t) + ')') + '</span>' : '') + '</td>' +
             '<td><select class="role"' + (a.you ? ' disabled' : '') + '><option value="user"' + (a.role === 'user' ? ' selected' : '') + '>Standard</option>' +
             '<option value="admin"' + (a.role === 'admin' ? ' selected' : '') + '>Admin</option></select></td><td>' + emailCell(a) + '</td><td>' + a.signedIn + '</td><td><div class="row">' +
             '<button type="button" class="small pw">Change password</button><button type="button" class="small rename">Rename</button>' +
             '<button type="button" class="small out"' + (a.signedIn ? '' : ' disabled') + '>Sign out everywhere</button>' +
+            '<button type="button" class="small msg">' + (a.note && !a.note.seen ? 'Change message' : 'Send message') + '</button>' +
+            (a.note ? '<button type="button" class="small nomsg">' + (a.note.seen ? 'Clear message' : 'Cancel message') + '</button>' : '') +
             (a.mustVerify ? '<button type="button" class="small excuse" title="Let this account use the site without checking its email address">Excuse email check</button>' : '') +
             (a.email ? '<button type="button" class="small noemail">Remove email</button>' : '') +
             (a.you ? '' : '<button type="button" class="small danger del">Delete</button>') + '</div></td></tr>';
@@ -423,6 +426,18 @@
         if (ex) ex.addEventListener('click', function () { patch({ excuse: true }, a.username + ' can now use the site without checking an email address.'); });
         if (ne) ne.addEventListener('click', function () {
           if (confirm('Remove the email address of ' + a.label + '? They can add one again from the menu under their name.')) patch({ email: '' }, 'Email address removed.');
+        });
+        // a message shown to them once, on their next page (straight away if they're signed in now)
+        tr.querySelector('.msg').addEventListener('click', function () {
+          (a.note && !a.note.seen ? api('GET', 'accounts/' + id + '/note') : Promise.resolve(null)).then(function (n) {
+            return ask('Message for ' + a.username + ' (shown once, next time they open the site):', n ? n.text : '');
+          }).then(function (v) {
+            if (v && v.trim()) api('PUT', 'accounts/' + id + '/note', { text: v.trim() }).then(function () { say('Message saved; ' + a.username + ' sees it on their next page.'); loadAccounts(); }).catch(function (e) { say(e.message, true); });
+          });
+        });
+        var nomsg = tr.querySelector('.nomsg');
+        if (nomsg) nomsg.addEventListener('click', function () {
+          api('DELETE', 'accounts/' + id + '/note').then(function () { say(a.note.seen ? 'Cleared.' : 'Message cancelled.'); loadAccounts(); }).catch(function (e) { say(e.message, true); });
         });
         tr.querySelector('.out').addEventListener('click', function () {
           api('POST', 'sessions/end', { accountId: id }).then(function (d) { say(d.ended + ' session(s) signed out.'); loadAccounts(); });
