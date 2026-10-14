@@ -121,7 +121,7 @@ async function fresh(ctx, path) {
 function withConsent(res, signedIn, note) {
   if (res.status !== 200 || !(res.headers.get('content-type') || '').includes('text/html')) return res;
   const scripts = '<script src="/consent.js?v=2" defer></script>' + (signedIn ? '<script src="/activity.js?v=1" defer></script>' : '') +
-    (note ? '<script src="/note.js?v=1" defer></script>' : '');
+    (note ? '<script src="/note.js?v=2" defer></script>' : '');
   return new HTMLRewriter().on('body', { element(e) { e.append(scripts, { html: true }); } }).transform(res);
 }
 

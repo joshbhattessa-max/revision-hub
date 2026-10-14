@@ -36,6 +36,20 @@
   </div>
   <dialog class="ask"><form method="dialog"><p class="ask-q"></p><input class="ask-in"><div class="ask-btns">
     <button value="cancel" type="submit" class="btn-quiet">Cancel</button><button value="ok" type="submit" class="btn-main">OK</button></div></form></dialog>
+  <dialog class="ask msgdlg"><form method="dialog"><p class="ask-q"></p>
+    <input class="ask-in msg-title" placeholder="Title (optional)" maxlength="120">
+    <label class="msg-logo"><input type="checkbox"> Show the JBR logo</label>
+    <div class="msg-tools" role="toolbar" aria-label="Formatting">
+      <button type="button" data-cmd="bold" title="Bold"><b>B</b></button><button type="button" data-cmd="italic" title="Italic"><i>I</i></button>
+      <button type="button" data-cmd="underline" title="Underline"><u>U</u></button><button type="button" data-cmd="formatBlock" data-arg="h3" title="Heading">H</button>
+      <button type="button" data-cmd="formatBlock" data-arg="p" title="Normal text">¶</button>
+      <button type="button" data-cmd="insertUnorderedList" title="Bulleted list">• List</button><button type="button" data-cmd="insertOrderedList" title="Numbered list">1. List</button>
+      <button type="button" data-cmd="createLink" title="Link">Link</button>
+      <label title="Text colour" class="msg-color">A<input type="color" value="#c0392b"></label>
+      <button type="button" data-cmd="removeFormat" title="Clear formatting">Clear</button>
+    </div>
+    <div class="msg-ed" contenteditable="true" aria-label="Message"></div>
+    <div class="ask-btns"><button value="cancel" type="submit" class="btn-quiet">Cancel</button><button value="ok" type="submit" class="btn-main">Save</button></div></form></dialog>
   <script src="admin.js"></script>
 </body>
 </html>

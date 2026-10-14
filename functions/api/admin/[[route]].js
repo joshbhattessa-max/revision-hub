@@ -20,6 +20,7 @@ import { forgetMaintenance, maintenance } from '../../_lib/maintenance.js';
 import { getKeys, newKey, saveKeys, sha256 } from '../../_lib/keys.js';
 import { SOURCES, load as loadDeploys, sync as syncDeploys, upsert as upsertDeploys } from '../../_lib/deploylog.js';
 import { KEEP_DAYS, SITES, db as activityDb, forget as forgetActivity, schema as activitySchema } from '../../_lib/activity.js';
+import { cleanHtml } from '../../_lib/richtext.js';
 import { clearVerifyFlag, endSessions, getAccounts, hashPassword, hubContent, json, listSessions, randomToken, saveAccounts, setNoteFlag } from '../../_lib/auth.js';
 
 const ROLES = ['admin', 'user'];
@@ -104,10 +105,11 @@ export async function onRequest(ctx) {
   if (noteRoute && method === 'PUT') {
     const a = (await getAccounts(env)).find(x => x.id === noteRoute[1]);
     if (!a) return json({ error: 'No such account.' }, 404);
-    const text = String(body.text || '').trim().slice(0, 2000);
-    if (!text) return json({ error: 'Write a message.' }, 400);
-    const rec = { text, t: Date.now() };
-    await env.HUB_KV.put('note:' + a.id, JSON.stringify(rec), { metadata: { t: rec.t, len: text.length } });
+    // a title, the JBR logo or not, and the message with its formatting (only what richtext.js keeps)
+    const title = String(body.title || '').trim().slice(0, 120), html = cleanHtml(body.html);
+    if (!title && !html.replace(/<[^>]*>|&nbsp;|\s/g, '')) return json({ error: 'Write a message.' }, 400);
+    const rec = { title, logo: !!body.logo, html, t: Date.now() };
+    await env.HUB_KV.put('note:' + a.id, JSON.stringify(rec), { metadata: { t: rec.t, len: html.length } });
     await setNoteFlag(env, a.id, true);
     return json({ ok: true });
   }

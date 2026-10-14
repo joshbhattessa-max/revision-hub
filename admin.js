@@ -28,6 +28,37 @@
       dlg.returnValue = ''; dlg.showModal(); inp.focus();
     });
   }
+  // the message box for Accounts → Send message: a title, the JBR logo or not, and the message with simple formatting
+  var mdlg = document.querySelector('.msgdlg'), med = mdlg.querySelector('.msg-ed');
+  Array.prototype.forEach.call(mdlg.querySelectorAll('.msg-tools button'), function (b) {
+    b.addEventListener('mousedown', function (e) { e.preventDefault(); });  // keep the selection in the message
+    b.addEventListener('click', function () {
+      var cmd = b.getAttribute('data-cmd'), arg = b.getAttribute('data-arg');
+      if (cmd === 'createLink') { arg = prompt('Link address (https://…):', 'https://'); if (!arg || arg === 'https://') return; }
+      med.focus();
+      document.execCommand(cmd, false, arg ? (cmd === 'formatBlock' ? '<' + arg + '>' : arg) : null);
+    });
+  });
+  var mcolor = mdlg.querySelector('.msg-color input'), msel = null;
+  med.addEventListener('blur', function () { var s = getSelection(); msel = s.rangeCount ? s.getRangeAt(0) : null; });
+  mcolor.addEventListener('input', function () {
+    med.focus();
+    if (msel) { var s = getSelection(); s.removeAllRanges(); s.addRange(msel); }
+    document.execCommand('foreColor', false, mcolor.value);
+  });
+  mdlg.querySelector('.msg-title').addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); med.focus(); } });
+  function writeMessage(question, n) {
+    return new Promise(function (resolve) {
+      mdlg.querySelector('.ask-q').textContent = question;
+      mdlg.querySelector('.msg-title').value = (n && n.title) || '';
+      mdlg.querySelector('.msg-logo input').checked = !!(n && n.logo);
+      med.innerHTML = n ? (n.html || esc(n.text || '').replace(/\n/g, '<br>')) : '';
+      mdlg.onclose = function () {
+        resolve(mdlg.returnValue === 'ok' ? { title: mdlg.querySelector('.msg-title').value.trim(), logo: mdlg.querySelector('.msg-logo input').checked, html: med.innerHTML } : null);
+      };
+      mdlg.returnValue = ''; mdlg.showModal(); med.focus();
+    });
+  }
   function when(t) { return new Date(t).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }); }
   function left(t) {
     var m = Math.max(0, Math.round((t - Date.now()) / 60000));
@@ -430,9 +461,9 @@
         // a message shown to them once, on their next page (straight away if they're signed in now)
         tr.querySelector('.msg').addEventListener('click', function () {
           (a.note && !a.note.seen ? api('GET', 'accounts/' + id + '/note') : Promise.resolve(null)).then(function (n) {
-            return ask('Message for ' + a.username + ' (shown once, next time they open the site):', n ? n.text : '');
-          }).then(function (v) {
-            if (v && v.trim()) api('PUT', 'accounts/' + id + '/note', { text: v.trim() }).then(function () { say('Message saved; ' + a.username + ' sees it on their next page.'); loadAccounts(); }).catch(function (e) { say(e.message, true); });
+            return writeMessage('Message for ' + a.username + ' (shown once, next time they open the site):', n);
+          }).then(function (m) {
+            if (m) api('PUT', 'accounts/' + id + '/note', m).then(function () { say('Message saved; ' + a.username + ' sees it on their next page.'); loadAccounts(); }).catch(function (e) { say(e.message, true); });
           });
         });
         var nomsg = tr.querySelector('.nomsg');

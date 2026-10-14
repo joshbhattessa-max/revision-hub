@@ -256,6 +256,15 @@ footer p { margin: 0 0 8px; }
 .ask::backdrop { background: rgba(0, 0, 0, .45); }
 .ask-in { width: 100%; box-sizing: border-box; margin: 6px 0 14px; }
 .ask-btns { display: flex; gap: 8px; justify-content: flex-end; }
+.msgdlg { width: min(560px, 94vw); }
+.msg-logo { display: flex; gap: 8px; align-items: center; margin: -4px 0 10px; font-size: .9rem; }
+.msg-tools { display: flex; flex-wrap: wrap; gap: 4px; padding: 6px; border: 1px solid var(--line); border-bottom: 0; border-radius: 8px 8px 0 0; }
+.msg-tools button, .msg-color { font: inherit; font-size: .85rem; min-width: 32px; padding: 4px 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--card); color: var(--ink); cursor: pointer; }
+.msg-color { display: inline-flex; align-items: center; gap: 4px; font-weight: 700; }
+.msg-color input { width: 22px; height: 18px; padding: 0; border: 0; background: none; cursor: pointer; }
+.msg-ed { min-height: 160px; max-height: 50vh; overflow: auto; padding: 10px 12px; margin-bottom: 14px; border: 1px solid var(--line); border-radius: 0 0 8px 8px; background: var(--bg); line-height: 1.5; outline: none; }
+.msg-ed:focus { border-color: var(--muted); }
+.msg-ed h3 { margin: 8px 0 4px; } .msg-ed p { margin: 0 0 6px; } .msg-ed ul, .msg-ed ol { margin: 0 0 6px; padding-left: 22px; }
 
 /* shown to admins while maintenance mode is on */
 .maint-bar { background: var(--ink); color: var(--bg); text-align: center; font-size: .88rem; padding: 9px 16px; }
