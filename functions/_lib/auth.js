@@ -133,6 +133,9 @@ export async function createSession(env, account, request) {
     ip: request.headers.get('cf-connecting-ip') || '', country: (request.cf && request.cf.country) || '',
     device: (request.headers.get('user-agent') || '').slice(0, 160),
   };
+  // a message from the admin console waiting for this account: the pages of this session show it (functions/api/note.js)
+  const note = await env.HUB_KV.get('note:' + account.id, 'json');
+  if (note && !note.seen) info.note = true;
   // the key expires with the session; the metadata lets the admin console list sessions without reading each one
   await env.HUB_KV.put('sess:' + token, JSON.stringify(info), { expiration: Math.floor(info.expires / 1000), metadata: info });
   return token;
@@ -165,6 +168,17 @@ export async function clearVerifyFlag(env, accountId) {
   for (const s of await listSessions(env)) {
     if (s.accountId !== accountId || !s.mustVerify) continue;
     const { token, mustVerify, ...info } = s;
+    await env.HUB_KV.put('sess:' + token, JSON.stringify(info), { expiration: Math.floor(info.expires / 1000), metadata: info });
+  }
+}
+
+// an admin's message for an account was set (on) or read or removed (off): its sessions on every device find out on
+// their next page, so it shows straight away if they're already signed in
+export async function setNoteFlag(env, accountId, on) {
+  for (const s of await listSessions(env)) {
+    if (s.accountId !== accountId || !!s.note === on) continue;
+    const { token, note, ...info } = s;
+    if (on) info.note = true;
     await env.HUB_KV.put('sess:' + token, JSON.stringify(info), { expiration: Math.floor(info.expires / 1000), metadata: info });
   }
 }
