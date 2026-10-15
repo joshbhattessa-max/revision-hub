@@ -209,8 +209,8 @@ export function movedPage(url) {
 <link rel="icon" href="${NEW_SITE}/favicon-32.png" sizes="32x32" type="image/png">
 <link rel="apple-touch-icon" href="${NEW_SITE}/apple-touch-icon.png">
 <style>
-:root { --bg: #ecebe7; --card: #fff; --ink: #33312e; --muted: #6b6862; --line: #e4e2dd; --accent: #17a398; --logo: #3a3530; }
-:root[data-theme="dark"] { --bg: #0f0f11; --card: #222226; --ink: #ecebe8; --muted: #a3a09a; --line: #34343a; --logo: #3a3530; }
+:root { --bg: #ecebe7; --card: #fff; --ink: #33312e; --muted: #6b6862; --line: #e4e2dd; --accent: #17a398; --logo: #000; }
+:root[data-theme="dark"] { --bg: #0f0f11; --card: #222226; --ink: #ecebe8; --muted: #a3a09a; --line: #34343a; --logo: #000; }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) { --bg: #0f0f11; --card: #222226; --ink: #ecebe8; --muted: #a3a09a; --line: #34343a; }
 }
