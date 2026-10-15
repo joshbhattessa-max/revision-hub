@@ -27,13 +27,13 @@ header.top { display: flex; align-items: center; justify-content: space-between;
 .brand { display: flex; align-items: center; gap: 14px; }
 .jbr { width: clamp(54px, 8vw, 68px); height: auto; aspect-ratio: 1; display: block; flex: none; }
 /* the JBR logo: dark ink in light mode, light ink in dark mode */
-.jbr-ink { fill: #1c1c1c; }
-.jbr-ring { stroke: #1c1c1c; }
-:root[data-theme="dark"] .jbr-ink { fill: #ececec; }
-:root[data-theme="dark"] .jbr-ring { stroke: #ececec; }
+.jbr-ink { fill: #000; }
+.jbr-ring { stroke: #000; }
+:root[data-theme="dark"] .jbr-ink { fill: #fff; }
+:root[data-theme="dark"] .jbr-ring { stroke: #fff; }
 @media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) .jbr-ink { fill: #ececec; }
-  :root:not([data-theme="light"]) .jbr-ring { stroke: #ececec; }
+  :root:not([data-theme="light"]) .jbr-ink { fill: #fff; }
+  :root:not([data-theme="light"]) .jbr-ring { stroke: #fff; }
 }
 h1 { font-size: clamp(1.8rem, 4vw, 2.6rem); font-weight: 700; margin: 0; letter-spacing: -.5px; }
 .subtitle { color: var(--muted); margin: 0; font-size: 1.05rem; }

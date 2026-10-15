@@ -176,6 +176,6 @@ export const SCENE_CSS = `
 @keyframes lit { 0%, 40% { opacity: 0; } 55%, 85% { opacity: .95; } 100% { opacity: 0; } }
 .scene .flag { transform-box: fill-box; transform-origin: left center; animation: wave 1.6s ease-in-out infinite alternate; }
 @keyframes wave { from { transform: skewY(-6deg) scaleX(.94); } to { transform: skewY(5deg) scaleX(1); } }
-.scene .jbr-ink { fill: #3a3530; } .scene .jbr-ring { stroke: #3a3530; }
+.scene .jbr-ink { fill: #000; } .scene .jbr-ring { stroke: #000; }
 @media (prefers-reduced-motion: reduce) { .scene .win, .scene .flag { animation: none; } }`;
 

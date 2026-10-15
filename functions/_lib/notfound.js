@@ -171,7 +171,7 @@ p { color: var(--muted); line-height: 1.5; margin: 0 0 20px; font-size: 1rem; }
 .back { background: transparent; color: var(--ink); border: 1.5px solid currentColor; }
 .go:hover, .back:hover { opacity: .88; }
 a:focus-visible, button:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
-.jbr-ink { fill: #3a3530; } .jbr-ring { stroke: #3a3530; }
+.jbr-ink { fill: #000; } .jbr-ring { stroke: #000; }
 @media (max-width: 700px) {
   .copy { position: relative; top: auto; left: auto; padding: 24px 20px 0; max-width: none; }
   .stage { top: auto; height: 62vh; }
