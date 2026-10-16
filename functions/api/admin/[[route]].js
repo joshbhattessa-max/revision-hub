@@ -5,6 +5,9 @@
 //   POST   /api/admin/accounts               {username, password, role}
 //   PATCH  /api/admin/accounts/:id           {username?, password?, role?, excuse?: true, email?: ''}
 //   DELETE /api/admin/accounts/:id
+//   POST   /api/admin/accounts/:id/ban    DELETE /api/admin/accounts/:id/ban    ban or unban an account
+//   GET    /api/admin/bans                   banned accounts (deleted ones too), their attempts, blocked internet addresses
+//   DELETE /api/admin/bans/ip/:ip             let that internet address make new accounts again
 //   POST   /api/admin/notes                  {ids, title, logo, html} one message to many accounts    POST /api/admin/notes/clear {ids}
 //   GET    /api/admin/hub    PUT /api/admin/hub {content}    DELETE /api/admin/hub (back to hub.json)
 //   POST   /api/admin/media                  raw image body -> {url}
@@ -22,7 +25,8 @@ import { getKeys, newKey, saveKeys, sha256 } from '../../_lib/keys.js';
 import { SOURCES, load as loadDeploys, sync as syncDeploys, upsert as upsertDeploys } from '../../_lib/deploylog.js';
 import { KEEP_DAYS, SITES, db as activityDb, forget as forgetActivity, schema as activitySchema } from '../../_lib/activity.js';
 import { cleanHtml } from '../../_lib/richtext.js';
-import { clearVerifyFlag, endSessions, getAccounts, hashPassword, hubContent, json, listSessions, randomToken, saveAccounts, setNoteFlag } from '../../_lib/auth.js';
+import { ban, getBans, liftIp, unban } from '../../_lib/bans.js';
+import { changeAccounts, clearVerifyFlag, endSessions, getAccounts, hashPassword, hubContent, json, listSessions, randomToken, saveAccounts, setNoteFlag } from '../../_lib/auth.js';
 
 const ROLES = ['admin', 'user'];
 const MAX_IMAGE = 5 * 1024 * 1024;
@@ -62,7 +66,7 @@ export async function onRequest(ctx) {
   if (route === 'accounts' && method === 'GET') {
     const [sessions, notes] = await Promise.all([listSessions(env), listNotes(env)]);
     return json((await getAccounts(env)).map(a => ({ note: notes[a.id] || null, id: a.id, username: a.username, role: a.role, label: label(a),
-      email: a.email || '', emailVerified: a.emailVerified || null, mustVerify: !!a.mustVerify,
+      banned: a.banned || null, email: a.email || '', emailVerified: a.emailVerified || null, mustVerify: !!a.mustVerify,
       signedIn: sessions.filter(s => s.accountId === a.id).length, you: a.id === me.accountId })));
   }
   if (route === 'accounts' && method === 'POST') {
@@ -121,6 +125,47 @@ export async function onRequest(ctx) {
   if (noteRoute && method === 'DELETE') {
     await env.HUB_KV.delete('note:' + noteRoute[1]);
     await setNoteFlag(env, noteRoute[1], false);
+    return json({ ok: true });
+  }
+  // ban: signed out everywhere, can't sign in, and can't make a new account (functions/_lib/bans.js); unban undoes it all
+  const banRoute = route.match(/^accounts\/([\w-]+)\/ban$/);
+  if (banRoute && (method === 'POST' || method === 'DELETE')) {
+    const id = banRoute[1], on = method === 'POST';
+    if (on && id === me.accountId) return json({ error: "You can't ban the account you're signed in with." }, 400);
+    const found = (await getAccounts(env)).find(x => x.id === id);
+    if (!found) {
+      // an account deleted after it was banned: unbanning it still frees its email address and internet addresses
+      if (!on && await unban(env, id)) return json({ ok: true });
+      return json({ error: 'No such account.' }, 404);
+    }
+    const r = await changeAccounts(env, list => {
+      const a = list.find(x => x.id === id);
+      if (!a) return { stop: true };
+      if (on && a.role === 'admin' && list.filter(x => x.role === 'admin' && !x.banned).length < 2) return { stop: true, lastAdmin: true };
+      if (on) a.banned = Date.now(); else delete a.banned;
+    }, list => { const a = list.find(x => x.id === id); return !!a && !!a.banned === on; });
+    if (r.lastAdmin) return json({ error: 'There must always be at least one admin account that isn\'t banned.' }, 400);
+    if (!r.ok) return json({ error: 'That didn\'t save. Try again.' }, 503);
+    if (on) {
+      await ban(env, found, (await listSessions(env)).filter(s => s.accountId === id));
+      const ended = await endSessions(env, s => s.accountId === id);
+      return json({ ok: true, ended });
+    }
+    await unban(env, id);
+    return json({ ok: true });
+  }
+  if (route === 'bans' && method === 'GET') {
+    const b = await getBans(env), accounts = await getAccounts(env), now = Date.now();
+    return json({
+      accounts: Object.entries(b.accounts).map(([id, r]) => ({ id, username: r.username, email: r.email, t: r.t,
+        gone: !accounts.some(a => a.id === id), devices: r.devs.length, tries: r.tries.slice().reverse() })),
+      ips: Object.entries(b.ips).filter(([, x]) => x.until > now).map(([ip, x]) => ({ ip, t: x.t, until: x.until,
+        username: (b.accounts[x.acct] || {}).username || '' })),
+    });
+  }
+  const ipRoute = route.match(/^bans\/ip\/(.+)$/);
+  if (ipRoute && method === 'DELETE') {
+    await liftIp(env, decodeURIComponent(ipRoute[1]));
     return json({ ok: true });
   }
   if (acct && method === 'DELETE') {

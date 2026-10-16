@@ -529,6 +529,7 @@ a.pl-chip:hover { border-color: var(--ink); }
 .em-ok { color: #23824a; font-weight: 600; white-space: nowrap; }
 :root[data-theme="dark"] .em-ok { color: #6fcf8a; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .em-ok { color: #6fcf8a; } }
+.ban-tag { color: #d33c3c; font-weight: 600; white-space: nowrap; }
 .email-nudge { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 0 0 24px; padding: 12px 14px; background: var(--card);
   border: 1px solid var(--line); border-left: 4px solid #17A398; border-radius: 12px; font-size: .92rem; }
 .email-nudge span { flex: 1 1 260px; }

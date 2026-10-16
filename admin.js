@@ -426,6 +426,7 @@
       abox.innerHTML = '<div class="tablewrap"><table><thead><tr><th>Account</th><th>Role</th><th>Email</th><th>Signed in now</th><th></th></tr></thead><tbody>' +
         list.map(function (a) {
           return '<tr data-id="' + esc(a.id) + '"><td>' + esc(a.username) + (a.you ? ' <span class="muted">(you)</span>' : '') +
+            (a.banned ? '<br><span class="ban-tag">Banned ' + when(a.banned) + '</span>' : '') +
             (a.note ? '<br><span class="muted">' + (a.note.seen ? 'Message read ' + when(a.note.seen) : 'Message waiting (sent ' + when(a.note.t) + ')') + '</span>' : '') + '</td>' +
             '<td><select class="role"' + (a.you ? ' disabled' : '') + '><option value="user"' + (a.role === 'user' ? ' selected' : '') + '>Standard</option>' +
             '<option value="admin"' + (a.role === 'admin' ? ' selected' : '') + '>Admin</option></select></td><td>' + emailCell(a) + '</td><td>' + a.signedIn + '</td><td><div class="row">' +
@@ -435,6 +436,7 @@
             (a.note ? '<button type="button" class="small nomsg">' + (a.note.seen ? 'Clear message' : 'Cancel message') + '</button>' : '') +
             (a.mustVerify ? '<button type="button" class="small excuse" title="Let this account use the site without checking its email address">Excuse email check</button>' : '') +
             (a.email ? '<button type="button" class="small noemail">Remove email</button>' : '') +
+            (a.you ? '' : '<button type="button" class="small ' + (a.banned ? 'unban">Unban' : 'danger ban">Ban') + '</button>') +
             (a.you ? '' : '<button type="button" class="small danger del">Delete</button>') + '</div></td></tr>';
         }).join('') + '</tbody></table></div>' +
         '<h2>Add an account</h2><div class="box"><div class="row"><input type="text" class="nu grow" placeholder="Username" autocomplete="off">' +
@@ -473,6 +475,16 @@
         tr.querySelector('.out').addEventListener('click', function () {
           api('POST', 'sessions/end', { accountId: id }).then(function (d) { say(d.ended + ' session(s) signed out.'); loadAccounts(); });
         });
+        // ban: signed out everywhere, can't sign in again or make a new account (functions/_lib/bans.js)
+        var bn = tr.querySelector('.ban'), ub = tr.querySelector('.unban');
+        if (bn) bn.addEventListener('click', function () {
+          if (!confirm('Ban ' + a.label + '? They\'re signed out everywhere now, can\'t sign in again, and can\'t make a new account. ' +
+            'If they try to, new accounts can\'t be made from their internet address for 30 days. Other accounts there still work.')) return;
+          api('POST', 'accounts/' + id + '/ban').then(function (d) { say(a.username + ' is banned' + (d.ended ? ' and was signed out.' : '.')); loadAccounts(); }).catch(function (e) { say(e.message, true); });
+        });
+        if (ub) ub.addEventListener('click', function () {
+          api('DELETE', 'accounts/' + id + '/ban').then(function () { say(a.username + ' is no longer banned.'); loadAccounts(); }).catch(function (e) { say(e.message, true); });
+        });
         var del = tr.querySelector('.del');
         if (del) del.addEventListener('click', function () {
           if (confirm('Delete the account ' + a.label + '? Anyone using it is signed out.'))
@@ -484,6 +496,7 @@
         api('POST', 'accounts', { username: u, password: p, role: r }).then(function () { say('Account added.'); loadAccounts(); }).catch(function (e) { say(e.message, true); });
       });
       addPicker(list);
+      loadBans();
       loadKeys();
     }).catch(function (e) { say(e.message, true); });
   }
@@ -562,6 +575,46 @@
           .catch(function (e) { say(e.message, true); });
     });
     count();
+  }
+
+  // bans: banned accounts (deleted ones too, whose ban still stands), their attempts since, and internet addresses that
+  // can't make new accounts for now because a banned person tried to make one there
+  function loadBans() {
+    var bbox = document.createElement('div');
+    abox.appendChild(bbox);
+    api('GET', 'bans').then(function (b) {
+      if (!b.accounts.length && !b.ips.length) return;
+      var tries = function (r) {
+        if (!r.tries.length) return '<span class="muted">none</span>';
+        var up = r.tries.filter(function (x) { return x.what === 'signup'; }).length;
+        return (up ? up + ' new account' + (up === 1 ? '' : 's') : '') + (up && up < r.tries.length ? ', ' : '') +
+          (r.tries.length > up ? (r.tries.length - up) + ' sign-in' + (r.tries.length - up === 1 ? '' : 's') : '') +
+          '<br><span class="muted">last ' + when(r.tries[0].t) + '</span>';
+      };
+      bbox.innerHTML = '<h2>Banned</h2>' +
+        '<p class="muted">Banned people can\'t sign in or make a new account with the same email address or on a browser they used. ' +
+        'Trying to make one blocks new accounts from their internet address for 30 days; everyone there can still sign in to their own accounts.</p>' +
+        (b.accounts.length ? '<div class="tablewrap"><table><thead><tr><th>Account</th><th>Banned</th><th>Tried since</th><th></th></tr></thead><tbody>' +
+          b.accounts.map(function (r) {
+            return '<tr><td>' + esc(r.username) + (r.gone ? ' <span class="muted">(deleted)</span>' : '') + (r.email ? '<br><span class="muted">' + esc(r.email) + '</span>' : '') +
+              '</td><td>' + when(r.t) + '</td><td>' + tries(r) + '</td><td><button type="button" class="small bunban" data-id="' + esc(r.id) + '" data-name="' + esc(r.username) + '">Unban</button></td></tr>';
+          }).join('') + '</tbody></table></div>' : '') +
+        (b.ips.length ? '<h3>Internet addresses that can\'t make new accounts</h3><div class="tablewrap"><table><thead><tr><th>Address</th><th>Because</th><th>Until</th><th></th></tr></thead><tbody>' +
+          b.ips.map(function (x) {
+            return '<tr><td><code>' + esc(x.ip) + '</code></td><td>' + esc(x.username) + ' tried ' + when(x.t) + '</td><td>' +
+              new Date(x.until).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) + '</td><td><button type="button" class="small lift" data-ip="' + esc(x.ip) + '">Lift</button></td></tr>';
+          }).join('') + '</tbody></table></div>' : '');
+      Array.prototype.forEach.call(bbox.querySelectorAll('.bunban'), function (el) {
+        el.addEventListener('click', function () {
+          api('DELETE', 'accounts/' + el.getAttribute('data-id') + '/ban').then(function () { say(el.getAttribute('data-name') + ' is no longer banned.'); loadAccounts(); }).catch(function (e) { say(e.message, true); });
+        });
+      });
+      Array.prototype.forEach.call(bbox.querySelectorAll('.lift'), function (el) {
+        el.addEventListener('click', function () {
+          api('DELETE', 'bans/ip/' + encodeURIComponent(el.getAttribute('data-ip'))).then(function () { say('New accounts can be made from there again.'); loadAccounts(); }).catch(function (e) { say(e.message, true); });
+        });
+      });
+    }).catch(function (e) { say(e.message, true); });
   }
 
   // access keys: let an agent (e.g. a Claude agent) use the site as a standard account without the login form
