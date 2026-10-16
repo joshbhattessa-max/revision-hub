@@ -1,4 +1,5 @@
 import { checkLogin, createSession, json, noteFailure, sessionCookie, SESSION_SECONDS, tooManyFailures } from '../_lib/auth.js';
+import { takedown } from '../_lib/takedown.js';
 import { deviceCookie, deviceOf, getBans, newDevice, noteTry } from '../_lib/bans.js';
 
 export async function onRequestPost({ env, request }) {
@@ -10,6 +11,8 @@ export async function onRequestPost({ env, request }) {
     await noteFailure(env, request, body.username);
     return json({ error: 'Wrong username or password.' }, 401);
   }
+  // while the site is taken down only admins can sign in; anyone else gets the same answer as a wrong password
+  if (account.role !== 'admin' && await takedown(env)) return json({ error: 'Wrong username or password.' }, 401);
   const dev = deviceOf(request) || newDevice();
   // a banned account (right password, so it is them): this browser is remembered as theirs
   if (account.banned) {

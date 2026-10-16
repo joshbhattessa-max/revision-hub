@@ -6,6 +6,7 @@ import { keySession } from './_lib/keys.js';
 import { NEW_SITE, isOldAddress, movedPage } from './_lib/moved.js';
 import { canSend } from './_lib/email.js';
 import { tagSession } from './_lib/bans.js';
+import { TAKEDOWN_PAGE, takedown } from './_lib/takedown.js';
 
 // what the login page itself needs
 const OPEN = new Set(['/login', '/login.html', '/login.js', '/hub.css', '/fonts.css', '/favicon.svg', '/favicon-32.png',
@@ -54,6 +55,13 @@ export async function onRequest(ctx) {
   if (!session) {
     const ks = await keySession(ctx.env, ctx.request, url);
     if (ks) { session = ks.session; keyCookie = ks.setCookie; }
+  }
+  // takedown mode (admin console): every address is the plain "taken down" page, except for a signed-in admin. Only
+  // signing in (the page's own hidden form, which lets admins in only) and out still work.
+  if (await takedown(ctx.env) && !(session && session.role === 'admin') && !['/api/login', '/api/logout'].includes(path)) {
+    const headers = { 'cache-control': 'no-store', 'x-robots-tag': 'noindex, nofollow' };
+    if (path.startsWith('/api/')) return json({ error: 'Not available.' }, 503, headers);
+    return new Response(ctx.request.method === 'HEAD' ? null : TAKEDOWN_PAGE, { status: 503, headers: { ...headers, 'content-type': 'text/html; charset=utf-8' } });
   }
   const isLogin = path === '/login' || path === '/login.html';
   const m = await maintenance(ctx);

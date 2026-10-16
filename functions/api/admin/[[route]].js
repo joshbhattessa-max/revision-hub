@@ -12,6 +12,7 @@
 //   GET    /api/admin/hub    PUT /api/admin/hub {content}    DELETE /api/admin/hub (back to hub.json)
 //   POST   /api/admin/media                  raw image body -> {url}
 //   GET    /api/admin/maintenance    PUT /api/admin/maintenance {on, message}
+//   GET    /api/admin/takedown       PUT /api/admin/takedown {on}  (stays on until turned off)
 //   GET    /api/admin/keys    POST /api/admin/keys {label} -> {key} (shown once)    DELETE /api/admin/keys/:id
 //   GET    /api/admin/usage?days=30           usage statistics (from visitors who accepted them) and cookie choices
 //   GET    /api/admin/activity                 each account: the page it's on now and when it was last active
@@ -21,6 +22,7 @@
 //   POST   /api/admin/deploylog/sync             checks GitHub for new deployments now
 //   POST   /api/admin/deploylog/key              -> {key} (shown once) for the Google Sheet's links; the old one stops working
 import { forgetMaintenance, maintenance } from '../../_lib/maintenance.js';
+import { forgetTakedown, takedownState } from '../../_lib/takedown.js';
 import { getKeys, newKey, saveKeys, sha256 } from '../../_lib/keys.js';
 import { SOURCES, load as loadDeploys, sync as syncDeploys, upsert as upsertDeploys } from '../../_lib/deploylog.js';
 import { KEEP_DAYS, SITES, db as activityDb, forget as forgetActivity, schema as activitySchema } from '../../_lib/activity.js';
@@ -214,6 +216,14 @@ export async function onRequest(ctx) {
       until: on && minutes ? Date.now() + minutes * 60000 : null }));
     forgetMaintenance();
     return json(await maintenance(ctx, true));
+  }
+
+  if (route === 'takedown' && method === 'GET') return json(await takedownState(env));
+  if (route === 'takedown' && method === 'PUT') {
+    if (body.on) await env.HUB_KV.put('takedown', JSON.stringify({ on: true, since: Date.now(), by: me.username }));
+    else await env.HUB_KV.delete('takedown');
+    forgetTakedown();
+    return json(await takedownState(env));
   }
 
   if (route === 'hub' && method === 'GET') return json(await hubContent(ctx));

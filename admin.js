@@ -363,10 +363,35 @@
   }
 
   // ------------------------------------------------------------------ maintenance
-  var mbox = document.getElementById('tab-maintenance');
+  var mtab = document.getElementById('tab-maintenance'), mbox = document.getElementById('maint-box');
   function loadMaintenance() {
     api('GET', 'maintenance').then(drawMaintenance).catch(function (e) { say(e.message, true); });
+    api('GET', 'takedown').then(drawTakedown).catch(function (e) { say(e.message, true); });
   }
+
+  // takedown: a plain "This site has been taken down" page for everyone but admins, until it's turned off here
+  var tbox = document.getElementById('takedown-box'), quickT = document.querySelector('.quick-takedown');
+  function drawTakedown(t) {
+    quickT.hidden = !t.on;
+    quickT.title = 'Everyone except admins sees the "taken down" page. Click to manage it.';
+    quickT.onclick = function () { show('maintenance'); };
+    tbox.innerHTML = '<div class="box">' +
+      '<div class="row"><b class="grow">Take the site down: ' + (t.on ? 'ON' : 'off') + '</b>' +
+      '<button type="button" class="' + (t.on ? 'btn-main' : 'small danger') + ' tflip">' + (t.on ? 'Bring the site back' : 'Take the site down') + '</button></div>' +
+      '<p class="muted">While it\'s on, every page of the site and every subject shows only the words "This site has been taken down." ' +
+      'on a plain page with no name, logo or colours, and students who are signed in are locked out too. It stays on until you turn it off here; no update or countdown ends it.</p>' +
+      '<p class="muted">Admins can still use the site. To sign in from that page, click the <b>w</b> in "down": a sign-in form appears, and it only lets admin accounts in.</p>' +
+      (t.on && t.since ? '<p class="muted"><b>Taken down since ' + new Date(t.since).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) + '.</b></p>' : '') +
+      '</div>';
+    tbox.querySelector('.tflip').addEventListener('click', function () {
+      if (!t.on && !confirm('Take the site down? Everyone except admins will see only "This site has been taken down." until you turn it off.')) return;
+      api('PUT', 'takedown', { on: !t.on }).then(function (s) {
+        drawTakedown(s);
+        say(s.on ? 'The site is taken down. You can still use it as an admin.' : 'The site is back for everyone.');
+      }).catch(function (e) { say(e.message, true); });
+    });
+  }
+  api('GET', 'takedown').then(drawTakedown).catch(function () {});
   // one-click switch in the header, on every tab (admins keep using the site while it's on)
   var quick = document.querySelector('.quick-maint');
   function drawQuick(m) {
@@ -375,13 +400,13 @@
     quick.disabled = m.byUpdate && !m.byAdmin;
     quick.textContent = m.on ? 'Maintenance mode: ON' + (m.byAdmin && m.until ? ' until ' + new Date(m.until).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) : '') : 'Maintenance mode: off';
     clearTimeout(quick.t);
-    if (m.byAdmin && m.until) quick.t = setTimeout(function () { api('GET', 'maintenance').then(function (s) { drawQuick(s); if (!mbox.hidden) drawMaintenance(s); }); }, Math.max(1000, m.until - Date.now() + 1500));
+    if (m.byAdmin && m.until) quick.t = setTimeout(function () { api('GET', 'maintenance').then(function (s) { drawQuick(s); if (!mtab.hidden) drawMaintenance(s); }); }, Math.max(1000, m.until - Date.now() + 1500));
     quick.title = quick.disabled ? 'Switched on by an update being deployed; it turns off when the update is finished'
       : m.on ? 'Click to open the site to everyone again' : 'Click to show everyone except admins the maintenance page';
     quick.onclick = function () {
       if (!m.byAdmin && !confirm('Put the site into maintenance mode? Everyone except admins will see the maintenance page; you can still use the site.')) return;
       api('PUT', 'maintenance', { on: !m.byAdmin, message: m.message || '' }).then(function (s) {
-        drawQuick(s); if (!mbox.hidden) drawMaintenance(s);
+        drawQuick(s); if (!mtab.hidden) drawMaintenance(s);
         say(s.on ? 'Maintenance mode is on. You can still use the site as normal.' : 'Maintenance mode is off. The site is open to everyone.');
       }).catch(function (e) { say(e.message, true); });
     };

@@ -11,7 +11,8 @@
 
   function render(data, me) {
     document.title = data.title || 'Revision';
-    var h = (me && me.maintenance ? '<div class="maint-bar">Maintenance mode is on: only admins can use the site right now. <a href="/admin#maintenance">Turn it off</a></div>' : '') +
+    var h = (me && me.takedown ? '<div class="maint-bar">The site is taken down: only admins can see it. <a href="/admin#maintenance">Bring it back</a></div>' : '') +
+      (me && me.maintenance ? '<div class="maint-bar">Maintenance mode is on: only admins can use the site right now. <a href="/admin#maintenance">Turn it off</a></div>' : '') +
       '<div class="wrap"><header class="top"><div class="brand">' + JBR_LOGO + '<div><h1>' + esc(data.title) + '</h1>' +
       (data.subtitle ? '<p class="subtitle">' + esc(data.subtitle) + '</p>' : '') + '</div></div>' +
       (me ? '<nav class="top-links" aria-label="Your study"><a class="btn-quiet" href="/progress">Your progress</a><a class="btn-quiet" href="/planner">Revision planner</a>' +
