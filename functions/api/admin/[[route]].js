@@ -5,6 +5,7 @@
 //   POST   /api/admin/accounts               {username, password, role}
 //   PATCH  /api/admin/accounts/:id           {username?, password?, role?, excuse?: true, email?: ''}
 //   DELETE /api/admin/accounts/:id
+//   POST   /api/admin/notes                  {ids, title, logo, html} one message to many accounts    POST /api/admin/notes/clear {ids}
 //   GET    /api/admin/hub    PUT /api/admin/hub {content}    DELETE /api/admin/hub (back to hub.json)
 //   POST   /api/admin/media                  raw image body -> {url}
 //   GET    /api/admin/maintenance    PUT /api/admin/maintenance {on, message}
@@ -50,6 +51,9 @@ export async function onRequest(ctx) {
     else if (body.everyoneElse) n = await endSessions(env, s => s.token !== me.token);
     return json({ ended: n });
   }
+  // one message for many accounts at once: each gets its own copy (so the console shows who has read it), shown once
+  if (route === 'notes' && method === 'POST') return json(...await batchNotes(env, body));
+  if (route === 'notes/clear' && method === 'POST') return json(...await batchNotes(env, body, true));
 
   if (route === 'activity' && method === 'GET') return json(await activityList(env));
   const actRoute = route.match(/^activity\/([\w:-]+)$/);
@@ -240,6 +244,35 @@ async function listNotes(env) {
     cursor = page.list_complete ? null : page.cursor;
   } while (cursor);
   return out;
+}
+
+// POST /api/admin/notes {ids, title, logo, html} sends one message to each of those accounts (banned ones are skipped);
+// POST /api/admin/notes/clear {ids} cancels or clears theirs. Returns [body, status] for json().
+async function batchNotes(env, body, clear) {
+  const want = new Set((Array.isArray(body.ids) ? body.ids : []).map(String));
+  const accounts = (await getAccounts(env)).filter(a => want.has(a.id) && (clear || !a.banned));
+  if (!accounts.length) return [{ error: 'Pick at least one account.' }, 400];
+  if (accounts.length > 500) return [{ error: 'Pick 500 accounts or fewer at a time.' }, 400];
+  const t = Date.now();
+  let rec, len = 0;
+  if (!clear) {
+    const title = String(body.title || '').trim().slice(0, 120), html = cleanHtml(body.html);
+    if (!title && !html.replace(/<[^>]*>|&nbsp;|\s/g, '')) return [{ error: 'Write a message.' }, 400];
+    rec = JSON.stringify({ title, logo: !!body.logo, html, t }); len = html.length;
+  }
+  const ids = new Set(accounts.map(a => a.id));
+  for (const a of accounts) {
+    if (clear) await env.HUB_KV.delete('note:' + a.id);
+    else await env.HUB_KV.put('note:' + a.id, rec, { metadata: { t, len } });
+  }
+  // the same as setNoteFlag, with one pass over the sessions for every account
+  for (const s of await listSessions(env)) {
+    if (!ids.has(s.accountId) || !!s.note === !clear) continue;
+    const { token, note, ...info } = s;
+    if (!clear) info.note = true;
+    await env.HUB_KV.put('sess:' + token, JSON.stringify(info), { expiration: Math.floor(info.expires / 1000), metadata: info });
+  }
+  return [{ ok: true, count: accounts.length, skipped: want.size - accounts.length }];
 }
 
 function clean(s) { return String(s || '').trim().slice(0, 40); }
