@@ -122,7 +122,8 @@ export function sessionCookie(token, maxAge) {
   return `${COOKIE}=${token}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=${maxAge}`;
 }
 
-export async function createSession(env, account, request) {
+// dev: this browser's device id (functions/_lib/bans.js), so a ban knows which browsers the account used
+export async function createSession(env, account, request, dev) {
   const token = randomToken();
   const now = Date.now();
   const info = {
@@ -132,6 +133,7 @@ export async function createSession(env, account, request) {
     ...(account.mustVerify ? { mustVerify: true } : {}),
     ip: request.headers.get('cf-connecting-ip') || '', country: (request.cf && request.cf.country) || '',
     device: (request.headers.get('user-agent') || '').slice(0, 160),
+    ...(dev ? { dev } : {}),
   };
   // a message from the admin console waiting for this account: the pages of this session show it (functions/api/note.js)
   const note = await env.HUB_KV.get('note:' + account.id, 'json');

@@ -4,6 +4,7 @@
 //   POST /api/email/send     {email}   emails a code (one every 30 seconds, 5 an hour)
 //   POST /api/email/verify   {code}    the code from the email (works once, for 15 minutes and 5 tries)
 import { clearVerifyFlag, getAccounts, json, saveAccounts } from '../../_lib/auth.js';
+import { bannedBy, getBans } from '../../_lib/bans.js';
 import { canSend, checkCode, cleanEmail, emailCode, lastCode, mask, overLimit, validEmail } from '../../_lib/email.js';
 
 export async function onRequest(ctx) {
@@ -26,6 +27,8 @@ export async function onRequest(ctx) {
     const body = await request.json().catch(() => ({}));
     const email = cleanEmail(body.email);
     if (!validEmail(email)) return json({ error: "That doesn't look like an email address." }, 400);
+    // a banned account's address can't be moved onto another account
+    if (bannedBy(await getBans(env), { email })) return json({ error: "That email address can't be used on this site." }, 403);
     const last = await lastCode(env, key);
     if (last && Date.now() - last.at < 30000) return json({ error: 'Wait a few seconds before asking for another code.' }, 429);
     if (await overLimit(env, 'acct:' + a.id, 5)) return json({ error: 'Too many codes for now. Try again in an hour.' }, 429);

@@ -5,6 +5,7 @@ import { notFoundPage } from './_lib/notfound.js';
 import { keySession } from './_lib/keys.js';
 import { NEW_SITE, isOldAddress, movedPage } from './_lib/moved.js';
 import { canSend } from './_lib/email.js';
+import { tagSession } from './_lib/bans.js';
 
 // what the login page itself needs
 const OPEN = new Set(['/login', '/login.html', '/login.js', '/hub.css', '/fonts.css', '/favicon.svg', '/favicon-32.png',
@@ -86,16 +87,19 @@ export async function onRequest(ctx) {
     return json({ error: 'This is a past version of the site, so nothing is saved.' }, 403);
   }
   ctx.data.session = session;
+  const devCookie = await tagSession(ctx.env, ctx.request, session).catch(() => null);
   const res = await ctx.next();
   // pages that don't exist get the 404 page (404.html only makes Pages answer 404 instead of the home page)
   if (res.status === 404 && (ctx.request.headers.get('accept') || '').includes('text/html')) {
     const nf = new Response(notFoundPage(url.pathname), { status: 404, headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store' } });
     if (keyCookie) nf.headers.append('set-cookie', keyCookie);
+    if (devCookie) nf.headers.append('set-cookie', devCookie);
     return nf;
   }
   const out = new Response(res.body, res);
   out.headers.set('cache-control', 'private, no-store');
   if (keyCookie) out.headers.append('set-cookie', keyCookie);
+  if (devCookie) out.headers.append('set-cookie', devCookie);
   // (a past version keeps its own pages as they were, without today's cookie popup)
   return path.startsWith('/v/') ? out : withConsent(out, true, session.note);
 }
