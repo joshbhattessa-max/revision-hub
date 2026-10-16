@@ -370,11 +370,8 @@
   }
 
   // takedown: a plain "This site has been taken down" page for everyone but admins, until it's turned off here
-  var tbox = document.getElementById('takedown-box'), quickT = document.querySelector('.quick-takedown');
+  var tbox = document.getElementById('takedown-box');
   function drawTakedown(t) {
-    quickT.hidden = !t.on;
-    quickT.title = 'Everyone except admins sees the "taken down" page. Click to manage it.';
-    quickT.onclick = function () { show('maintenance'); };
     tbox.innerHTML = '<div class="box">' +
       '<div class="row"><b class="grow">Take the site down: ' + (t.on ? 'ON' : 'off') + '</b>' +
       '<button type="button" class="' + (t.on ? 'btn-main' : 'small danger') + ' tflip">' + (t.on ? 'Bring the site back' : 'Take the site down') + '</button></div>' +
@@ -391,7 +388,6 @@
       }).catch(function (e) { say(e.message, true); });
     });
   }
-  api('GET', 'takedown').then(drawTakedown).catch(function () {});
   // one-click switch in the header, on every tab (admins keep using the site while it's on)
   var quick = document.querySelector('.quick-maint');
   function drawQuick(m) {
