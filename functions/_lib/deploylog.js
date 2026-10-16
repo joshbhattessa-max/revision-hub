@@ -26,7 +26,7 @@ export const SOURCES = [
   { repo: 'historyq', branch: 'main', id: 'history', name: 'HistoryQ (History)', color: '#7b4fa6' },
   { repo: 'rpq', branch: 'main', id: 'religious-studies', name: 'RPQ (Religion and Philosophy)', color: '#d9a514' },
   { repo: 'peq', branch: 'main', id: 'pe', name: 'PEQ (Sports Science)', color: '#1f6b6e' },
-  { repo: 'dtq', branch: 'main', id: 'design-technology', name: 'DTQ (Design and Technology)', color: '#b5562e' },
+  { repo: 'dtq', branch: 'main', id: 'design-technology', name: 'DTQ (Design and Technology)', color: '#cc7449' },
   { repo: 'frenchq', branch: 'main', id: 'french', name: 'FrenchQ (French)', color: '#4a9bd6' },
 ];
 const BLOCK = 50;
