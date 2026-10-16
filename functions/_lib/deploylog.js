@@ -18,7 +18,7 @@ export const SOURCES = [
   { repo: 'bioq', branch: 'main', id: 'biology', name: 'BioQ (Biology)', color: '#2e9e4f' },
   { repo: 'physq', branch: 'main', id: 'physics', name: 'PhysQ (Physics)', color: '#067bc2' },
   { repo: 'mathsq', branch: 'main', id: 'maths', name: 'MathsQ (Maths)', color: '#6750d5' },
-  { repo: 'geoq', branch: 'main', id: 'geography', name: 'GeoQ (Geography)', color: '#c2711a' },
+  { repo: 'geoq', branch: 'main', id: 'geography', name: 'GeoQ (Geography)', color: '#7d8a2e' },
   { repo: 'csq', branch: 'main', id: 'computer-science', name: 'CSQ (Computer Science)', color: '#5b5852' },
   { repo: 'spanishq', branch: 'main', id: 'spanish', name: 'SpanishQ (Spanish)', color: '#e0453a' },
   { repo: 'englangq', branch: 'main', id: 'english-language', name: 'EngLangQ (English Language)', color: '#d6457a' },
@@ -26,7 +26,7 @@ export const SOURCES = [
   { repo: 'historyq', branch: 'main', id: 'history', name: 'HistoryQ (History)', color: '#7b4fa6' },
   { repo: 'rpq', branch: 'main', id: 'religious-studies', name: 'RPQ (Religion and Philosophy)', color: '#d9a514' },
   { repo: 'peq', branch: 'main', id: 'pe', name: 'PEQ (Sports Science)', color: '#1f6b6e' },
-  { repo: 'dtq', branch: 'main', id: 'design-technology', name: 'DTQ (Design and Technology)', color: '#d08a4a' },
+  { repo: 'dtq', branch: 'main', id: 'design-technology', name: 'DTQ (Design and Technology)', color: '#d9734a' },
   { repo: 'frenchq', branch: 'main', id: 'french', name: 'FrenchQ (French)', color: '#4a9bd6' },
 ];
 const BLOCK = 50;
