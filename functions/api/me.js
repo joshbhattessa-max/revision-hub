@@ -1,6 +1,7 @@
 import { getAccounts, json } from '../_lib/auth.js';
 import { canSend } from '../_lib/email.js';
 import { maintenance } from '../_lib/maintenance.js';
+import { takedown } from '../_lib/takedown.js';
 
 export async function onRequestGet(ctx) {
   const s = ctx.data.session;
@@ -13,5 +14,6 @@ export async function onRequestGet(ctx) {
   }
   // admins can still use the site during maintenance, so tell them it's on
   if (s.role === 'admin') out.maintenance = (await maintenance(ctx)).on;
+  if (s.role === 'admin' && await takedown(ctx.env)) out.takedown = true;
   return json(out);
 }

@@ -271,7 +271,7 @@ footer p { margin: 0 0 8px; }
 .maint-bar a { color: inherit; font-weight: 600; }
 
 /* admin console: maintenance switch in the header */
-.quick-maint.on { background: #d33c3c; border-color: #d33c3c; color: #fff; }
+.quick-maint.on, .quick-takedown { background: #d33c3c; border-color: #d33c3c; color: #fff; }
 /* admin console on a phone: its buttons go on a row under the title instead of over it */
 @media (max-width: 600px) { .admin header.top .top-actions { order: 3; flex-basis: 100%; flex-wrap: wrap; } }
 .quick-maint:disabled { opacity: .7; cursor: default; }

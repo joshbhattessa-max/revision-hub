@@ -56,6 +56,8 @@ Only a hash of each key is stored. Revoking a key cuts it off immediately.
 
 The **Maintenance mode** button at the top of the admin console (or its **Maintenance** tab) turns it on or off, with an optional message and countdown. If you set a countdown, the site reopens by itself when it ends. Admins keep using the site as normal while it's on. While it's on, everyone except admins gets a "Down for maintenance" page. That page reloads by itself when the site is back, and has an "Admin sign-in" link. Setting `"on": true` in `maintenance.json` does the same from the repository, which is useful while a big update deploys.
 
+**Take the site down** (admin console → Maintenance tab) is stronger: everyone except a signed-in admin, including signed-in students, gets a plain page saying only "This site has been taken down." for every page, subject and API address, with no name, logo, icon or colours. It stays on until an admin turns it off (no countdown, and no update ends it). To sign in from that page, click the "w" in "down": a sign-in form appears that only lets admin accounts in (`functions/_lib/takedown.js`).
+
 ### Setting it up (once)
 
 1. **Make the store.** In the Cloudflare dashboard go to *Storage & Databases* → *KV* → *Create a namespace*, and name it `hub`.
