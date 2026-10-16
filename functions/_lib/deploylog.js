@@ -21,13 +21,13 @@ export const SOURCES = [
   { repo: 'geoq', branch: 'main', id: 'geography', name: 'GeoQ (Geography)', color: '#c2711a' },
   { repo: 'csq', branch: 'main', id: 'computer-science', name: 'CSQ (Computer Science)', color: '#5b5852' },
   { repo: 'spanishq', branch: 'main', id: 'spanish', name: 'SpanishQ (Spanish)', color: '#e0453a' },
-  { repo: 'englangq', branch: 'main', id: 'english-language', name: 'EngLangQ (English Language)', color: '#c0396b' },
-  { repo: 'englitq', branch: 'main', id: 'english-literature', name: 'EngLitQ (English Literature)', color: '#8e3f8f' },
-  { repo: 'historyq', branch: 'main', id: 'history', name: 'HistoryQ (History)', color: '#9a6a3a' },
-  { repo: 'rpq', branch: 'main', id: 'religious-studies', name: 'RPQ (Religion and Philosophy)', color: '#7a6f99' },
-  { repo: 'peq', branch: 'main', id: 'pe', name: 'PEQ (Sports Science)', color: '#2a7f62' },
-  { repo: 'dtq', branch: 'main', id: 'design-technology', name: 'DTQ (Design and Technology)', color: '#4f6d7a' },
-  { repo: 'frenchq', branch: 'main', id: 'french', name: 'FrenchQ (French)', color: '#3d6fb6' },
+  { repo: 'englangq', branch: 'main', id: 'english-language', name: 'EngLangQ (English Language)', color: '#d6457a' },
+  { repo: 'englitq', branch: 'main', id: 'english-literature', name: 'EngLitQ (English Literature)', color: '#a8326b' },
+  { repo: 'historyq', branch: 'main', id: 'history', name: 'HistoryQ (History)', color: '#7b4fa6' },
+  { repo: 'rpq', branch: 'main', id: 'religious-studies', name: 'RPQ (Religion and Philosophy)', color: '#d9a514' },
+  { repo: 'peq', branch: 'main', id: 'pe', name: 'PEQ (Sports Science)', color: '#1f6b6e' },
+  { repo: 'dtq', branch: 'main', id: 'design-technology', name: 'DTQ (Design and Technology)', color: '#b5562e' },
+  { repo: 'frenchq', branch: 'main', id: 'french', name: 'FrenchQ (French)', color: '#4a9bd6' },
 ];
 const BLOCK = 50;
 const EVERY = 10 * 60 * 1000;
