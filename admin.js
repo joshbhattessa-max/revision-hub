@@ -495,9 +495,86 @@
         var u = abox.querySelector('.nu').value.trim(), p = abox.querySelector('.np').value, r = abox.querySelector('.nr').value;
         api('POST', 'accounts', { username: u, password: p, role: r }).then(function () { say('Account added.'); loadAccounts(); }).catch(function (e) { say(e.message, true); });
       });
+      addPicker(list);
       loadBans();
       loadKeys();
     }).catch(function (e) { say(e.message, true); });
+  }
+
+  // pick several accounts (tick boxes, or the quick picks) and send them all one message, or cancel theirs
+  var picked = {};
+  function addPicker(list) {
+    var table = abox.querySelector('table'), rows = abox.querySelectorAll('tr[data-id]'), byId = {};
+    list.forEach(function (a) { byId[a.id] = a; });
+    Object.keys(picked).forEach(function (id) { if (!byId[id] || byId[id].banned) delete picked[id]; });
+    var bar = document.createElement('div');
+    bar.className = 'box pickbar';
+    bar.innerHTML = '<div class="row"><input type="text" class="pick-find grow" placeholder="Find an account (name or email)" autocomplete="off">' +
+      '<span class="muted">Tick:</span><button type="button" class="small pick-q" data-q="all">Everyone shown</button>' +
+      '<button type="button" class="small pick-q" data-q="user">Standard accounts</button><button type="button" class="small pick-q" data-q="on">Signed in now</button>' +
+      '<button type="button" class="small pick-q" data-q="unread">Message not read yet</button><button type="button" class="small pick-q" data-q="none">None</button></div>' +
+      '<div class="row"><span class="pick-n grow"></span><button type="button" class="small pick-clear">Cancel their messages</button>' +
+      '<button type="button" class="btn-main pick-send">Message ticked accounts</button></div>';
+    table.parentNode.parentNode.insertBefore(bar, table.parentNode);
+    var head = document.createElement('th'), all = document.createElement('input');
+    all.type = 'checkbox'; all.setAttribute('aria-label', 'Tick every account shown');
+    head.appendChild(all); table.querySelector('thead tr').insertBefore(head, table.querySelector('thead th'));
+    var boxes = [];
+    Array.prototype.forEach.call(rows, function (tr) {
+      var id = tr.getAttribute('data-id'), a = byId[id], td = document.createElement('td'), cb = document.createElement('input');
+      cb.type = 'checkbox'; cb.className = 'pick'; cb.checked = !!picked[id]; cb.disabled = !!a.banned;
+      cb.setAttribute('aria-label', 'Tick ' + a.username); if (a.banned) cb.title = 'Banned accounts don\'t get messages';
+      cb.addEventListener('change', function () { if (cb.checked) picked[id] = 1; else delete picked[id]; count(); });
+      td.appendChild(cb); tr.insertBefore(td, tr.firstChild);
+      boxes.push({ tr: tr, cb: cb, a: a });
+    });
+    function shown() { return boxes.filter(function (b) { return !b.tr.hidden && !b.cb.disabled; }); }
+    function count() {
+      var n = Object.keys(picked).length, s = shown();
+      bar.querySelector('.pick-n').textContent = n ? n + ' account' + (n === 1 ? '' : 's') + ' ticked' : 'Tick accounts to message several at once.';
+      bar.querySelector('.pick-send').disabled = bar.querySelector('.pick-clear').disabled = !n;
+      all.checked = s.length > 0 && s.every(function (b) { return b.cb.checked; });
+    }
+    function set(b, on) { b.cb.checked = on; if (on) picked[b.a.id] = 1; else delete picked[b.a.id]; }
+    all.addEventListener('change', function () { shown().forEach(function (b) { set(b, all.checked); }); count(); });
+    bar.querySelector('.pick-find').addEventListener('input', function (e) {
+      var q = e.target.value.trim().toLowerCase();
+      boxes.forEach(function (b) { b.tr.hidden = !!q && (b.a.username + ' ' + (b.a.email || '')).toLowerCase().indexOf(q) < 0; });
+      count();
+    });
+    Array.prototype.forEach.call(bar.querySelectorAll('.pick-q'), function (btn) {
+      btn.addEventListener('click', function () {
+        var q = btn.getAttribute('data-q');
+        shown().forEach(function (b) {
+          set(b, q === 'all' || (q === 'user' && b.a.role === 'user') || (q === 'on' && b.a.signedIn > 0) || (q === 'unread' && !!b.a.note && !b.a.note.seen));
+        });
+        count();
+      });
+    });
+    function names(ids) {
+      var n = ids.map(function (id) { return byId[id].username; });
+      return n.length > 3 ? n.slice(0, 3).join(', ') + ' and ' + (n.length - 3) + ' more' : n.join(', ');
+    }
+    bar.querySelector('.pick-send').addEventListener('click', function () {
+      var ids = Object.keys(picked);
+      writeMessage('Message for ' + ids.length + ' account' + (ids.length === 1 ? '' : 's') + ' (' + names(ids) + '). Each sees it once, next time they open the site' +
+        (ids.some(function (id) { return byId[id].note && !byId[id].note.seen; }) ? '; this replaces any message they haven\'t read yet' : '') + ':', null).then(function (m) {
+        if (!m) return;
+        m.ids = ids;
+        api('POST', 'notes', m).then(function (d) {
+          picked = {};
+          say('Message sent to ' + d.count + ' account' + (d.count === 1 ? '' : 's') + (d.skipped ? ' (' + d.skipped + ' skipped)' : '') + '; they see it on their next page.');
+          loadAccounts();
+        }).catch(function (e) { say(e.message, true); });
+      });
+    });
+    bar.querySelector('.pick-clear').addEventListener('click', function () {
+      var ids = Object.keys(picked);
+      if (confirm('Cancel or clear the messages of ' + names(ids) + '?'))
+        api('POST', 'notes/clear', { ids: ids }).then(function (d) { picked = {}; say('Messages cleared for ' + d.count + ' account' + (d.count === 1 ? '' : 's') + '.'); loadAccounts(); })
+          .catch(function (e) { say(e.message, true); });
+    });
+    count();
   }
 
   // bans: banned accounts (deleted ones too, whose ban still stands), their attempts since, and internet addresses that
