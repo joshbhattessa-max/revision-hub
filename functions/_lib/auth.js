@@ -221,7 +221,16 @@ export const json = (data, status = 200, headers = {}) =>
 // hub content: the admin console's saved copy, else the hub.json that ships with the site
 export async function hubContent(ctx) {
   const saved = ctx.env.HUB_KV && await ctx.env.HUB_KV.get('hub', 'json');
-  if (saved) return saved;
   const res = await ctx.env.ASSETS.fetch(new URL('/hub.json', ctx.request.url));
-  return res.json();
+  const built = await res.json();
+  if (!saved) return built;
+  // a subject added to hub.json after the content was saved in the admin console still shows, in its built-in place
+  const have = new Set((saved.sites || []).map(s => s.path));
+  const sites = [];
+  for (const s of built.sites || []) {
+    if (!have.has(s.path)) sites.push(s);
+    else sites.push(...(saved.sites || []).filter(o => o.path === s.path));
+  }
+  for (const o of saved.sites || []) if (!sites.includes(o)) sites.push(o);
+  return { ...saved, sites };
 }

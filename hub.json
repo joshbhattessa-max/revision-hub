@@ -70,6 +70,80 @@
       "questions": 478,
       "papers": 44,
       "image": ""
+    },
+    {
+      "path": "english-language",
+      "name": "EngLangQ",
+      "subject": "English Language",
+      "origin": "https://englangq.pages.dev",
+      "color": "#C0396B",
+      "questions": 0,
+      "papers": 0,
+      "image": "",
+      "pair": "english",
+      "pairName": "English"
+    },
+    {
+      "path": "english-literature",
+      "name": "EngLitQ",
+      "subject": "English Literature",
+      "origin": "https://englitq.pages.dev",
+      "color": "#8E3F8F",
+      "questions": 0,
+      "papers": 0,
+      "image": "",
+      "pair": "english",
+      "pairName": "English"
+    },
+    {
+      "path": "history",
+      "name": "HistoryQ",
+      "subject": "History",
+      "origin": "https://historyq.pages.dev",
+      "color": "#9A6A3A",
+      "questions": 0,
+      "papers": 0,
+      "image": ""
+    },
+    {
+      "path": "religious-studies",
+      "name": "RPQ",
+      "subject": "Religion and Philosophy",
+      "origin": "https://rpq.pages.dev",
+      "color": "#7A6F99",
+      "questions": 0,
+      "papers": 0,
+      "image": ""
+    },
+    {
+      "path": "pe",
+      "name": "PEQ",
+      "subject": "Sports Science (PE)",
+      "origin": "https://peq.pages.dev",
+      "color": "#2A7F62",
+      "questions": 0,
+      "papers": 0,
+      "image": ""
+    },
+    {
+      "path": "design-technology",
+      "name": "DTQ",
+      "subject": "Design and Technology",
+      "origin": "https://dtq.pages.dev",
+      "color": "#4F6D7A",
+      "questions": 0,
+      "papers": 0,
+      "image": ""
+    },
+    {
+      "path": "french",
+      "name": "FrenchQ",
+      "subject": "French",
+      "origin": "https://frenchq.pages.dev",
+      "color": "#3D6FB6",
+      "questions": 0,
+      "papers": 0,
+      "image": ""
     }
   ],
   "sections": [

@@ -115,7 +115,7 @@
   });
 
   // ------------------------------------------------------------------ usage statistics (only with permission)
-  var SUBJECTS = /^\/(chemistry|biology|physics|maths|geography|computer-science|spanish)(\/|$)/;
+  var SUBJECTS = /^\/(chemistry|biology|physics|maths|geography|computer-science|spanish|english-language|english-literature|history|religious-studies|pe|design-technology|french)(\/|$)/;
   function pageKey() {
     var p = location.pathname.replace(/\/index\.html$/, '/').replace(/\.html$/, ''), m = p.match(SUBJECTS);
     if (m) {

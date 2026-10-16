@@ -197,7 +197,7 @@
   // only visitors who pressed "Accept all" in the cookie popup are counted, under a random number, never an account
   var ubox = document.getElementById('tab-usage'), udays = 30;
   function pageName(p) {
-    var parts = p.split(':'), subj = { chemistry: 'Chemistry', biology: 'Biology', physics: 'Physics', maths: 'Maths', geography: 'Geography', 'computer-science': 'Computer Science', spanish: 'Spanish' };
+    var parts = p.split(':'), subj = { chemistry: 'Chemistry', biology: 'Biology', physics: 'Physics', maths: 'Maths', geography: 'Geography', 'computer-science': 'Computer Science', spanish: 'Spanish', 'english-language': 'English Language', 'english-literature': 'English Literature', history: 'History', 'religious-studies': 'Religion and Philosophy', pe: 'Sports Science (PE)', 'design-technology': 'Design and Technology', french: 'French' };
     var hub = { home: 'Home page', planner: 'Revision planner', progress: 'Your progress', admin: 'Admin console', privacy: 'Privacy Policy', terms: 'Terms and Conditions', login: 'Sign in' };
     var route = { home: 'question list', questions: 'question list', question: 'a question', topics: 'My topics', mock: 'mock paper', review: 'Review', practise: 'practising a topic', about: 'About' };
     return parts.length > 1 ? (subj[parts[0]] || parts[0]) + ' · ' + (route[parts[1]] || parts[1]) : (hub[p] || p);
