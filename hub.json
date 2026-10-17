@@ -77,8 +77,8 @@
       "subject": "English Language",
       "origin": "https://englangq.pages.dev",
       "color": "#D6457A",
-      "questions": 0,
-      "papers": 0,
+      "questions": 279,
+      "papers": 51,
       "image": "",
       "pair": "english",
       "pairName": "English"
@@ -89,8 +89,8 @@
       "subject": "English Literature",
       "origin": "https://englitq.pages.dev",
       "color": "#A8326B",
-      "questions": 0,
-      "papers": 0,
+      "questions": 898,
+      "papers": 52,
       "image": "",
       "pair": "english",
       "pairName": "English"
@@ -101,8 +101,8 @@
       "subject": "History",
       "origin": "https://historyq.pages.dev",
       "color": "#7B4FA6",
-      "questions": 0,
-      "papers": 0,
+      "questions": 934,
+      "papers": 64,
       "image": ""
     },
     {
@@ -111,8 +111,8 @@
       "subject": "Religion and Philosophy",
       "origin": "https://rpq.pages.dev",
       "color": "#D9A514",
-      "questions": 0,
-      "papers": 0,
+      "questions": 60,
+      "papers": 15,
       "image": ""
     },
     {
@@ -121,8 +121,8 @@
       "subject": "Sports Science (PE)",
       "origin": "https://peq.pages.dev",
       "color": "#1F6B6E",
-      "questions": 0,
-      "papers": 0,
+      "questions": 245,
+      "papers": 14,
       "image": ""
     },
     {
@@ -131,8 +131,8 @@
       "subject": "Design and Technology",
       "origin": "https://dtq.pages.dev",
       "color": "#D9734A",
-      "questions": 0,
-      "papers": 0,
+      "questions": 180,
+      "papers": 7,
       "image": ""
     },
     {
@@ -141,8 +141,8 @@
       "subject": "French",
       "origin": "https://frenchq.pages.dev",
       "color": "#4A9BD6",
-      "questions": 0,
-      "papers": 0,
+      "questions": 209,
+      "papers": 28,
       "image": ""
     }
   ],
