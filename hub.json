@@ -73,7 +73,7 @@
     },
     {
       "path": "english-language",
-      "name": "EngLangQ",
+      "name": "LangQ",
       "subject": "English Language",
       "origin": "https://englangq.pages.dev",
       "color": "#D6457A",
@@ -85,7 +85,7 @@
     },
     {
       "path": "english-literature",
-      "name": "EngLitQ",
+      "name": "LitQ",
       "subject": "English Literature",
       "origin": "https://englitq.pages.dev",
       "color": "#A8326B",
