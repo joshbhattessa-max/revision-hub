@@ -218,19 +218,23 @@ export async function noteFailure(env, request, who) {
 export const json = (data, status = 200, headers = {}) =>
   new Response(JSON.stringify(data), { status, headers: { 'content-type': 'application/json', 'cache-control': 'no-store', ...headers } });
 
+// what the admin console's Content tab can change about a subject
+const EDITABLE = ['name', 'subject', 'color', 'image', 'hidden'];
+const pick = (o, keys) => Object.fromEntries(keys.filter(k => k in o).map(k => [k, o[k]]));
+
 // hub content: the admin console's saved copy, else the hub.json that ships with the site
 export async function hubContent(ctx) {
   const saved = ctx.env.HUB_KV && await ctx.env.HUB_KV.get('hub', 'json');
   const res = await ctx.env.ASSETS.fetch(new URL('/hub.json', ctx.request.url));
   const built = await res.json();
   if (!saved) return built;
-  // a subject added to hub.json after the content was saved in the admin console still shows, in its built-in place
-  const have = new Set((saved.sites || []).map(s => s.path));
+  // a subject added to hub.json after the content was saved in the admin console still shows, in its built-in place.
+  // Only what the console edits comes from the saved copy, so later hub.json changes (address, counts) still show.
   const sites = [];
   for (const s of built.sites || []) {
-    if (!have.has(s.path)) sites.push(s);
-    else sites.push(...(saved.sites || []).filter(o => o.path === s.path));
+    const o = (saved.sites || []).find(x => x.path === s.path);
+    sites.push(o ? { ...s, ...pick(o, EDITABLE) } : s);
   }
-  for (const o of saved.sites || []) if (!sites.includes(o)) sites.push(o);
+  for (const o of saved.sites || []) if (!sites.some(s => s.path === o.path)) sites.push(o);
   return { ...saved, sites };
 }
