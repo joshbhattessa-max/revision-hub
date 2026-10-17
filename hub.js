@@ -61,7 +61,7 @@
     if (!live) stats += (stats ? ' · ' : '') + 'not online yet';
     // a half card names its subject in the band ("English" over "Language") and the site in the body
     var pre = half && s.pairName && s.subject.indexOf(s.pairName + ' ') === 0;
-    var logo = pre ? '<span class="kicker">' + esc(s.pairName) + '</span>' + esc(s.subject.slice(s.pairName.length + 1)) : esc(s.name);
+    var logo = pre ? '<span class="kicker">' + esc(s.pairName) + '</span>' + esc(s.subject.slice(s.pairName.length + 1)) : esc(half ? s.subject : s.name);
     return '<a class="' + (half ? 'half' : 'subject') + (live ? '' : ' off') + '" href="' + (live ? '/' + esc(s.path) + '/' : '#') + '" style="--c:' + esc(s.color || '#33312e') + '">' +
       '<div class="band" style="' + band + '"><span class="logo">' + logo + '</span></div>' +
       '<div class="body"><div class="name">' + esc(half ? s.name : s.subject) + '</div>' +
