@@ -53,6 +53,17 @@ h2 { font-size: 1.15rem; font-weight: 600; margin: 32px 0 12px; display: flex; a
 .subject.soon { cursor: default; filter: grayscale(1); opacity: .5; }
 .subject.soon:hover { transform: none; box-shadow: none; }
 .subject.soon .stats { font-weight: 600; letter-spacing: .02em; }
+/* one card split in two halves (English Language | English Literature), each half its own link */
+.subject.split { display: grid; grid-template-columns: 1fr 1fr; }
+.subject.split:hover { transform: none; }
+.subject .half { display: block; min-width: 0; text-decoration: none; color: inherit; transition: background-color .12s ease; }
+.subject .half + .half { border-left: 1px solid var(--line); }
+.subject .half:hover { background: color-mix(in srgb, var(--c) 7%, var(--card)); }
+.subject .half .band { padding: 0 14px; }
+.subject .half .logo { font-size: 1.45rem; letter-spacing: -.5px; line-height: 1.1; }
+.subject .half .kicker { display: block; font-size: .78rem; font-weight: 600; letter-spacing: .02em; opacity: .9; margin-bottom: 2px; }
+.subject .half .body { padding: 12px 14px 14px; }
+.subject .half.off { opacity: .55; pointer-events: none; }
 
 .card { display: flex; flex-direction: column; background: var(--card); border: 1px solid var(--line); border-radius: 12px; overflow: hidden;
   box-shadow: var(--shadow); text-decoration: none; }

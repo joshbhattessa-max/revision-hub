@@ -8,7 +8,9 @@
 
 export const KEEP_DAYS = 90;
 export const SITES = { chemistry: 'Chemistry', biology: 'Biology', physics: 'Physics', maths: 'Maths', geography: 'Geography',
-  'computer-science': 'Computer Science', spanish: 'Spanish' };
+  'computer-science': 'Computer Science', spanish: 'Spanish',
+  'english-language': 'English Language', 'english-literature': 'English Literature',
+  history: 'History', 'religious-studies': 'Religion and Philosophy', pe: 'Sports Science (PE)', 'design-technology': 'Design and Technology', french: 'French' };
 
 export const db = env => env.ACTIVITY_DB || null;
 

@@ -3,13 +3,13 @@
 One web address for everything: a sign-in, then a home page with all the subject sites plus your own links and pictures.
 
 - `https://jbrevision.co.uk/` is the home page.
-- `https://jbrevision.co.uk/chemistry/` is ChemQ. The same goes for `/biology/`, `/physics/`, `/maths/`, `/geography/`, `/computer-science/` and `/spanish/`.
+- `https://jbrevision.co.uk/chemistry/` is ChemQ. The same goes for `/biology/`, `/physics/`, `/maths/`, `/geography/`, `/computer-science/`, `/spanish/`, `/french/`, `/english-language/`, `/english-literature/`, `/history/`, `/religious-studies/`, `/pe/` and `/design-technology/`. English Language and English Literature share one card on the home page, split in two (sites with the same `pair` in `hub.json`).
 
 The subject sites stay as separate Cloudflare Pages projects. The hub quietly fetches them for you (`functions/[[path]].js`), so you only ever use the hub's address. Your notes and handwriting in each subject are kept separately, as before.
 
 ## Putting it online (Cloudflare Pages)
 
-Before you start, the seven subject sites should already be on Cloudflare (chemq, bioq, physq, mathsq, geoq, csq, spanishq).
+Before you start, the fourteen subject sites should already be on Cloudflare (chemq, bioq, physq, mathsq, geoq, csq, spanishq, frenchq, englangq, englitq, historyq, rpq, peq, dtq).
 
 1. Go to *Workers & Pages* → *Create* → *Pages* → *Connect to Git*, then pick this repository.
 2. Production branch `main`, framework preset *None*, build command empty, output directory `/`.
@@ -26,7 +26,7 @@ Everything (the home page, every subject and the admin console) needs a sign-in.
 - **After signing in** the home page says "Hello, *name*", and the name then moves to the top right. Hover over it (tap on a phone) to change your password, log out or delete your account. Deleting needs your password, and the last admin account can't be deleted.
 - **Standard accounts** see the site as normal.
 - **Admin accounts** also get an **Admin console** button on the home page (`/admin`):
-  - **Content:** change the title, subjects, links and pictures. Uploads are kept in Cloudflare. *Reset to the built-in version* goes back to `hub.json`.
+  - **Content:** change the title, subjects, links and pictures. Uploads are kept in Cloudflare. *Reset to the built-in version* goes back to `hub.json`. A subject added to `hub.json` later still shows after a save here.
   - **Signed in:** who is signed in now, from which device and country. You can sign out one session, or everyone except you.
   - **Accounts:** change a password, rename, make admin or standard, sign out everywhere, delete, or add an account.
 - Passwords are stored only as salted PBKDF2 hashes. Ten wrong passwords from one address lock that address out for 15 minutes.
@@ -64,7 +64,7 @@ The **Maintenance mode** button at the top of the admin console (or its **Mainte
 2. **Bind it to the hub.** In the hub's Pages project go to *Settings* → *Bindings* → *Add* → *KV namespace*. Name it `HUB_KV` and pick `hub`. Do this for Production (and Preview, if you use it).
 3. **Make a shared secret.** Pick a long random string, e.g. from a password generator, at least 32 characters.
    - Hub: add it in *Settings* → *Variables and Secrets* → *Add* → type *Secret*, name `HUB_SECRET`.
-   - Each of the seven subject projects (chemq, bioq, physq, mathsq, geoq, csq, spanishq): add the same secret, with the same name `HUB_SECRET`.
+   - Each of the fourteen subject projects (chemq, bioq, physq, mathsq, geoq, csq, spanishq, frenchq, englangq, englitq, historyq, rpq, peq, dtq): add the same secret, with the same name `HUB_SECRET`.
 
    The subject sites then refuse anyone who opens them directly. Only the hub can fetch them, so no one gets round the sign-in. Set the hub's secret first: until a subject has the secret it stays open, and once it has the secret it only answers the hub.
 4. **Redeploy everything.** Run *Deployments* → *Retry deployment* on the hub and on each subject site, so they pick up the binding and secret.

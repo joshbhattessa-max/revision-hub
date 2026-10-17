@@ -46,7 +46,7 @@
       "name": "GeoQ",
       "subject": "Geography",
       "origin": "https://geoq.pages.dev",
-      "color": "#C2711A",
+      "color": "#7D8A2E",
       "questions": 2768,
       "papers": 586,
       "image": ""
@@ -69,6 +69,80 @@
       "color": "#E0453A",
       "questions": 478,
       "papers": 44,
+      "image": ""
+    },
+    {
+      "path": "english-language",
+      "name": "EngLangQ",
+      "subject": "English Language",
+      "origin": "https://englangq.pages.dev",
+      "color": "#D6457A",
+      "questions": 279,
+      "papers": 51,
+      "image": "",
+      "pair": "english",
+      "pairName": "English"
+    },
+    {
+      "path": "english-literature",
+      "name": "EngLitQ",
+      "subject": "English Literature",
+      "origin": "https://englitq.pages.dev",
+      "color": "#A8326B",
+      "questions": 898,
+      "papers": 52,
+      "image": "",
+      "pair": "english",
+      "pairName": "English"
+    },
+    {
+      "path": "history",
+      "name": "HistoryQ",
+      "subject": "History",
+      "origin": "https://historyq.pages.dev",
+      "color": "#7B4FA6",
+      "questions": 934,
+      "papers": 64,
+      "image": ""
+    },
+    {
+      "path": "religious-studies",
+      "name": "RPQ",
+      "subject": "Religion and Philosophy",
+      "origin": "https://rpq.pages.dev",
+      "color": "#D9A514",
+      "questions": 60,
+      "papers": 15,
+      "image": ""
+    },
+    {
+      "path": "pe",
+      "name": "PEQ",
+      "subject": "Sports Science (PE)",
+      "origin": "https://peq.pages.dev",
+      "color": "#1F6B6E",
+      "questions": 245,
+      "papers": 14,
+      "image": ""
+    },
+    {
+      "path": "design-technology",
+      "name": "DTQ",
+      "subject": "Design and Technology",
+      "origin": "https://dtq.pages.dev",
+      "color": "#D9734A",
+      "questions": 180,
+      "papers": 7,
+      "image": ""
+    },
+    {
+      "path": "french",
+      "name": "FrenchQ",
+      "subject": "French",
+      "origin": "https://frenchq.pages.dev",
+      "color": "#4A9BD6",
+      "questions": 209,
+      "papers": 28,
       "image": ""
     }
   ],
