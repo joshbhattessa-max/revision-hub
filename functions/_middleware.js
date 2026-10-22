@@ -8,10 +8,14 @@ import { canSend } from './_lib/email.js';
 import { tagSession } from './_lib/bans.js';
 import { TAKEDOWN_PAGE, takedown } from './_lib/takedown.js';
 
-// what the login page itself needs
+// what anyone can open without signing in (the login page, the front page and "Try a few questions", Privacy, Terms)
 const OPEN = new Set(['/login', '/login.html', '/login.js', '/hub.css', '/fonts.css', '/favicon.svg', '/favicon-32.png',
   '/apple-touch-icon.png', '/og.png', '/sitemap.xml', '/api/login', '/api/signup', '/api/status',
-  '/privacy', '/privacy.html', '/terms', '/terms.html', '/consent.js', '/api/reset']);
+  '/privacy', '/privacy.html', '/terms', '/terms.html', '/consent.js', '/api/reset',
+  '/welcome', '/welcome.html', '/welcome.css', '/try', '/try.html', '/try.js']);
+// the pictures for "Try a few questions" (try.js): three fixed questions and their mark schemes, plus the front page's
+// screenshot
+const TRY = p => /^\/try\/[a-z-]+\.webp$/.test(p);
 // what still works for everyone during maintenance (so an admin can sign in)
 const DURING_MAINTENANCE = new Set(['/og.png', '/sitemap.xml', '/login.js', '/hub.css', '/fonts.css', '/favicon.svg', '/favicon-32.png', '/apple-touch-icon.png',
   '/api/login', '/api/logout', '/api/status', '/privacy', '/privacy.html', '/terms', '/terms.html']);
@@ -75,7 +79,14 @@ export async function onRequest(ctx) {
     if (adminLogin) return ctx.next();
   }
   if (PRINT(path)) return ctx.next();
-  if (OPEN.has(path) || path.startsWith('/fonts/') || SHEET(path)) {
+  // signed out, the front page is the welcome page (welcome.html, with "Try a few questions"); signed in, it's the hub
+  if (!session && path === '/' && ['GET', 'HEAD'].includes(ctx.request.method)) {
+    const res = await ctx.env.ASSETS.fetch(new URL('/welcome', url));
+    const out = new Response(res.body, res);
+    out.headers.set('cache-control', 'private, no-store');
+    return withConsent(out);
+  }
+  if (OPEN.has(path) || path.startsWith('/fonts/') || SHEET(path) || TRY(path)) {
     if (session && isLogin) return Response.redirect(url.origin + safeNext(url), 302);  // (a key's cookie is set on its next page)
     return withConsent(await fresh(ctx, path));
   }
@@ -117,7 +128,7 @@ export async function onRequest(ctx) {
 // let browsers keep them for 4 hours; it leaves "private, no-store" alone.) The whole file is always sent, never
 // "not changed since your copy", so a copy Cloudflare kept from before is replaced too. Fonts and pictures still keep.
 async function fresh(ctx, path) {
-  if (path.startsWith('/fonts/') || /\.(png|svg|ico|woff2?)$/.test(path)) return ctx.next();
+  if (path.startsWith('/fonts/') || /\.(png|webp|svg|ico|woff2?)$/.test(path)) return ctx.next();
   const headers = new Headers(ctx.request.headers);
   headers.delete('if-none-match');
   headers.delete('if-modified-since');
