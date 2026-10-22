@@ -3,53 +3,107 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Admin console · JB Revision</title>
+  <title>jbr-hub/admin</title>
   <meta name="robots" content="noindex, nofollow">
   <meta name="color-scheme" content="light dark">
-  <script>try { var t = localStorage.getItem('hub-theme'); if (t) document.documentElement.setAttribute('data-theme', t); } catch (e) {}</script>
-  <link rel="icon" href="favicon.svg" type="image/svg+xml">
-  <link rel="icon" href="favicon-32.png" sizes="32x32" type="image/png">
-  <link rel="stylesheet" href="fonts.css?v=2">
-  <link rel="stylesheet" href="hub.css?v=2">
+  <!-- deliberately plain: browser default fonts and system colours, no site styles -->
+  <style>
+    body { margin: 8px; font: 15px/1.35 'Times New Roman', Times, serif; background: Canvas; color: CanvasText; }
+    code, pre, kbd, tt, .mono, table, input, select, button, .notice, .sysbar, .reqlog, .muted { font-family: ui-monospace, Menlo, Consolas, 'Courier New', monospace; font-size: 12px; }
+    h1 { font-size: 20px; margin: 0; } h2 { font-size: 16px; margin: 20px 0 6px; } h3 { font-size: 14px; margin: 16px 0 4px; } h4 { font-size: 13px; margin: 12px 0 2px; }
+    hr { border: 0; border-top: 1px solid GrayText; }
+    a { color: LinkText; }
+    .muted { color: GrayText; }
+    .top { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: baseline; justify-content: space-between; }
+    .top-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+    .sysbar { color: GrayText; margin: 4px 0; overflow-wrap: anywhere; }
+    .tabs { margin: 8px 0; border-bottom: 1px solid GrayText; padding-bottom: 6px; display: flex; flex-wrap: wrap; gap: 4px; }
+    .tabs button.on { font-weight: bold; text-decoration: underline; }
+    .notice { min-height: 1.4em; margin: 4px 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+    .notice.err { color: #c00; }
+    .box { border: 1px solid GrayText; padding: 6px 8px; margin: 0 0 8px; }
+    .row { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; margin: 4px 0; }
+    .grow { flex: 1 1 200px; }
+    label.lbl { display: flex; flex-direction: column; gap: 2px; flex: 1 1 200px; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 11px; color: GrayText; }
+    input[type=text], input[type=url], input[type=password], select { min-width: 0; }
+    .thumb { width: 64px; height: 40px; object-fit: cover; border: 1px solid GrayText; }
+    button.danger { color: #c00; }
+    .savebar { position: sticky; bottom: 0; background: Canvas; padding: 6px 0; border-top: 1px solid GrayText; display: flex; gap: 6px; flex-wrap: wrap; }
+    .tablewrap { max-width: 100%; overflow-x: auto; }
+    table { border-collapse: collapse; width: 100%; }
+    th, td { border: 1px solid GrayText; padding: 2px 5px; text-align: left; vertical-align: top; }
+    th { background: color-mix(in srgb, GrayText 18%, Canvas); font-weight: bold; white-space: nowrap; }
+    td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+    tr.act-sel td { background: color-mix(in srgb, GrayText 12%, Canvas); }
+    .act-head { margin-top: 18px; border-top: 2px solid CanvasText; padding-top: 6px; }
+    .act-tl { margin: 0; padding-left: 0; list-style: none; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12px; }
+    .act-tl time { color: GrayText; margin-right: 8px; }
+    .act-live { color: #080; font-weight: bold; }
+    .u-tiles { display: flex; flex-wrap: wrap; gap: 0; margin: 8px 0; }
+    .u-tiles div { border: 1px solid GrayText; padding: 3px 8px; margin: 0 -1px -1px 0; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12px; }
+    .u-tiles b { margin-right: 6px; }
+    .u-bar { display: inline-block; height: 8px; width: calc(var(--w) * .6); max-width: 60%; min-width: 1px; background: CanvasText; margin-right: 6px; vertical-align: middle; }
+    .em-ok { color: #080; white-space: nowrap; }
+    .ban-tag { color: #c00; font-weight: bold; white-space: nowrap; }
+    .quick-maint.on { color: #c00; font-weight: bold; }
+    dialog { border: 1px solid CanvasText; background: Canvas; color: CanvasText; padding: 10px; width: min(380px, 92vw); }
+    dialog::backdrop { background: rgba(0, 0, 0, .35); }
+    .ask-q { margin: 0 0 6px; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12px; }
+    .ask-in { width: 100%; box-sizing: border-box; margin: 0 0 8px; }
+    .ask-btns { display: flex; gap: 6px; justify-content: flex-end; }
+    .msgdlg { width: min(560px, 94vw); }
+    .msg-logo { display: flex; gap: 6px; align-items: center; margin: 0 0 6px; font-size: 12px; font-family: ui-monospace, Menlo, Consolas, monospace; }
+    .msg-tools { display: flex; flex-wrap: wrap; gap: 2px; padding: 3px; border: 1px solid GrayText; border-bottom: 0; }
+    .msg-color { display: inline-flex; align-items: center; gap: 2px; border: 1px solid GrayText; padding: 0 4px; font-weight: bold; }
+    .msg-color input { width: 20px; height: 16px; padding: 0; border: 0; }
+    .msg-ed { min-height: 160px; max-height: 50vh; overflow: auto; padding: 6px; margin-bottom: 8px; border: 1px solid GrayText; outline: none; font: 14px/1.4 sans-serif; }
+    .msg-ed h3 { margin: 6px 0 4px; } .msg-ed p { margin: 0 0 6px; }
+    /* phones: tables keep their columns and scroll sideways */
+    @media (max-width: 700px) { table { width: max-content; min-width: 100%; } td .row { flex-wrap: nowrap; } }
+    .reqlog { margin-top: 24px; border-top: 1px solid GrayText; padding-top: 4px; color: GrayText; }
+    .reqlog pre { margin: 0; max-height: 9.5em; overflow: auto; white-space: pre; font-size: 11px; }
+  </style>
 </head>
 <body>
-  <div class="wrap admin">
+  <div class="admin">
     <header class="top">
-      <div class="brand"><svg class="jbr" width="52" height="52" viewBox="0 0 248 248" aria-hidden="true"><defs><mask id="jbr-ring-gap" maskUnits="userSpaceOnUse" x="0" y="0" width="248" height="248"><rect width="248" height="248" fill="#fff"/><g transform="translate(26.00 164.25) scale(0.05402 -0.05402)" fill="#000" stroke="#000" stroke-width="222" stroke-linejoin="round"><path transform="translate(-45 0)" d="M573 -24Q319 -24 182.0 105.0Q45 234 45 474V592H429V470Q429 398 464.37254901960785 359.0Q499.7450980392157 320 566 320Q631.6929133858267 320 667.3464566929133 359.0Q703 398 703 470V1490H1119V462.3348982785603Q1119 228 977.5 102.0Q836 -24 573 -24Z"/><path transform="translate(1034 0)" d="M80 0V1490H726Q896 1490 1012.0 1442.0Q1128 1394 1187.0 1310.5Q1246 1227 1246 1118Q1246 1032 1210.0 962.5Q1174 893 1109.5 847.5Q1045 802 958 785V783Q1054 780 1130.5 733.5Q1207 687 1251.5 607.0Q1296 527 1296 422Q1296 300 1235.0 204.5Q1174 109 1059.0 54.5Q944 0 782 0ZM484 312H704Q780 312 825.0 352.0Q870 392 870 459Q870 504 849.5 537.0Q829 570 792.0 588.0Q755 606 704 606H484ZM484 900H679Q725 900 759.0 917.0Q793 934 811.5 965.5Q830 997 830 1039Q830 1102 789.0 1140.0Q748 1178 679 1178H484Z"/><path transform="translate(2290 0)" d="M80 0V1490H713Q891 1490 1021.0 1426.5Q1151 1363 1221.5 1246.5Q1292 1130 1292 970Q1292 815 1218.5 702.0Q1145 589 1010.5 527.5Q876 466 691 466H336V788H682Q745 788 790.5 811.0Q836 834 861.0 875.0Q886 916 886 970Q886 1025 861.0 1065.5Q836 1106 790.5 1129.0Q745 1152 682 1152H496V0ZM905 0 581 676H1006L1338 0Z"/></g></mask></defs><circle cx="124" cy="124" r="92" fill="none" stroke-width="6.5" mask="url(#jbr-ring-gap)" class="jbr-ring"/><g class="jbr-ink"><g transform="translate(26.00 164.25) scale(0.05402 -0.05402)"><path transform="translate(-45 0)" d="M573 -24Q319 -24 182.0 105.0Q45 234 45 474V592H429V470Q429 398 464.37254901960785 359.0Q499.7450980392157 320 566 320Q631.6929133858267 320 667.3464566929133 359.0Q703 398 703 470V1490H1119V462.3348982785603Q1119 228 977.5 102.0Q836 -24 573 -24Z"/><path transform="translate(1034 0)" d="M80 0V1490H726Q896 1490 1012.0 1442.0Q1128 1394 1187.0 1310.5Q1246 1227 1246 1118Q1246 1032 1210.0 962.5Q1174 893 1109.5 847.5Q1045 802 958 785V783Q1054 780 1130.5 733.5Q1207 687 1251.5 607.0Q1296 527 1296 422Q1296 300 1235.0 204.5Q1174 109 1059.0 54.5Q944 0 782 0ZM484 312H704Q780 312 825.0 352.0Q870 392 870 459Q870 504 849.5 537.0Q829 570 792.0 588.0Q755 606 704 606H484ZM484 900H679Q725 900 759.0 917.0Q793 934 811.5 965.5Q830 997 830 1039Q830 1102 789.0 1140.0Q748 1178 679 1178H484Z"/><path transform="translate(2290 0)" d="M80 0V1490H713Q891 1490 1021.0 1426.5Q1151 1363 1221.5 1246.5Q1292 1130 1292 970Q1292 815 1218.5 702.0Q1145 589 1010.5 527.5Q876 466 691 466H336V788H682Q745 788 790.5 811.0Q836 834 861.0 875.0Q886 916 886 970Q886 1025 861.0 1065.5Q836 1106 790.5 1129.0Q745 1152 682 1152H496V0ZM905 0 581 676H1006L1338 0Z"/></g></g></svg><div><h1>Admin console</h1></div></div>
-      <div class="top-actions"><button type="button" class="btn-quiet quick-maint" hidden></button><a class="btn-quiet" href="/">Back to the site</a></div>
+      <h1>jbr-hub :: admin</h1>
+      <div class="top-actions"><button type="button" class="quick-maint" hidden></button><a href="/">[exit to /]</a></div>
     </header>
+    <div class="sysbar">build=<span id="sys-build">…</span> · branch=<span id="sys-branch">…</span> · edge=<span id="sys-colo">…</span> · operator=<span id="sys-op">…</span> · utc=<span id="sys-utc">…</span></div>
     <nav class="tabs" role="tablist">
-      <button type="button" role="tab" data-tab="content" class="on">Content</button>
-      <button type="button" role="tab" data-tab="sessions">Signed in</button>
-      <button type="button" role="tab" data-tab="activity">Activity</button>
-      <button type="button" role="tab" data-tab="accounts">Accounts</button>
-      <button type="button" role="tab" data-tab="maintenance">Maintenance</button>
-      <button type="button" role="tab" data-tab="usage">Usage</button>
+      <button type="button" role="tab" data-tab="content" class="on">hub.json</button>
+      <button type="button" role="tab" data-tab="sessions">sessions</button>
+      <button type="button" role="tab" data-tab="activity">activity_log</button>
+      <button type="button" role="tab" data-tab="accounts">accounts</button>
+      <button type="button" role="tab" data-tab="maintenance">site_state</button>
+      <button type="button" role="tab" data-tab="usage">telemetry</button>
     </nav>
     <p class="notice" role="status"></p>
-    <section id="tab-content"><div class="ld" style="--ld-accent:#17A398" role="status"><svg class="ld-art" viewBox="0 -60 100 166" aria-hidden="true"><ellipse cx="50" cy="101" rx="26" ry="5" fill="#2b2620" opacity=".12"/><g class="ld-b1"><polygon points="50,56 69,67 50,78 31,67" fill="#f6f0e4"/><polygon points="31,67 50,78 50,100 31,89" fill="#e3d8c4"/><polygon points="50,78 69,67 69,89 50,100" fill="#cdbfa5"/><path d="M36 72l9 5" stroke="#fffaf0" stroke-width="1.6" stroke-linecap="round" opacity=".6"/></g><g class="ld-b2"><path class="ld-cable" d="M50 -60V28M46 28h8l-4 6z"/><polygon points="50,34 69,45 50,56 31,45" fill="#f6f0e4"/><polygon points="31,45 50,56 50,78 31,67" fill="#e3d8c4"/><polygon points="50,56 69,45 69,67 50,78" fill="#cdbfa5"/><path d="M36 50l9 5" stroke="#fffaf0" stroke-width="1.6" stroke-linecap="round" opacity=".6"/></g><g class="ld-b3"><path class="ld-cable" d="M50 -60V6M46 6h8l-4 6z"/><polygon points="50,12 69,23 50,34 31,23" fill="var(--ld-a-top)"/><polygon points="31,23 50,34 50,56 31,45" fill="var(--ld-a-left)"/><polygon points="50,34 69,23 69,45 50,56" fill="var(--ld-a-right)"/><path d="M36 28l9 5" stroke="#fffaf0" stroke-width="1.6" stroke-linecap="round" opacity=".6"/></g></svg><span>Loading the console…</span></div></section>
+    <section id="tab-content"><p class="muted">GET /api/admin/hub …</p></section>
     <section id="tab-sessions" hidden></section>
     <section id="tab-activity" hidden></section>
     <section id="tab-accounts" hidden></section>
     <section id="tab-maintenance" hidden><div id="takedown-box"></div><div id="maint-box"></div></section>
     <section id="tab-usage" hidden></section>
+    <footer class="reqlog"><div>request log (this tab, newest first) · <span id="sys-bind"></span></div><pre id="reqlog"></pre></footer>
   </div>
   <dialog class="ask"><form method="dialog"><p class="ask-q"></p><input class="ask-in"><div class="ask-btns">
-    <button value="cancel" type="submit" class="btn-quiet">Cancel</button><button value="ok" type="submit" class="btn-main">OK</button></div></form></dialog>
+    <button value="cancel" type="submit">cancel</button><button value="ok" type="submit">ok</button></div></form></dialog>
   <dialog class="ask msgdlg"><form method="dialog"><p class="ask-q"></p>
-    <input class="ask-in msg-title" placeholder="Title (optional)" maxlength="120">
-    <label class="msg-logo"><input type="checkbox"> Show the JBR logo</label>
+    <input class="ask-in msg-title" placeholder="title (optional)" maxlength="120">
+    <label class="msg-logo"><input type="checkbox"> logo=true</label>
     <div class="msg-tools" role="toolbar" aria-label="Formatting">
       <button type="button" data-cmd="bold" title="Bold"><b>B</b></button><button type="button" data-cmd="italic" title="Italic"><i>I</i></button>
-      <button type="button" data-cmd="underline" title="Underline"><u>U</u></button><button type="button" data-cmd="formatBlock" data-arg="h3" title="Heading">H</button>
-      <button type="button" data-cmd="formatBlock" data-arg="p" title="Normal text">¶</button>
-      <button type="button" data-cmd="insertUnorderedList" title="Bulleted list">• List</button><button type="button" data-cmd="insertOrderedList" title="Numbered list">1. List</button>
-      <button type="button" data-cmd="createLink" title="Link">Link</button>
+      <button type="button" data-cmd="underline" title="Underline"><u>U</u></button><button type="button" data-cmd="formatBlock" data-arg="h3" title="Heading">h3</button>
+      <button type="button" data-cmd="formatBlock" data-arg="p" title="Normal text">p</button>
+      <button type="button" data-cmd="insertUnorderedList" title="Bulleted list">ul</button><button type="button" data-cmd="insertOrderedList" title="Numbered list">ol</button>
+      <button type="button" data-cmd="createLink" title="Link">a</button>
       <label title="Text colour" class="msg-color">A<input type="color" value="#c0392b"></label>
-      <button type="button" data-cmd="removeFormat" title="Clear formatting">Clear</button>
+      <button type="button" data-cmd="removeFormat" title="Clear formatting">clr</button>
     </div>
     <div class="msg-ed" contenteditable="true" aria-label="Message"></div>
-    <div class="ask-btns"><button value="cancel" type="submit" class="btn-quiet">Cancel</button><button value="ok" type="submit" class="btn-main">Save</button></div></form></dialog>
-  <script src="admin.js"></script>
+    <div class="ask-btns"><button value="cancel" type="submit">cancel</button><button value="ok" type="submit">commit</button></div></form></dialog>
+  <script src="admin.js?v=3"></script>
 </body>
 </html>
