@@ -9,6 +9,8 @@
 //   GET    /api/admin/bans                   banned accounts (deleted ones too), their attempts, blocked internet addresses
 //   DELETE /api/admin/bans/ip/:ip             let that internet address make new accounts again
 //   POST   /api/admin/notes                  {ids, title, logo, html} one message to many accounts    POST /api/admin/notes/clear {ids}
+//   GET    /api/admin/updates                the update list, what each account has read, the notes sent, deploys since the last
+//   PUT    /api/admin/updates/subs {ids}      who is on the update list    POST /api/admin/updates {bullets} sends a note to them
 //   GET    /api/admin/hub    PUT /api/admin/hub {content}    DELETE /api/admin/hub (back to hub.json)
 //   POST   /api/admin/media                  raw image body -> {url}
 //   GET    /api/admin/maintenance    PUT /api/admin/maintenance {on, message}
@@ -28,8 +30,9 @@ import { getKeys, newKey, saveKeys, sha256 } from '../../_lib/keys.js';
 import { SOURCES, load as loadDeploys, sync as syncDeploys, upsert as upsertDeploys } from '../../_lib/deploylog.js';
 import { KEEP_DAYS, SITES, db as activityDb, forget as forgetActivity, schema as activitySchema } from '../../_lib/activity.js';
 import { cleanHtml } from '../../_lib/richtext.js';
+import { MAX_BULLETS, MAX_LEN, forgetUpd, getLog, getSubs, listUpd, saveSubs, sendUpdate, sinceLast } from '../../_lib/updates.js';
 import { ban, getBans, liftIp, unban } from '../../_lib/bans.js';
-import { changeAccounts, clearVerifyFlag, endSessions, getAccounts, hashPassword, hubContent, json, listSessions, randomToken, saveAccounts, setNoteFlag } from '../../_lib/auth.js';
+import { changeAccounts, clearVerifyFlag, endSessions, getAccounts, hashPassword, hubContent, json, listSessions, randomToken, refreshNoteFlag, saveAccounts, setNoteFlag } from '../../_lib/auth.js';
 
 const ROLES = ['admin', 'user'];
 const MAX_IMAGE = 5 * 1024 * 1024;
@@ -61,6 +64,15 @@ export async function onRequest(ctx) {
   // one message for many accounts at once: each gets its own copy (so the console shows who has read it), shown once
   if (route === 'notes' && method === 'POST') return json(...await batchNotes(env, body));
   if (route === 'notes/clear' && method === 'POST') return json(...await batchNotes(env, body, true));
+
+  // update notes: a line or two about each update, for the accounts on the list (functions/_lib/updates.js)
+  if (route === 'updates' && method === 'GET') {
+    const [accounts, subs, upd, log, since] = await Promise.all([getAccounts(env), getSubs(env), listUpd(env), getLog(env), sinceLast(env)]);
+    return json({ subs, log: log.slice(-30).reverse(), since, maxBullets: MAX_BULLETS, maxLen: MAX_LEN,
+      accounts: accounts.map(a => ({ id: a.id, username: a.username, role: a.role, banned: a.banned || null, upd: upd[a.id] || null })) });
+  }
+  if (route === 'updates/subs' && method === 'PUT') return json({ ok: true, subs: await saveSubs(env, body.ids) });
+  if (route === 'updates' && method === 'POST') return json(...await sendUpdate(env, body, me.username));
 
   if (route === 'activity' && method === 'GET') return json(await activityList(env));
   const actRoute = route.match(/^activity\/([\w:-]+)$/);
@@ -127,7 +139,7 @@ export async function onRequest(ctx) {
   if (noteRoute && method === 'GET') return json(await env.HUB_KV.get('note:' + noteRoute[1], 'json'));
   if (noteRoute && method === 'DELETE') {
     await env.HUB_KV.delete('note:' + noteRoute[1]);
-    await setNoteFlag(env, noteRoute[1], false);
+    await refreshNoteFlag(env, noteRoute[1]);  // stays on if update notes are waiting
     return json({ ok: true });
   }
   // ban: signed out everywhere, can't sign in, and can't make a new account (functions/_lib/bans.js); unban undoes it all
@@ -184,6 +196,7 @@ export async function onRequest(ctx) {
     await env.HUB_KV.delete('consent:' + a.id);
     await env.HUB_KV.delete('ecode:' + a.id);
     await env.HUB_KV.delete('note:' + a.id);
+    await forgetUpd(env, a.id);
     await forgetActivity(env, a.id);
     return json({ ok: true });
   }
@@ -324,16 +337,19 @@ async function batchNotes(env, body, clear) {
     if (!title && !html.replace(/<[^>]*>|&nbsp;|\s/g, '')) return [{ error: 'Write a message.' }, 400];
     rec = JSON.stringify({ title, logo: !!body.logo, html, t }); len = html.length;
   }
-  const ids = new Set(accounts.map(a => a.id));
+  const ids = new Set(accounts.map(a => a.id)), keep = new Set();
   for (const a of accounts) {
     if (clear) await env.HUB_KV.delete('note:' + a.id);
     else await env.HUB_KV.put('note:' + a.id, rec, { metadata: { t, len } });
   }
+  // after clearing, accounts with update notes waiting keep the flag (refreshNoteFlag, for many accounts at once)
+  if (clear) for (const [id, u] of Object.entries(await listUpd(env))) if (ids.has(id) && !u.seen && u.n) keep.add(id);
   // the same as setNoteFlag, with one pass over the sessions for every account
   for (const s of await listSessions(env)) {
-    if (!ids.has(s.accountId) || !!s.note === !clear) continue;
+    const on = !clear || keep.has(s.accountId);
+    if (!ids.has(s.accountId) || !!s.note === on) continue;
     const { token, note, ...info } = s;
-    if (!clear) info.note = true;
+    if (on) info.note = true;
     await env.HUB_KV.put('sess:' + token, JSON.stringify(info), { expiration: Math.floor(info.expires / 1000), metadata: info });
   }
   return [{ ok: true, count: accounts.length, skipped: want.size - accounts.length }];

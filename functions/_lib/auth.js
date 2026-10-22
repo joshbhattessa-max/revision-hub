@@ -135,9 +135,9 @@ export async function createSession(env, account, request, dev) {
     device: (request.headers.get('user-agent') || '').slice(0, 160),
     ...(dev ? { dev } : {}),
   };
-  // a message from the admin console waiting for this account: the pages of this session show it (functions/api/note.js)
-  const note = await env.HUB_KV.get('note:' + account.id, 'json');
-  if (note && !note.seen) info.note = true;
+  // a message from the admin console, or update notes, waiting for this account: the pages of this session show them
+  // (functions/api/note.js)
+  if (await hasUnread(env, account.id)) info.note = true;
   // the key expires with the session; the metadata lets the admin console list sessions without reading each one
   await env.HUB_KV.put('sess:' + token, JSON.stringify(info), { expiration: Math.floor(info.expires / 1000), metadata: info });
   return token;
@@ -183,6 +183,16 @@ export async function setNoteFlag(env, accountId, on) {
     if (on) info.note = true;
     await env.HUB_KV.put('sess:' + token, JSON.stringify(info), { expiration: Math.floor(info.expires / 1000), metadata: info });
   }
+}
+
+// whether the account has something unread for note.js to show: the admin's message, or update notes (_lib/updates.js)
+export async function hasUnread(env, accountId) {
+  const [note, upd] = await Promise.all([env.HUB_KV.get('note:' + accountId, 'json'), env.HUB_KV.get('upd:' + accountId, 'json')]);
+  return !!(note && !note.seen) || !!(upd && !upd.seen && upd.items && upd.items.length);
+}
+// after one of them was read or removed: the flag stays on while the other is still waiting
+export async function refreshNoteFlag(env, accountId) {
+  await setNoteFlag(env, accountId, await hasUnread(env, accountId));
 }
 
 export async function endSessions(env, test) {
