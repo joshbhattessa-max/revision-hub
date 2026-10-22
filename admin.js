@@ -259,12 +259,14 @@
     var h = document.createElement('h2'); h.textContent = 'Subjects'; box.appendChild(h);
     (c.sites || []).forEach(function (s) {
       var row = document.createElement('div'); row.className = 'box';
-      row.innerHTML = '<div class="row"><strong class="grow">' + esc(s.name) + '</strong>' +
+      row.innerHTML = '<div class="row"><strong class="grow">' + esc(s.subject || s.name) + '</strong>' +
         '<label class="muted"><input type="checkbox" class="hid"' + (s.hidden ? ' checked' : '') + '> Hide on the home page</label></div>' +
         '<div class="row"><label class="lbl">Subject name<input type="text" class="subj" value="' + esc(s.subject) + '"></label>' +
+        '<label class="lbl">Site name (on the card\'s coloured band)<input type="text" class="nm" value="' + esc(s.name) + '"></label>' +
         '<label class="lbl">Colour<input type="text" class="col" value="' + esc(s.color) + '" placeholder="#17A398"></label></div>';
       row.querySelector('.hid').addEventListener('change', function (e) { s.hidden = e.target.checked; markDirty(); });
       row.querySelector('.subj').addEventListener('input', function (e) { s.subject = e.target.value; markDirty(); });
+      row.querySelector('.nm').addEventListener('input', function (e) { s.name = e.target.value; markDirty(); });
       row.querySelector('.col').addEventListener('input', function (e) { s.color = e.target.value.trim(); markDirty(); });
       row.appendChild(imageField(s.image, function (v) { s.image = v; }));
       box.appendChild(row);
@@ -326,6 +328,8 @@
     // drop links left completely empty
     content.sections.forEach(function (s) { s.cards = (s.cards || []).filter(function (c) { return c.title || c.url || c.image; }); });
     var bad = [];
+    content.sites.forEach(function (s) { s.subject = (s.subject || '').trim(); s.name = (s.name || '').trim(); if (!s.subject || !s.name) bad.push(s.path); });
+    if (bad.length) { say('Every subject needs a subject name and a site name (missing for ' + bad[0] + ').', true); return; }
     content.sections.forEach(function (s) { s.cards.forEach(function (c) { if (!c.title) bad.push(c.url || 'a link'); }); });
     if (bad.length) { say('Every link needs a title (missing for ' + bad[0] + ').', true); return; }
     api('PUT', 'hub', { content: content }).then(function () { dirty = false; drawContent(); say('Saved. The home page shows it now.'); })
