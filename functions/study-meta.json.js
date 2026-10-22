@@ -1,4 +1,4 @@
-// the planner's and progress page's subject list (study-meta.json), with the names and colours from the hub's
+// the progress page's subject list (study-meta.json), with the names and colours from the hub's
 // content, so a subject renamed or recoloured in the admin console shows the same way there too
 import { hubContent, json } from './_lib/auth.js';
 

@@ -118,15 +118,11 @@ The hub's forwarding and the subject sites' secret check run on Cloudflare's fre
 Every subject site has **My topics** (a heatmap of how secure each topic is, from your self-marking, plus red/amber/green
 ratings), **Mock paper** (a paper you build yourself from the school board's questions, timed on screen or printed, with
 a grade estimate from the board's grade boundaries) and a "How many marks did you get?" row under every mark scheme. On the main site, **Your campus** (home page) grows a building per subject as topics become
-secure, and the **Revision planner** (`/planner`) holds exams, class tests and topic deadlines, reads revision
-checklists (PDF or pasted text) to tick the topics they cover (skipping the sheet's headings and test details), and lays
-out a day-by-day plan (also as a calendar file). Each date has:
+secure, and **Your progress** (`/progress`) shows how you're doing over time.
 
-- **Question sets** (up to 15 questions, picked line by line from the topic sheet, with questions due for review first),
-  listed under the date. *Start* opens the set on its subject site (`#/set/<id>`), one question at a time on the normal
-  question page: Previous and Next stay inside the set, and a strip above the question fills in as you mark each part.
-- **Mock paper**, which hands the date's topics to the subject site's mock paper (`jbr-mock-preset-<subject>` in
-  browser storage), so the paper is built from just those topics.
+The revision planner (`/planner`) and the subject sites' Review page (`#/review`) and question sets (`#/set/<id>`) were
+removed in October 2026. `/planner` now sends you to the home page. Anything saved with them stays in each account's
+progress (the `plan` field) and isn't deleted.
 
 The mock paper builder (`#/mock`) lets you tick whole areas, topics or single spec points (with a search box and "My
 weakest topics"), pick the length (30 to 110 marks, or your own), the time (exam pace, your own minutes or no timer),
