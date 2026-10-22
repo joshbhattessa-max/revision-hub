@@ -13,6 +13,7 @@
 //   POST   /api/admin/media                  raw image body -> {url}
 //   GET    /api/admin/maintenance    PUT /api/admin/maintenance {on, message}
 //   GET    /api/admin/takedown       PUT /api/admin/takedown {on}  (stays on until turned off)
+//   GET    /api/admin/sys                     build and runtime details for the console's header and footer
 //   GET    /api/admin/keys    POST /api/admin/keys {label} -> {key} (shown once)    DELETE /api/admin/keys/:id
 //   GET    /api/admin/usage?days=30           usage statistics (from visitors who accepted them) and cookie choices
 //   GET    /api/admin/activity                 each account: the page it's on now and when it was last active
@@ -224,6 +225,14 @@ export async function onRequest(ctx) {
     else await env.HUB_KV.delete('takedown');
     forgetTakedown();
     return json(await takedownState(env));
+  }
+
+  if (route === 'sys' && method === 'GET') {
+    const cf = request.cf || {};
+    return json({ commit: env.CF_PAGES_COMMIT_SHA || null, branch: env.CF_PAGES_BRANCH || null, deployUrl: env.CF_PAGES_URL || null,
+      colo: cf.colo || null, country: cf.country || null, tls: cf.tlsVersion || null, http: cf.httpProtocol || null, asn: cf.asn || null,
+      ray: request.headers.get('cf-ray'), now: Date.now(), operator: me.username,
+      bindings: { HUB_KV: !!env.HUB_KV, ACTIVITY_DB: !!env.ACTIVITY_DB, HUB_SECRET: !!env.HUB_SECRET, RESEND_API_KEY: !!env.RESEND_API_KEY, GITHUB_TOKEN: !!env.GITHUB_TOKEN } });  // set or not, never the values
   }
 
   if (route === 'hub' && method === 'GET') return json(await hubContent(ctx));
