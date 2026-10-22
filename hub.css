@@ -64,6 +64,9 @@ h2 { font-size: 1.15rem; font-weight: 600; margin: 32px 0 12px; display: flex; a
 .subject .half .kicker { display: block; font-size: .78rem; font-weight: 600; letter-spacing: .02em; opacity: .9; margin-bottom: 2px; }
 .subject .half .body { padding: 12px 14px 14px; }
 .subject .half.off { opacity: .55; pointer-events: none; }
+button.subject.pair { width: 100%; padding: 0; font: inherit; color: inherit; text-align: left; cursor: pointer; }
+.pick-dlg { width: min(520px, calc(100vw - 24px)); }
+.pick-dlg .subject.split { box-shadow: none; }
 
 .card { display: flex; flex-direction: column; background: var(--card); border: 1px solid var(--line); border-radius: 12px; overflow: hidden;
   box-shadow: var(--shadow); text-decoration: none; }

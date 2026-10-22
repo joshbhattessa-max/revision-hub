@@ -21,15 +21,16 @@
       (me ? userMenu(me) : '') + TOGGLE + '</div></header>' + emailNudge(me);
 
     h += '<h2>Subjects</h2><div class="grid">';
-    // sites sharing a "pair" (English Language and Literature) share one card, split in two halves
-    var paired = {};
+    // sites sharing a "pair" (English Language and Literature) share one card that asks which one to open
+    var paired = {}, pairs = {};
     (data.sites || []).forEach(function (s) {
       if (s.hidden) return;
       if (s.pair) {
         if (paired[s.pair]) return;
         var halves = data.sites.filter(function (o) { return o.pair === s.pair && !o.hidden; });
         paired[s.pair] = true;
-        h += '<div class="subject split">' + halves.map(function (o) { return subjectCard(o, true); }).join('') + '</div>';
+        pairs[s.pair] = halves;
+        h += pairCard(s.pair, halves);
         return;
       }
       h += subjectCard(s);
@@ -49,6 +50,9 @@
     h += '<footer><p>Past papers and mark schemes are © their exam boards. For personal revision.</p><nav class="site-foot" aria-label="About this site"><a href="/privacy">Privacy Policy</a><a href="/terms">Terms and Conditions</a><a href="#" data-cookie-settings>Cookie settings</a><span class="foot-email">contact@jbrevision.co.uk</span></nav></footer></div>';
     document.getElementById('app').innerHTML = h;
     if (me) { wireUserMenu(); hello(me); wireNudge(); }
+    Array.prototype.forEach.call(document.querySelectorAll('.subject.pair'), function (b) {
+      b.addEventListener('click', function () { pickHalf(pairs[b.getAttribute('data-pair')]); });
+    });
     var btn = document.querySelector('.theme-toggle');
     btn.addEventListener('click', function () { toggleTheme(btn); });
     syncToggle();
@@ -66,6 +70,29 @@
       '<div class="band" style="' + band + '"><span class="logo">' + logo + '</span></div>' +
       '<div class="body"><div class="name">' + esc(half ? s.name : s.subject) + '</div>' +
       '<div class="stats">' + stats + '</div></div></a>';
+  }
+
+  // one card for a pair: named by the shared subject ("English"), coloured by its first site
+  function pairCard(pair, halves) {
+    var first = halves[0], name = first.pairName || pair;
+    var qs = halves.reduce(function (n, o) { return n + (o.questions || 0); }, 0);
+    return '<button type="button" class="subject pair" data-pair="' + esc(pair) + '" aria-haspopup="dialog" style="--c:' + esc(first.color || '#33312e') + '">' +
+      '<div class="band"><span class="logo">' + esc(name) + '</span></div>' +
+      '<div class="body"><div class="name">' + esc(halves.map(function (o) { return o.subject.replace(name + ' ', ''); }).join(' or ')) + '</div>' +
+      '<div class="stats">' + (qs ? fmt(qs) + ' questions' : '') + '</div></div></button>';
+  }
+
+  // the popup a pair card opens: the two sites as half cards, pick one to go there
+  function pickHalf(halves) {
+    var d = document.createElement('dialog');
+    d.className = 'acct-dlg pick-dlg';
+    d.innerHTML = '<form method="dialog"><h3>Which ' + esc(halves[0].pairName || '') + '?</h3>' +
+      '<div class="subject split">' + halves.map(function (o) { return subjectCard(o, true); }).join('') + '</div>' +
+      '<div class="acct-btns"><button type="submit">Cancel</button></div></form>';
+    document.body.appendChild(d);
+    d.addEventListener('close', function () { d.remove(); });
+    d.addEventListener('click', function (e) { if (e.target === d) d.close(); });
+    d.showModal();
   }
 
   // JB Revision logo (heavy JBR running past a ring that breaks where the letters cross it); colours come from hub.css
