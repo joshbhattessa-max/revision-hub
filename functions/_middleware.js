@@ -8,6 +8,7 @@ import { canSend } from './_lib/email.js';
 import { tagSession } from './_lib/bans.js';
 import { TAKEDOWN_PAGE, takedown } from './_lib/takedown.js';
 import { autoUpdate } from './_lib/updates.js';
+import { whoCookie } from './_lib/who.js';
 
 // what anyone can open without signing in (the login page, the front page and "Try a few questions", Privacy, Terms)
 const OPEN = new Set(['/login', '/login.html', '/login.js', '/hub.css', '/look.css', '/look.js', '/fonts.css', '/favicon.svg', '/favicon-32.png',
@@ -115,18 +116,22 @@ export async function onRequest(ctx) {
   // every 10 minutes by each server
   if (Date.now() - lastAuto > 10 * 60 * 1000) { lastAuto = Date.now(); ctx.waitUntil(autoUpdate(ctx).catch(() => {})); }
   const devCookie = await tagSession(ctx.env, ctx.request, session).catch(() => null);
+  // which account this browser's copy of study progress belongs to (_lib/who.js)
+  const who = await whoCookie(ctx.request, session).catch(() => null);
   const res = await ctx.next();
   // pages that don't exist get the 404 page (404.html only makes Pages answer 404 instead of the home page)
   if (res.status === 404 && (ctx.request.headers.get('accept') || '').includes('text/html')) {
     const nf = new Response(notFoundPage(url.pathname), { status: 404, headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store' } });
     if (keyCookie) nf.headers.append('set-cookie', keyCookie);
     if (devCookie) nf.headers.append('set-cookie', devCookie);
+    if (who) nf.headers.append('set-cookie', who);
     return nf;
   }
   const out = new Response(res.body, res);
   out.headers.set('cache-control', 'private, no-store');
   if (keyCookie) out.headers.append('set-cookie', keyCookie);
   if (devCookie) out.headers.append('set-cookie', devCookie);
+  if (who) out.headers.append('set-cookie', who);
   // (a past version keeps its own pages as they were, without today's cookie popup; the admin console stays bare HTML
   // with no CSS, so it gets none of the styled popups either)
   return path.startsWith('/v/') || path === '/admin' || path === '/admin.html' ? out : withConsent(out, true, session.note);
