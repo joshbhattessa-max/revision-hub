@@ -106,11 +106,12 @@
   });
   function show(name) {
     Array.prototype.forEach.call(tabs, function (b) { b.classList.toggle('on', b.getAttribute('data-tab') === name); });
-    ['content', 'sessions', 'activity', 'accounts', 'maintenance', 'usage'].forEach(function (n) { document.getElementById('tab-' + n).hidden = n !== name; });
+    ['content', 'sessions', 'activity', 'accounts', 'updates', 'maintenance', 'usage'].forEach(function (n) { document.getElementById('tab-' + n).hidden = n !== name; });
     say('');
     if (name === 'sessions') loadSessions();
     if (name === 'activity') loadActivity(); else stopActivity();
     if (name === 'accounts') loadAccounts();
+    if (name === 'updates') loadUpdates();
     if (name === 'maintenance') loadMaintenance();
     if (name === 'usage') loadUsage();
   }
@@ -466,6 +467,113 @@
       put(!m.byAdmin);
     });
     mbox.querySelector('.savemsg').addEventListener('click', function () { put(m.byAdmin); });
+  }
+
+  // ------------------------------------------------------------------ update notes
+  // a line or two about each update for the accounts on the list (functions/_lib/updates.js); it pops up on their next
+  // page, and anything they haven't read yet comes with it, under its own dates
+  var upbox = document.getElementById('tab-updates'), upSubs = {}, upDirty = false;
+  function upSite(site) { var m = /\(([^)]+)\)/.exec(site || ''); return m ? m[1] + ': ' : ''; }
+  function loadUpdates() {
+    api('GET', 'updates').then(drawUpdates).catch(function (e) { say(e.message, true); });
+  }
+  function drawUpdates(d) {
+    upSubs = {}; upDirty = false;
+    d.subs.forEach(function (id) { upSubs[id] = 1; });
+    var byId = {};
+    d.accounts.forEach(function (a) { byId[a.id] = a; });
+    var onList = d.accounts.filter(function (a) { return upSubs[a.id]; }), reach = onList.filter(function (a) { return !a.banned; }).length;
+    var deps = d.since.deploys;
+    upbox.innerHTML = '<p class="muted">list=' + onList.length + '/' + d.accounts.length + ' reachable=' + reach + ' notes_sent=' + d.log.length +
+      ' store=kv:updates:subs,updates:log,upd:&lt;uid&gt; delivery=popup on next page load; unread notes stack newest-first under date headings</p>' +
+      '<h2>compose</h2><div class="box">' +
+      [0, 1].map(function (i) {
+        return '<label class="lbl">bullet[' + i + ']' + (i ? ' (optional)' : '') + '<input type="text" class="up-bul" data-i="' + i + '" maxlength="' + d.maxLen + '" autocomplete="off"></label>';
+      }).join('') +
+      '<div class="up-prev"><div class="muted">preview (newest block of the popup):</div><h4>Latest update · ' + esc(new Date().toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'long', year: 'numeric' })) + '</h4><ul class="up-prev-ul"></ul></div>' +
+      '<div class="row"><button type="button" class="small up-draft"' + (deps.length ? '' : ' disabled') + '>draft from deploys</button>' +
+      '<span class="grow"></span><button type="button" class="btn-main up-send">POST /updates → ' + reach + ' accounts</button></div>' +
+      '<h3>deploys since ' + (d.since.last ? 'last note (' + iso(d.since.last) + ')' : 'ever (last 10)') + ' [' + deps.length + ']</h3>' +
+      (deps.length ? '<ul class="up-src mono">' + deps.map(function (x, di) {
+        return '<li>' + esc(iso(x.at)) + ' ' + esc(x.site) + (x.titles.length ? '<ul>' + x.titles.map(function (t, ti) {
+          return '<li>' + esc(t) + '<button type="button" class="small up-use" data-d="' + di + '" data-t="' + ti + '">use</button></li>';
+        }).join('') + '</ul>' : ' <span class="muted">(no titles)</span>') + '</li>';
+      }).join('') + '</ul>' : '<p class="muted">0 rows (nothing deployed since the last note, or the deploy log is empty)</p>') + '</div>' +
+      '<h2>list[' + onList.length + ']</h2><div class="box"><div class="row"><input type="text" class="up-find grow" placeholder="filter: username" autocomplete="off">' +
+      '<span class="muted">select:</span><button type="button" class="small up-q" data-q="all">*</button><button type="button" class="small up-q" data-q="user">role=user</button>' +
+      '<button type="button" class="small up-q" data-q="none">none</button></div>' +
+      '<div class="tablewrap"><table><thead><tr><th>on_list</th><th>uid</th><th>username</th><th>role</th><th>last_note</th></tr></thead><tbody>' +
+      d.accounts.map(function (a) {
+        var u = a.upd;
+        return '<tr data-id="' + esc(a.id) + '"><td><input type="checkbox" class="up-cb"' + (upSubs[a.id] ? ' checked' : '') + ' aria-label="' + esc(a.username) + ' on the update list"></td>' +
+          '<td><code>' + esc(a.id) + '</code></td><td>' + esc(a.username) + (a.banned ? ' <span class="ban-tag">BANNED (skipped)</span>' : '') + '</td><td>' + esc(a.role) + '</td><td class="muted">' +
+          (u ? (u.seen ? 'read=' + when(u.seen) : 'unread=' + (u.n || 0) + ' since ' + when(u.t)) : '-') + '</td></tr>';
+      }).join('') + '</tbody></table></div>' +
+      '<div class="savebar"><button type="button" class="btn-main up-save" disabled>PUT list</button><span class="muted up-state">state=clean kv_key=updates:subs</span></div></div>' +
+      '<h2>sent_log[' + d.log.length + ']</h2>' + (d.log.length ? '<div class="tablewrap"><table><thead><tr><th>ts</th><th>by</th><th class="num">sent</th><th class="num">skipped</th><th>bullets</th></tr></thead><tbody>' +
+        d.log.map(function (l) {
+          return '<tr><td>' + esc(iso(l.t)) + '</td><td>' + esc(l.by) + '</td><td class="num">' + l.sent + '</td><td class="num">' + l.skipped + '</td><td>' + l.bullets.map(function (b) { return '- ' + esc(b); }).join('<br>') + '</td></tr>';
+        }).join('') + '</tbody></table></div>' : '<p class="muted">0 rows</p>');
+
+    var buls = upbox.querySelectorAll('.up-bul'), prev = upbox.querySelector('.up-prev-ul'), send = upbox.querySelector('.up-send');
+    function bullets() { return Array.prototype.map.call(buls, function (b) { return b.value.trim(); }).filter(Boolean); }
+    function preview() {
+      prev.innerHTML = bullets().map(function (b) { return '<li>' + esc(b) + '</li>'; }).join('') || '<li class="muted">(empty)</li>';
+      send.disabled = !bullets().length || !reach || upDirty;
+      send.title = upDirty ? 'PUT the list first' : !reach ? 'Nobody on the list' : '';
+    }
+    Array.prototype.forEach.call(buls, function (b) { b.addEventListener('input', preview); });
+    function put(text) {
+      var empty = Array.prototype.filter.call(buls, function (b) { return !b.value.trim(); })[0];
+      if (!empty) { say('both bullets are full; clear one first', true); return; }
+      empty.value = text; preview();
+    }
+    Array.prototype.forEach.call(upbox.querySelectorAll('.up-use'), function (b) {
+      b.addEventListener('click', function () { var x = deps[+b.getAttribute('data-d')]; put(upSite(x.site) + x.titles[+b.getAttribute('data-t')]); });
+    });
+    upbox.querySelector('.up-draft').addEventListener('click', function () {
+      var all = [];
+      deps.forEach(function (x) { x.titles.forEach(function (t) { all.push(upSite(x.site) + t); }); });
+      Array.prototype.forEach.call(buls, function (b, i) { b.value = all[i] || ''; });
+      preview(); say('drafted from ' + deps.length + ' deploys; edit the wording before sending');
+    });
+    send.addEventListener('click', function () {
+      var b = bullets();
+      if (!confirm('Send this update note to ' + reach + ' account(s)? It pops up on their next page.\n\n' + b.map(function (x) { return '- ' + x; }).join('\n'))) return;
+      api('POST', 'updates', { bullets: b }).then(function (r) { say('update note queued sent=' + r.sent + ' skipped=' + r.skipped); loadUpdates(); }).catch(function (e) { say(e.message, true); });
+    });
+
+    var rows = Array.prototype.map.call(upbox.querySelectorAll('tr[data-id]'), function (tr) {
+      return { tr: tr, cb: tr.querySelector('.up-cb'), a: byId[tr.getAttribute('data-id')] };
+    });
+    function upMark() {
+      upDirty = true;
+      upbox.querySelector('.up-save').disabled = false;
+      upbox.querySelector('.up-state').textContent = 'state=dirty list=' + Object.keys(upSubs).length + ' kv_key=updates:subs';
+      preview();
+    }
+    rows.forEach(function (r) {
+      r.cb.addEventListener('change', function () { if (r.cb.checked) upSubs[r.a.id] = 1; else delete upSubs[r.a.id]; upMark(); });
+    });
+    upbox.querySelector('.up-find').addEventListener('input', function (e) {
+      var q = e.target.value.trim().toLowerCase();
+      rows.forEach(function (r) { r.tr.hidden = !!q && r.a.username.toLowerCase().indexOf(q) < 0; });
+    });
+    Array.prototype.forEach.call(upbox.querySelectorAll('.up-q'), function (b) {
+      b.addEventListener('click', function () {
+        var q = b.getAttribute('data-q');
+        rows.forEach(function (r) {
+          if (r.tr.hidden) return;
+          var on = q === 'all' || (q === 'user' && r.a.role === 'user');
+          r.cb.checked = on; if (on) upSubs[r.a.id] = 1; else delete upSubs[r.a.id];
+        });
+        upMark();
+      });
+    });
+    upbox.querySelector('.up-save').addEventListener('click', function () {
+      api('PUT', 'updates/subs', { ids: Object.keys(upSubs) }).then(function (r) { say('200 committed updates:subs list=' + r.subs.length); loadUpdates(); }).catch(function (e) { say(e.message, true); });
+    });
+    preview();
   }
 
   // ------------------------------------------------------------------ accounts

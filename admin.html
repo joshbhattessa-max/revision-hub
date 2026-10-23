@@ -60,6 +60,10 @@
     .msg-ed h3 { margin: 6px 0 4px; } .msg-ed p { margin: 0 0 6px; }
     /* phones: tables keep their columns and scroll sideways */
     @media (max-width: 700px) { table { width: max-content; min-width: 100%; } td .row { flex-wrap: nowrap; } }
+    .up-bul { width: 100%; box-sizing: border-box; font: 13px/1.4 ui-monospace, Menlo, Consolas, monospace; }
+    .up-prev { border: 1px dashed GrayText; padding: 4px 10px; margin: 6px 0; font: 14px/1.4 sans-serif; }
+    .up-prev h4 { margin: 4px 0 2px; font-size: 13px; } .up-prev ul { margin: 0 0 6px; padding-left: 20px; }
+    .up-src li { margin: 0 0 2px; } .up-src button { margin-left: 4px; }
     .reqlog { margin-top: 24px; border-top: 1px solid GrayText; padding-top: 4px; color: GrayText; }
     .reqlog pre { margin: 0; max-height: 9.5em; overflow: auto; white-space: pre; font-size: 11px; }
   </style>
@@ -76,6 +80,7 @@
       <button type="button" role="tab" data-tab="sessions">sessions</button>
       <button type="button" role="tab" data-tab="activity">activity_log</button>
       <button type="button" role="tab" data-tab="accounts">accounts</button>
+      <button type="button" role="tab" data-tab="updates">update_notes</button>
       <button type="button" role="tab" data-tab="maintenance">site_state</button>
       <button type="button" role="tab" data-tab="usage">telemetry</button>
     </nav>
@@ -84,6 +89,7 @@
     <section id="tab-sessions" hidden></section>
     <section id="tab-activity" hidden></section>
     <section id="tab-accounts" hidden></section>
+    <section id="tab-updates" hidden></section>
     <section id="tab-maintenance" hidden><div id="takedown-box"></div><div id="maint-box"></div></section>
     <section id="tab-usage" hidden></section>
     <footer class="reqlog"><div>request log (this tab, newest first) · <span id="sys-bind"></span></div><pre id="reqlog"></pre></footer>
@@ -104,6 +110,6 @@
     </div>
     <div class="msg-ed" contenteditable="true" aria-label="Message"></div>
     <div class="ask-btns"><button value="cancel" type="submit">cancel</button><button value="ok" type="submit">commit</button></div></form></dialog>
-  <script src="admin.js?v=3"></script>
+  <script src="admin.js?v=4"></script>
 </body>
 </html>
