@@ -70,13 +70,10 @@
       t = setTimeout(function () { if (redraw && narrow() !== wasNarrow) { wasNarrow = narrow(); redraw(); } }, 200);
     });
   }
-  // the title, and the subtitle on one line or, if it's too long for the width (on a phone), two
-  function frame(title, sub) {
-    var lines = [sub || ''], fit = Math.floor(W / 5.6);
-    if (sub && sub.length > fit) { var cut = sub.lastIndexOf(' ', fit); if (cut < 1) cut = fit; lines = [sub.slice(0, cut), sub.slice(cut + 1)]; }
-    T = lines.length > 1 ? 54 : 40;
-    return '<text x="0" y="16" font-size="14" font-weight="700" fill="currentColor">' + esc(title) + '</text>' +
-      (sub ? lines.map(function (l, i) { return '<text x="0" y="' + (31 + i * 13) + '" font-size="10.5" fill="currentColor" fill-opacity=".6">' + esc(l) + '</text>'; }).join('') : '');
+  // just the title: the line of text that used to sit under it is gone
+  function frame(title) {
+    T = 32;
+    return '<text x="0" y="16" font-size="14" font-weight="700" fill="currentColor">' + esc(title) + '</text>';
   }
   function xLabels(bs, X) {
     var step = Math.max(1, Math.ceil(bs.length / (W < 500 ? 4 : 8))), s = '', pick = [];
