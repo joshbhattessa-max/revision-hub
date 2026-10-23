@@ -76,7 +76,7 @@ export async function onRequest(ctx) {
   const m = await maintenance(ctx);
   if (m.on && !(session && session.role === 'admin')) {
     const adminLogin = isLogin && url.searchParams.has('admin');
-    if (!adminLogin && !DURING_MAINTENANCE.has(path) && !path.startsWith('/fonts/') && !SHEET(path)) {
+    if (!adminLogin && !DURING_MAINTENANCE.has(path) && !path.startsWith('/fonts/') && !path.startsWith('/look-fonts/') && !SHEET(path)) {
       const headers = { 'cache-control': 'no-store', 'retry-after': '120' };
       if (path.startsWith('/api/')) return json({ error: 'Down for maintenance', maintenance: true }, 503, headers);
       return new Response(maintenancePage(m), { status: 503, headers: { ...headers, 'content-type': 'text/html; charset=utf-8' } });
@@ -91,7 +91,7 @@ export async function onRequest(ctx) {
     out.headers.set('cache-control', 'private, no-store');
     return withConsent(out);
   }
-  if (OPEN.has(path) || path.startsWith('/fonts/') || SHEET(path) || TRY(path)) {
+  if (OPEN.has(path) || path.startsWith('/fonts/') || path.startsWith('/look-fonts/') || SHEET(path) || TRY(path)) {
     if (session && isLogin) return Response.redirect(url.origin + safeNext(url), 302);  // (a key's cookie is set on its next page)
     return withConsent(await fresh(ctx, path));
   }

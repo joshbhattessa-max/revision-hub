@@ -20,9 +20,12 @@
       '<div class="top-actions">' +
       (me ? userMenu(me) : '') + TOGGLE + '</div></header>' + emailNudge(me);
 
-    h += '<h2>Subjects</h2><div class="grid">';
+    // a few words that change with what you've been doing (filled in by personal() once your progress is in)
+    if (me) h += '<section class="hi" aria-live="polite"><p class="hi-date">' + esc(new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' })) + '</p>' +
+      '<p class="hi-title">' + esc(timeHello(me)) + '</p><p class="hi-line"></p><div class="hi-chips"></div></section>';
+    h += '<h2>' + (me ? 'Your subjects' : 'Subjects') + '</h2><div class="grid">';
     // sites sharing a "pair" (English Language and Literature) share one card that asks which one to open
-    var paired = {}, pairs = {};
+    var paired = {}, pairs = {}, no = 0;
     (data.sites || []).forEach(function (s) {
       if (s.hidden) return;
       if (s.pair) {
@@ -30,10 +33,10 @@
         var halves = data.sites.filter(function (o) { return o.pair === s.pair && !o.hidden; });
         paired[s.pair] = true;
         pairs[s.pair] = halves;
-        h += pairCard(s.pair, halves);
+        h += pairCard(s.pair, halves, ++no);
         return;
       }
-      h += subjectCard(s);
+      h += subjectCard(s, false, ++no);
     });
     h += '</div>';
 
@@ -49,7 +52,7 @@
     });
     h += '<footer><p>Past papers and mark schemes are © their exam boards. For personal revision.</p><nav class="site-foot" aria-label="About this site"><a href="/privacy">Privacy Policy</a><a href="/terms">Terms and Conditions</a><a href="#" data-cookie-settings>Cookie settings</a><span class="foot-email">contact@jbrevision.co.uk</span></nav></footer></div>';
     document.getElementById('app').innerHTML = h;
-    if (me) { wireUserMenu(); hello(me); wireNudge(); }
+    if (me) { wireUserMenu(); hello(me); wireNudge(); personal(me, data); }
     Array.prototype.forEach.call(document.querySelectorAll('.subject.pair'), function (b) {
       b.addEventListener('click', function () { pickHalf(pairs[b.getAttribute('data-pair')]); });
     });
@@ -58,28 +61,36 @@
     syncToggle();
   }
 
-  function subjectCard(s, half) {
+  function subjectCard(s, half, no) {
     var live = !!s.origin;
     var band = s.image ? 'background-image:linear-gradient(rgba(0,0,0,.15),rgba(0,0,0,.35)),url(' + esc(s.image) + ');' : '';
     var stats = s.questions ? fmt(s.questions) + ' questions' + (half ? '' : ' · ' + fmt(s.papers) + ' papers') : '';
     if (!live) stats += (stats ? ' · ' : '') + 'not online yet';
+    var href = live ? '/' + esc(s.path) + '/' : '#', color = esc(s.color || '#33312e');
+    if (!half) return '<a class="subject sc' + (live ? '' : ' off') + '" href="' + href + '" style="--c:' + color + '" data-subj="' + esc(s.path) + '">' +
+      cardInside(no, s.name, s.subject, s.questions ? '<b>' + fmt(s.questions) + '</b> questions · ' + fmt(s.papers) + ' papers' + (live ? '' : ' · not online yet') : esc(stats)) + '</a>';
     // a half card names its subject in the band ("English" over "Language") and the site in the body
-    var pre = half && s.pairName && s.subject.indexOf(s.pairName + ' ') === 0;
-    var logo = pre ? '<span class="kicker">' + esc(s.pairName) + '</span>' + esc(s.subject.slice(s.pairName.length + 1)) : esc(half ? s.subject : s.name);
-    return '<a class="' + (half ? 'half' : 'subject') + (live ? '' : ' off') + '" href="' + (live ? '/' + esc(s.path) + '/' : '#') + '" style="--c:' + esc(s.color || '#33312e') + '">' +
+    var pre = s.pairName && s.subject.indexOf(s.pairName + ' ') === 0;
+    var logo = pre ? '<span class="kicker">' + esc(s.pairName) + '</span>' + esc(s.subject.slice(s.pairName.length + 1)) : esc(s.subject);
+    return '<a class="half' + (live ? '' : ' off') + '" href="' + href + '" style="--c:' + color + '">' +
       '<div class="band" style="' + band + '"><span class="logo">' + logo + '</span></div>' +
-      '<div class="body"><div class="name">' + esc(half ? s.name : s.subject) + '</div>' +
+      '<div class="body"><div class="name">' + esc(s.name) + '</div>' +
       '<div class="stats">' + stats + '</div></div></a>';
+  }
+  // the inside of a subject card: its number and site name, the subject, its size, and how much of it you've tried
+  function cardInside(no, key, name, stats) {
+    return '<div class="sc-top"><span class="sc-no">' + (no < 10 ? '0' : '') + no + '</span><span class="sc-key">' + esc(key) + '</span></div>' +
+      '<div class="name">' + esc(name) + '</div><div class="stats">' + stats + '</div>' +
+      '<div class="sc-prog" hidden><span class="sc-bar"><i></i></span><span class="sc-pct"></span></div>';
   }
 
   // one card for a pair: named by the shared subject ("English"), coloured by its first site
-  function pairCard(pair, halves) {
+  function pairCard(pair, halves, no) {
     var first = halves[0], name = first.pairName || pair;
     var qs = halves.reduce(function (n, o) { return n + (o.questions || 0); }, 0);
-    return '<button type="button" class="subject pair" data-pair="' + esc(pair) + '" aria-haspopup="dialog" style="--c:' + esc(first.color || '#33312e') + '">' +
-      '<div class="band"><span class="logo">' + esc(name) + '</span></div>' +
-      '<div class="body"><div class="name">' + esc(halves.map(function (o) { return o.subject.replace(name + ' ', ''); }).join(' or ')) + '</div>' +
-      '<div class="stats">' + (qs ? fmt(qs) + ' questions' : '') + '</div></div></button>';
+    return '<button type="button" class="subject sc pair" data-pair="' + esc(pair) + '" data-subj="' + esc(halves.map(function (o) { return o.path; }).join(' ')) + '" aria-haspopup="dialog" style="--c:' + esc(first.color || '#33312e') + '">' +
+      cardInside(no, halves.map(function (o) { return o.name; }).join(' · '), name,
+        esc(halves.map(function (o) { return o.subject.replace(name + ' ', ''); }).join(' or ')) + (qs ? ' · <b>' + fmt(qs) + '</b> questions' : '')) + '</button>';
   }
 
   // the popup a pair card opens: the two sites as half cards, pick one to go there
@@ -219,6 +230,131 @@
     document.body.appendChild(t);
     setTimeout(function () { t.classList.add('out'); }, 2200);
     setTimeout(function () { t.remove(); }, 2700);
+  }
+
+  // ------------------------------------------------------------------ the greeting above your subjects
+  // It reacts to what you've been doing and suggests what to do next: a mock you've just handed in, a subject going
+  // well, a streak, a weak or secure topic, questions due for review, or a long gap. Worked out in the browser from your
+  // saved progress (progress.js); nothing new is stored.
+  var DAY = 864e5;
+  function first(me) { var n = String(me.username || ''); return n.charAt(0).toUpperCase() + n.slice(1); }
+  function timeHello(me) {
+    var n = first(me), hr = new Date().getHours();
+    if (hr < 5 || hr >= 22) return 'Working late, ' + n + '.';
+    if (hr < 12) return 'Good morning, ' + n + '.';
+    if (hr < 18) return 'Good afternoon, ' + n + '.';
+    return 'Good evening, ' + n + '.';
+  }
+  function dayKey(t) { var d = new Date(t); return d.getFullYear() + '-' + d.getMonth() + '-' + d.getDate(); }
+  function topicName(meta, s, id) {
+    var m = meta && meta.subjects && meta.subjects[s], t = m && (m.topics || []).filter(function (x) { return x[0] === id; })[0];
+    return t ? String(t[1]).replace(/^[0-9][^\s]*\s+/, '') : '';
+  }
+  function subjName(meta, data, s) {
+    var m = meta && meta.subjects && meta.subjects[s];
+    if (m && m.subject) return m.subject;
+    var o = (data.sites || []).filter(function (x) { return x.path === s; })[0];
+    return o ? o.subject : s;
+  }
+
+  // what to say: the most interesting thing that's true right now
+  function sayHello(me, P, meta, data) {
+    var S = window.JBR_PROGRESS, now = Date.now(), n = first(me);
+    var items = Object.keys(P.items || {}).filter(function (k) { return !S || S.mine(k); }).map(function (k) { return P.items[k]; });
+    var mocks = (P.mocks || []).slice().sort(function (a, b) { return b.t - a.t; });
+    var out = { title: timeHello(me), line: '', chips: [] };
+    if (!items.length && !mocks.length) {
+      out.line = 'Choose a subject below and answer a few questions. This space will then suggest what to work on next.';
+      return out;
+    }
+    var week = items.filter(function (v) { return now - v.t < 7 * DAY; }), wg = 0, wm = 0;
+    week.forEach(function (v) { wg += v.g || 0; wm += v.m || 0; });
+    var days = {}; items.forEach(function (v) { days[dayKey(v.t)] = 1; }); mocks.forEach(function (m) { days[dayKey(m.t)] = 1; });
+    var streak = 0, d = now;
+    if (!days[dayKey(d)]) d -= DAY;
+    while (days[dayKey(d)]) { streak++; d -= DAY; }
+    var last = items.reduce(function (a, v) { return !a || v.t > a.t ? v : a; }, null);
+    var lastT = Math.max(last ? last.t : 0, mocks.length ? mocks[0].t : 0), away = Math.floor((now - lastT) / DAY);
+    // topics over the last fortnight: which one is fighting back, which one you've cracked
+    var by = {};
+    items.forEach(function (v) {
+      if (now - v.t > 14 * DAY) return;
+      (v.tp || []).forEach(function (t) { var k = v.s + '|' + t, b = by[k] = by[k] || { s: v.s, t: t, g: 0, m: 0, n: 0 }; b.g += v.g || 0; b.m += v.m || 0; b.n++; });
+    });
+    var tops = Object.keys(by).map(function (k) { var b = by[k]; b.pct = b.m ? b.g / b.m : 0; b.name = topicName(meta, b.s, b.t); return b; })
+      .filter(function (b) { return b.n >= 3 && b.name; });
+    var weak = tops.slice().sort(function (a, b) { return a.pct - b.pct; })[0], strong = tops.slice().sort(function (a, b) { return b.pct - a.pct; })[0];
+    var due = S && S.review ? items.filter(function (v) { var r = S.review(v); return r && r.now; }).length : 0;
+    var mock = mocks[0] && now - mocks[0].t < 3 * DAY ? mocks[0] : null;
+    var lines = [];
+    // the subject going best this week (at least 5 questions and 70% of marks)
+    var subj = {};
+    week.forEach(function (v) { var b = subj[v.s] = subj[v.s] || { s: v.s, g: 0, m: 0, n: 0 }; b.g += v.g || 0; b.m += v.m || 0; b.n++; });
+    var best = Object.keys(subj).map(function (k) { var b = subj[k]; b.pct = b.m ? b.g / b.m : 0; return b; })
+      .filter(function (b) { return b.n >= 5 && b.pct >= .7; }).sort(function (a, b) { return b.pct - a.pct; })[0];
+
+    if (mock) {
+      var ms = subjName(meta, data, mock.s), sc = mock.got + '/' + mock.max + ' on ' + ms + (mock.grade ? ' (' + (/^(8|11|18|[AEFHILMNORSX]\b)/.test(String(mock.grade)) ? 'an ' : 'a ') + mock.grade + ')' : '');
+      if (mock.pct >= .8) { out.title = 'Strong ' + ms + ' mock, ' + n + '.'; lines.push(sc + '. Check the few marks you dropped, then move on to a topic you know less well.'); }
+      else if (mock.pct >= .6) { out.title = 'Good ' + ms + ' mock, ' + n + '.'; lines.push(sc + '. The quickest gains are in the questions you only half got.'); }
+      else { out.title = ms + ' needs another look, ' + n + '.'; lines.push(mock.got + '/' + mock.max + ' on your last mock. Go through the questions you missed before trying another.'); }
+    } else if (away >= 7) {
+      out.title = 'Welcome back, ' + n + '.';
+      lines.push('It has been ' + away + ' days.' + (last ? ' A short set of ' + subjName(meta, data, last.s) + ' questions is a good way back in.' : ''));
+    } else if (best) {
+      out.title = subjName(meta, data, best.s) + ' going well, ' + n + '.';
+      lines.push(Math.round(best.pct * 100) + '% of marks across ' + best.n + ' questions this week.');
+    } else if (streak >= 3) {
+      out.title = streak + ' days in a row, ' + n + '.';
+      lines.push('Steady practice like this is what moves grades.');
+    }
+    if (weak && weak.pct < .5 && lines.length < 2) lines.push('Suggested next: ' + weak.name + ' in ' + subjName(meta, data, weak.s) + ', at ' + Math.round(weak.pct * 100) + '% recently.');
+    else if (strong && strong.pct >= .85 && lines.length < 2) lines.push(strong.name + ' looks secure at ' + Math.round(strong.pct * 100) + '%, so a less familiar topic is the better use of time.');
+    if (due >= 3 && lines.length < 2) lines.push(due + ' questions are due for review, which is a good place to start.');
+    if (!lines.length && last) {
+      var tn = topicName(meta, last.s, (last.tp || [])[0]);
+      lines.push('Last session: ' + (tn ? tn + ' in ' : '') + subjName(meta, data, last.s) + '. Carry on there, or choose a new topic below.');
+    }
+    out.line = lines.slice(0, 2).join(' ');
+    if (week.length) out.chips.push(['' + week.length, week.length === 1 ? 'question this week' : 'questions this week']);
+    if (wm) out.chips.push([Math.round(wg / wm * 100) + '%', 'of marks this week']);
+    if (mocks.length) out.chips.push(['' + mocks.length, mocks.length === 1 ? 'mock' : 'mocks']);
+    if (streak) out.chips.push(['' + streak, streak === 1 ? 'day in a row' : 'days in a row']);
+    return out;
+  }
+
+  // fills the greeting and the cards' progress bars, first from this browser's copy, then again once your account's
+  // copy has synced
+  function personal(me, data) {
+    var S = window.JBR_PROGRESS, meta = null;
+    if (!S) return;
+    function fill() {
+      var P = S.get(), box = document.querySelector('.hi');
+      if (!box) return;
+      var say = sayHello(me, P, meta, data);
+      box.querySelector('.hi-title').textContent = say.title;
+      box.querySelector('.hi-line').textContent = say.line;
+      box.querySelector('.hi-chips').innerHTML = say.chips.map(function (c) { return '<span class="hi-chip"><b>' + esc(c[0]) + '</b> ' + esc(c[1]) + '</span>'; }).join('');
+      // each card: the share of its topics you've tried at least once
+      Array.prototype.forEach.call(document.querySelectorAll('.sc[data-subj]'), function (card) {
+        var subs = card.getAttribute('data-subj').split(' '), all = 0, seen = {};
+        subs.forEach(function (s) { var m = meta && meta.subjects && meta.subjects[s]; all += m && m.topics ? m.topics.length : 0; });
+        Object.keys(P.items || {}).forEach(function (k) {
+          var v = P.items[k];
+          if (subs.indexOf(v.s) < 0 || !S.mine(k)) return;
+          (v.tp || []).forEach(function (t) { seen[v.s + '|' + t] = 1; });
+        });
+        var done = Object.keys(seen).length, bar = card.querySelector('.sc-prog');
+        if (!all || !bar) return;
+        var pct = Math.min(100, Math.round(done / all * 100));
+        bar.hidden = false;
+        bar.querySelector('i').style.width = pct + '%';
+        bar.querySelector('.sc-pct').textContent = pct + '%';
+        bar.title = done + ' of ' + all + ' topics tried';
+      });
+    }
+    fetch('/study-meta.json', { credentials: 'same-origin' }).then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; })
+      .then(function (m) { meta = m; fill(); S.pull(fill); });
   }
 
   // ------------------------------------------------------------------ "Hello, name" just after signing in
