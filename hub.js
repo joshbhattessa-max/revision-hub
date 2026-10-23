@@ -163,7 +163,7 @@
 
   // ------------------------------------------------------------------ the greeting above your subjects
   // It reacts to what you've been doing and suggests what to do next: a mock you've just handed in, a subject going
-  // well, a streak, a weak or secure topic, questions due for review, or a long gap. Worked out in the browser from your
+  // well, a streak, a weak or secure topic, or a long gap. Worked out in the browser from your
   // saved progress (progress.js); nothing new is stored.
   var DAY = 864e5;
   function first(me) { var n = String(me.username || ''); return n.charAt(0).toUpperCase() + n.slice(1); }
@@ -213,7 +213,6 @@
     var tops = Object.keys(by).map(function (k) { var b = by[k]; b.pct = b.m ? b.g / b.m : 0; b.name = topicName(meta, b.s, b.t); return b; })
       .filter(function (b) { return b.n >= 3 && b.name; });
     var weak = tops.slice().sort(function (a, b) { return a.pct - b.pct; })[0], strong = tops.slice().sort(function (a, b) { return b.pct - a.pct; })[0];
-    var due = S && S.review ? items.filter(function (v) { var r = S.review(v); return r && r.now; }).length : 0;
     var mock = mocks[0] && now - mocks[0].t < 3 * DAY ? mocks[0] : null;
     var lines = [];
     // the subject going best this week (at least 5 questions and 70% of marks)
@@ -239,7 +238,6 @@
     }
     if (weak && weak.pct < .5 && lines.length < 2) lines.push('Suggested next: ' + weak.name + ' in ' + subjName(meta, data, weak.s) + ', at ' + Math.round(weak.pct * 100) + '% recently.');
     else if (strong && strong.pct >= .85 && lines.length < 2) lines.push(strong.name + ' looks secure at ' + Math.round(strong.pct * 100) + '%, so a less familiar topic is the better use of time.');
-    if (due >= 3 && lines.length < 2) lines.push(due + ' questions are due for review, which is a good place to start.');
     if (!lines.length && last) {
       var tn = topicName(meta, last.s, (last.tp || [])[0]);
       lines.push('Last session: ' + (tn ? tn + ' in ' : '') + subjName(meta, data, last.s) + '. Carry on there, or choose a new topic below.');

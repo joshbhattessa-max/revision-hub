@@ -89,18 +89,5 @@ window.JBR_PROGRESS = (function () {
     });
     return out;
   }
-  // spaced repetition, the same rule as the subject sites: a question you didn't get full marks on is due a day
-  // later, then 3 days, then 7 after each right answer; three right in a row and it's learnt
-  var GAPS = [1, 3, 7];
-  function review(rec) {
-    if (!rec) return null;
-    var h = rec.h || [[rec.t, rec.g]], lastMiss = -1;
-    for (var i = 0; i < h.length; i++) if (h[i][1] < rec.m) lastMiss = i;
-    if (lastMiss < 0) return null;
-    var rightSince = h.length - 1 - lastMiss;
-    if (rightSince >= GAPS.length) return null;
-    var due = h[h.length - 1][0] + GAPS[rightSince] * 864e5;
-    return { due: due, now: due <= Date.now(), step: rightSince };
-  }
-  return { get: function () { return P; }, save: save, pull: pull, mastery: mastery, review: review, flush: push, mine: mine, langOf: langOf, lang: lang };
+  return { get: function () { return P; }, save: save, pull: pull, mastery: mastery, flush: push, mine: mine, langOf: langOf, lang: lang };
 })();
