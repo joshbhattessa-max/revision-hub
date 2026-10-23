@@ -10,15 +10,15 @@ import { TAKEDOWN_PAGE, takedown } from './_lib/takedown.js';
 import { autoUpdate } from './_lib/updates.js';
 
 // what anyone can open without signing in (the login page, the front page and "Try a few questions", Privacy, Terms)
-const OPEN = new Set(['/login', '/login.html', '/login.js', '/hub.css', '/fonts.css', '/favicon.svg', '/favicon-32.png',
+const OPEN = new Set(['/login', '/login.html', '/login.js', '/hub.css', '/look.css', '/look.js', '/fonts.css', '/favicon.svg', '/favicon-32.png',
   '/apple-touch-icon.png', '/og.png', '/sitemap.xml', '/api/login', '/api/signup', '/api/status',
   '/privacy', '/privacy.html', '/terms', '/terms.html', '/consent.js', '/api/reset',
-  '/welcome', '/welcome.html', '/welcome.css', '/try', '/try.html', '/try.js']);
+  '/welcome', '/welcome.html', '/welcome.css', '/look-landing.css', '/try', '/try.html', '/try.js']);
 // the pictures for "Try a few questions" (try.js): three fixed questions and their mark schemes, plus the front page's
 // screenshot
 const TRY = p => /^\/try\/[a-z-]+\.webp$/.test(p);
 // what still works for everyone during maintenance (so an admin can sign in)
-const DURING_MAINTENANCE = new Set(['/og.png', '/sitemap.xml', '/login.js', '/hub.css', '/fonts.css', '/favicon.svg', '/favicon-32.png', '/apple-touch-icon.png',
+const DURING_MAINTENANCE = new Set(['/og.png', '/sitemap.xml', '/login.js', '/hub.css', '/look.css', '/look.js', '/fonts.css', '/favicon.svg', '/favicon-32.png', '/apple-touch-icon.png',
   '/api/login', '/api/logout', '/api/status', '/privacy', '/privacy.html', '/terms', '/terms.html']);
 const ADMIN = p => p === '/admin' || p === '/admin.html' || p === '/admin.js' || p.startsWith('/api/admin/') || p.startsWith('/v/');
 // the deployment log's CSV and PDF records for the owner's Google Sheet: no sign-in (Google fetches them), the key in
