@@ -14,15 +14,15 @@ import { whoCookie, whoTag } from './_lib/who.js';
 // what anyone can open without signing in (the login page, the front page and "Try a few questions", Privacy, Terms)
 const OPEN = new Set(['/login', '/login.html', '/login.js', '/hub.css', '/look.css', '/look.js', '/fonts.css', '/favicon.svg', '/favicon-32.png',
   '/apple-touch-icon.png', '/og.png', '/sitemap.xml', '/api/login', '/api/signup', '/api/status',
-  '/privacy', '/privacy.html', '/terms', '/terms.html', '/consent.js', '/api/reset',
+  '/privacy', '/privacy.html', '/terms', '/terms.html', '/consent.js', '/press.js', '/api/reset',
   '/welcome', '/welcome.html', '/welcome.css', '/look-landing.css', '/try', '/try.html', '/try.js']);
 // the pictures for "Try a few questions" (try.js): three fixed questions and their mark schemes, plus the front page's
 // screenshot
 const TRY = p => /^\/try\/[a-z-]+\.webp$/.test(p);
 // what still works for everyone during maintenance (so an admin can sign in)
-const DURING_MAINTENANCE = new Set(['/og.png', '/sitemap.xml', '/login.js', '/hub.css', '/look.css', '/look.js', '/fonts.css', '/favicon.svg', '/favicon-32.png', '/apple-touch-icon.png',
+const DURING_MAINTENANCE = new Set(['/press.js', '/og.png', '/sitemap.xml', '/login.js', '/hub.css', '/look.css', '/look.js', '/fonts.css', '/favicon.svg', '/favicon-32.png', '/apple-touch-icon.png',
   '/api/login', '/api/logout', '/api/status', '/privacy', '/privacy.html', '/terms', '/terms.html']);
-const ADMIN = p => p === '/admin' || p === '/admin.html' || p === '/admin.js' || p.startsWith('/api/admin/') || p.startsWith('/v/');
+const ADMIN = p => p === '/admin' || p === '/admin.html' || p === '/admin.js' || p === '/admin.css' || p.startsWith('/api/admin/') || p.startsWith('/v/');
 // the deployment log's CSV and PDF records for the owner's Google Sheet: no sign-in (Google fetches them), the key in
 // the address protects them (functions/deploys/)
 const SHEET = p => p.startsWith('/deploys/');
@@ -169,7 +169,7 @@ async function fresh(ctx, path) {
 // and note.js while a message from the admin console is waiting for them (functions/api/note.js)
 function withConsent(res, signedIn, note) {
   if (res.status !== 200 || !(res.headers.get('content-type') || '').includes('text/html')) return res;
-  const scripts = '<script src="/consent.js?v=2" defer></script>' + (signedIn ? '<script src="/activity.js?v=1" defer></script>' : '') +
+  const scripts = '<script src="/consent.js?v=2" defer></script><script src="/press.js?v=1" defer></script>' + (signedIn ? '<script src="/activity.js?v=1" defer></script>' : '') +
     (note ? '<script src="/note.js?v=3" defer></script>' : '');
   return new HTMLRewriter().on('body', { element(e) { e.append(scripts, { html: true }); } }).transform(res);
 }
