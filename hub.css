@@ -325,9 +325,9 @@ footer p { margin: 0 0 8px; }
 .pc-card svg { overflow: visible; }
 .pc-empty b { display: block; margin-bottom: 4px; }
 .pc-empty p { margin: 0; color: var(--muted); font-size: .88rem; }
-.pc-legend { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: .75rem; color: var(--muted); margin-top: 6px; }
-.pc-legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 5px; vertical-align: -1px; }
-.pc-save { font: inherit; font-size: .75rem; background: none; border: 0; padding: 6px 0 2px; color: var(--muted); text-decoration: underline; cursor: pointer; }
+.pc-legend { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: .875rem; color: var(--text); margin-top: 8px; }
+.pc-legend i { display: inline-block; width: 12px; height: 12px; border-radius: 2px; margin-right: 5px; vertical-align: -1px; }
+.pc-save { font: inherit; font-size: .8125rem; background: none; border: 0; padding: 6px 0 2px; color: var(--muted); text-decoration: underline; cursor: pointer; }
 .pg-log { margin-top: 22px; }
 .pg-log table { width: 100%; border-collapse: collapse; font-size: .85rem; }
 .pg-log th, .pg-log td { text-align: left; padding: 7px 8px; border-bottom: 1px solid var(--line); }
