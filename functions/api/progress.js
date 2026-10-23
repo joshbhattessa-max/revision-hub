@@ -17,7 +17,10 @@ function merge(a, b) {
       if (!m) continue;
       const had = out.mocks.find(y => y.id === m.id);
       if (!had) out.mocks.push(m);
-      else if (!had.grade && m.grade) had.grade = m.grade;   // a grade worked out later fills the gap
+      else {
+        if (!had.grade && m.grade) had.grade = m.grade;   // a grade worked out later fills the gap
+        if (m.share && (m.shareT || 0) > (had.shareT || 0)) Object.assign(had, { share: m.share, shareScore: m.shareScore, shareT: m.shareT });   // its share code (/api/share), newest choice wins
+      }
     }
     if (x.plan && (!out.plan || (x.plan.t || 0) > (out.plan.t || 0))) out.plan = x.plan;
     out.t = Math.max(out.t, x.t || 0);
