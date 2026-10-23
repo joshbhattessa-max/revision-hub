@@ -3,6 +3,7 @@
 // here, so it follows you between devices.
 // Each save is merged with what's stored (newest wins, item by item), so two tabs or devices never undo each other.
 import { json } from '../_lib/auth.js';
+import { applyFix, fixKey } from '../_lib/mockfix.js';
 import { whoTag } from '../_lib/who.js';
 
 const MAX_BYTES = 600 * 1024;
@@ -40,8 +41,8 @@ async function sameAccount(ctx) {
 }
 
 export async function onRequestGet(ctx) {
-  const stored = await ctx.env.HUB_KV.get(key(ctx.data.session), 'json');
-  return json(stored || blank(), 200, { 'cache-control': 'no-store', 'x-jbr-who': await whoTag(ctx.data.session.accountId) });
+  const [stored, fix] = await Promise.all([ctx.env.HUB_KV.get(key(ctx.data.session), 'json'), ctx.env.HUB_KV.get(fixKey(ctx.data.session.accountId), 'json')]);
+  return json(applyFix(stored || blank(), fix), 200, { 'cache-control': 'no-store', 'x-jbr-who': await whoTag(ctx.data.session.accountId) });
 }
 
 export async function onRequestPut(ctx) {
@@ -52,7 +53,9 @@ export async function onRequestPut(ctx) {
   try { incoming = JSON.parse(text); } catch (e) { return json({ error: 'That wasn\'t valid progress data.' }, 400); }
   if (!incoming || incoming.v !== 1 || typeof incoming.items !== 'object') return json({ error: 'That wasn\'t valid progress data.' }, 400);
   const k = key(ctx.data.session);
-  const merged = merge(await ctx.env.HUB_KV.get(k, 'json'), incoming);
+  // a mock the admin removed or corrected stays that way, whatever the browser's copy still says (_lib/mockfix.js)
+  const [stored, fix] = await Promise.all([ctx.env.HUB_KV.get(k, 'json'), ctx.env.HUB_KV.get(fixKey(ctx.data.session.accountId), 'json')]);
+  const merged = applyFix(merge(stored, incoming), fix);
   const out = JSON.stringify(merged);
   if (out.length > MAX_BYTES) return json({ error: 'Your progress is too big to save. Ask Josh to have a look.' }, 413);
   await ctx.env.HUB_KV.put(k, out);

@@ -8,7 +8,8 @@ import { canSend } from './_lib/email.js';
 import { tagSession } from './_lib/bans.js';
 import { TAKEDOWN_PAGE, takedown } from './_lib/takedown.js';
 import { autoUpdate } from './_lib/updates.js';
-import { whoCookie } from './_lib/who.js';
+import { fixKey, fixScript } from './_lib/mockfix.js';
+import { whoCookie, whoTag } from './_lib/who.js';
 
 // what anyone can open without signing in (the login page, the front page and "Try a few questions", Privacy, Terms)
 const OPEN = new Set(['/login', '/login.html', '/login.js', '/hub.css', '/look.css', '/look.js', '/fonts.css', '/favicon.svg', '/favicon-32.png',
@@ -134,7 +135,18 @@ export async function onRequest(ctx) {
   if (who) out.headers.append('set-cookie', who);
   // (a past version keeps its own pages as they were, without today's cookie popup; the admin console stays bare HTML
   // with no CSS, so it gets none of the styled popups either)
-  return path.startsWith('/v/') || path === '/admin' || path === '/admin.html' ? out : withConsent(out, true, session.note);
+  if (path.startsWith('/v/') || path === '/admin' || path === '/admin.html') return out;
+  return session.mockfix ? withFix(withConsent(out, true, session.note), ctx.env, session.accountId) : withConsent(out, true, session.note);
+}
+
+// the admin removed or corrected one of this account's mocks: the page fixes the browser's copy of its progress first,
+// at the very top, before the subject site's own script reads it (_lib/mockfix.js)
+async function withFix(res, env, accountId) {
+  if (res.status !== 200 || !(res.headers.get('content-type') || '').includes('text/html')) return res;
+  const fix = await env.HUB_KV.get(fixKey(accountId), 'json');
+  if (!fix) return res;
+  const script = fixScript(fix, await whoTag(accountId));
+  return new HTMLRewriter().on('head', { element(e) { e.prepend(script, { html: true }); } }).transform(res);
 }
 
 // the pages, styles and scripts anyone can open (sign-in, Privacy Policy, Terms, hub.css...) are fetched fresh every
