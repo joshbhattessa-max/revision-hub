@@ -365,16 +365,7 @@
       try { localStorage.setItem('hub-theme', next); } catch (e) { /* storage blocked */ }
       syncToggle();
     }
-    var reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if (!document.startViewTransition || reduce) { apply(); return; }
-    // the new theme grows out of the button as a circle
-    var r = btn.getBoundingClientRect(), x = r.left + r.width / 2, y = r.top + r.height / 2;
-    var end = Math.hypot(Math.max(x, innerWidth - x), Math.max(y, innerHeight - y));
-    document.startViewTransition(apply).ready.then(function () {
-      document.documentElement.animate(
-        { clipPath: ['circle(0px at ' + x + 'px ' + y + 'px)', 'circle(' + end + 'px at ' + x + 'px ' + y + 'px)'] },
-        { duration: 700, easing: 'cubic-bezier(.65, 0, .35, 1)', pseudoElement: '::view-transition-new(root)' });
-    });
+    apply();
   }
   if (darkQuery.addEventListener) darkQuery.addEventListener('change', syncToggle);
 

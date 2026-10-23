@@ -13,11 +13,16 @@
     '@keyframes jbr-spin{to{transform:rotate(360deg)}}' +
     '@keyframes jbr-pop{0%{transform:scale(.3);opacity:0}15%{transform:scale(1.15);opacity:1}25%{transform:scale(1)}80%{opacity:1}100%{opacity:0}}' +
     '@media (prefers-reduced-motion:reduce){button,[role=button],summary{transition:none}[data-busy]::after,.jbr-tick{animation-duration:0s}.jbr-tick{opacity:1}}';
+  // The light/dark and look buttons give no feedback of their own (no spinner, tick, tilt or circle animation): they just switch.
+  try { document.startViewTransition = null; } catch (e) {}
+  css += '.theme-toggle,.theme-toggle:hover,.theme-toggle:active,.look-btn,.look-btn:hover,.look-btn:active{transform:none!important;filter:none!important;opacity:1!important}' +
+    '.theme-toggle[data-busy]::after,.look-btn[data-busy]::after{content:none!important}';
   var st = document.createElement('style'); st.textContent = css; document.head.appendChild(st);
 
   var last = null;   // the button that was just clicked, and when
   document.addEventListener('click', function (e) {
     var b = e.target.closest && e.target.closest('button,[role=button],input[type=button],input[type=submit]');
+    if (b && b.closest('.theme-toggle,.look-btn')) return;
     if (b && !b.disabled && !b.hasAttribute('data-busy')) last = { el: b, t: Date.now(), n: 0, done: false };
   }, true);
 
