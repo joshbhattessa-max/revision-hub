@@ -11,6 +11,7 @@
 //   POST   /api/admin/notes                  {ids, title, logo, html} one message to many accounts    POST /api/admin/notes/clear {ids}
 //   GET    /api/admin/updates                the update list, what each account has read, the notes sent, deploys since the last
 //   PUT    /api/admin/updates/subs {ids}      who is on the update list    POST /api/admin/updates {bullets} sends a note to them
+//   PUT    /api/admin/updates/auto {on}       whether the notes are written and sent by themselves after each update
 //   GET    /api/admin/hub    PUT /api/admin/hub {content}    DELETE /api/admin/hub (back to hub.json)
 //   POST   /api/admin/media                  raw image body -> {url}
 //   GET    /api/admin/maintenance    PUT /api/admin/maintenance {on, message}
@@ -30,7 +31,7 @@ import { getKeys, newKey, saveKeys, sha256 } from '../../_lib/keys.js';
 import { SOURCES, load as loadDeploys, sync as syncDeploys, upsert as upsertDeploys } from '../../_lib/deploylog.js';
 import { KEEP_DAYS, SITES, db as activityDb, forget as forgetActivity, schema as activitySchema } from '../../_lib/activity.js';
 import { cleanHtml } from '../../_lib/richtext.js';
-import { MAX_BULLETS, MAX_LEN, forgetUpd, getLog, getSubs, listUpd, saveSubs, sendUpdate, sinceLast } from '../../_lib/updates.js';
+import { MAX_BULLETS, MAX_LEN, forgetUpd, getAuto, getLog, getSubs, listUpd, saveSubs, sendUpdate, setAuto, sinceLast, writeBullets } from '../../_lib/updates.js';
 import { ban, getBans, liftIp, unban } from '../../_lib/bans.js';
 import { changeAccounts, clearVerifyFlag, endSessions, getAccounts, hashPassword, hubContent, json, listSessions, randomToken, refreshNoteFlag, saveAccounts, setNoteFlag } from '../../_lib/auth.js';
 
@@ -67,12 +68,13 @@ export async function onRequest(ctx) {
 
   // update notes: a line or two about each update, for the accounts on the list (functions/_lib/updates.js)
   if (route === 'updates' && method === 'GET') {
-    const [accounts, subs, upd, log, since] = await Promise.all([getAccounts(env), getSubs(env), listUpd(env), getLog(env), sinceLast(env)]);
-    return json({ subs, log: log.slice(-30).reverse(), since, maxBullets: MAX_BULLETS, maxLen: MAX_LEN,
+    const [accounts, subs, upd, log, since, auto] = await Promise.all([getAccounts(env), getSubs(env), listUpd(env), getLog(env), sinceLast(env), getAuto(env)]);
+    return json({ subs, log: log.slice(-30).reverse(), since, draft: writeBullets(since.deploys), auto, maxBullets: MAX_BULLETS, maxLen: MAX_LEN,
       accounts: accounts.map(a => ({ id: a.id, username: a.username, role: a.role, banned: a.banned || null, upd: upd[a.id] || null })) });
   }
   if (route === 'updates/subs' && method === 'PUT') return json({ ok: true, subs: await saveSubs(env, body.ids) });
   if (route === 'updates' && method === 'POST') return json(...await sendUpdate(env, body, me.username));
+  if (route === 'updates/auto' && method === 'PUT') return json(await setAuto(env, !!body.on));
 
   if (route === 'activity' && method === 'GET') return json(await activityList(env));
   const actRoute = route.match(/^activity\/([\w:-]+)$/);
