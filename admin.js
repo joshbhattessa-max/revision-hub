@@ -68,7 +68,7 @@
       mdlg.querySelector('.ask-q').textContent = question;
       mdlg.querySelector('.msg-title').value = (n && n.title) || '';
       mdlg.querySelector('.msg-logo input').checked = !!(n && n.logo);
-      med.innerHTML = n ? (n.html || esc(n.text || '').replace(/\n/g, '<br>')) : '';
+      med.innerHTML = (n && (n.html || esc(n.text || '').replace(/\n/g, '<br>'))) || '<p><br></p>';  // never empty, or it has no height to click
       mdlg.onclose = function () {
         resolve(mdlg.returnValue === 'ok' ? { title: mdlg.querySelector('.msg-title').value.trim(), logo: mdlg.querySelector('.msg-logo input').checked, html: med.innerHTML } : null);
       };
@@ -105,7 +105,7 @@
     b.addEventListener('click', function () { show(b.getAttribute('data-tab')); });
   });
   function show(name) {
-    Array.prototype.forEach.call(tabs, function (b) { b.classList.toggle('on', b.getAttribute('data-tab') === name); });
+    Array.prototype.forEach.call(tabs, function (b) { var on = b.getAttribute('data-tab') === name; b.disabled = on; b.setAttribute('aria-selected', on); });
     ['content', 'sessions', 'activity', 'accounts', 'updates', 'maintenance', 'usage'].forEach(function (n) { document.getElementById('tab-' + n).hidden = n !== name; });
     say('');
     if (name === 'sessions') loadSessions();
@@ -168,7 +168,7 @@
       var people = a.people, on = people.filter(function (p) { return p.t && Date.now() - p.t < 3 * 60000; }).length;
       list.innerHTML = '<div class="row"><span class="muted grow">rows=' + people.length + ' active_3m=' + on + ' retention=' + a.keepDays + 'd poll=30s source=D1:ACTIVITY_DB</span>' +
         '<button type="button" class="act-refresh">refresh</button></div>' +
-        '<div class="tablewrap"><table><thead><tr><th>account_id</th><th>username</th><th>last_page</th><th>last_seen</th><th class="num">hits_24h</th><th>ua</th><th></th></tr></thead><tbody>' +
+        '<div class="tablewrap"><table border="1" cellpadding="3"><thead><tr><th>account_id</th><th>username</th><th>last_page</th><th>last_seen</th><th class="num">hits_24h</th><th>ua</th><th></th></tr></thead><tbody>' +
         people.map(function (p) {
           var live = p.t && Date.now() - p.t < 3 * 60000;
           return '<tr' + (aopen === p.account ? ' class="act-sel"' : '') + '><td><code>' + esc(p.account) + '</code></td><td>' + esc(p.username) +
@@ -194,10 +194,10 @@
       var head = '<div class="row act-head"><h2 class="grow">trace: ' + esc(name) + ' <code class="muted">' + esc(id) + '</code></h2><label class="muted">window <select class="act-days">' +
         [1, 7, 30, 90].map(function (n) { return '<option value="' + n + '"' + (n === adays ? ' selected' : '') + '>' + n + 'd</option>'; }).join('') +
         '</select></label><button type="button" class="act-close">close</button></div>';
-      var papers = '<h3>papers [' + a.papers.length + ']</h3>' + (a.papers.length ? '<div class="tablewrap"><table><thead><tr><th>paper</th><th>site</th><th class="num">q_opened</th><th>first_seen</th><th>last_seen</th></tr></thead><tbody>' +
+      var papers = '<h3>papers [' + a.papers.length + ']</h3>' + (a.papers.length ? '<div class="tablewrap"><table border="1" cellpadding="3"><thead><tr><th>paper</th><th>site</th><th class="num">q_opened</th><th>first_seen</th><th>last_seen</th></tr></thead><tbody>' +
         a.papers.map(function (p) { return '<tr><td>' + esc(p.paper) + '</td><td>' + esc(p.site) + '</td><td class="num">' + p.questions + '</td><td>' + esc(when(p.first)) + '</td><td>' + esc(when(p.last)) + '</td></tr>'; }).join('') +
         '</tbody></table></div>' : '<p class="muted">0 rows</p>');
-      var mocks = '<h3>mocks_submitted [' + a.mocks.length + ']</h3>' + (a.mocks.length ? '<div class="tablewrap"><table><thead><tr><th>ts</th><th>site</th><th>board</th><th class="num">score</th><th class="num">pct</th><th>grade</th><th class="num">t_used</th></tr></thead><tbody>' +
+      var mocks = '<h3>mocks_submitted [' + a.mocks.length + ']</h3>' + (a.mocks.length ? '<div class="tablewrap"><table border="1" cellpadding="3"><thead><tr><th>ts</th><th>site</th><th>board</th><th class="num">score</th><th class="num">pct</th><th>grade</th><th class="num">t_used</th></tr></thead><tbody>' +
         a.mocks.map(function (m) { return '<tr><td>' + esc(when(m.t)) + '</td><td>' + esc(m.s) + '</td><td>' + esc(m.board) + '</td><td class="num">' + esc(m.got) + '/' + esc(m.max) + '</td><td class="num">' + (m.pct != null ? esc(m.pct) : '-') + '</td><td>' + esc(m.grade || '-') + '</td><td class="num">' + (m.used != null ? esc(m.used) + (m.minutes ? '/' + esc(m.minutes) : '') + 'min' : '-') + '</td></tr>'; }).join('') +
         '</tbody></table></div>' : '<p class="muted">0 rows</p>');
       var subs = Object.keys(a.marked);
@@ -241,10 +241,10 @@
         '<label class="muted">window <select class="udays">' + [7, 30, 90].map(function (n) { return '<option value="' + n + '"' + (n === udays ? ' selected' : '') + '>' + n + 'd</option>'; }).join('') + '</select></label></div>' +
         '<div class="u-tiles"><div><b>' + u.visitors + '</b>uniq_visitors</div><div><b>' + views + '</b>pageviews</div>' +
         '<div><b>' + u.devices.phone + '</b>ua.phone (' + pct(u.devices.phone) + ')</div><div><b>' + u.devices.tablet + '</b>ua.tablet (' + pct(u.devices.tablet) + ')</div><div><b>' + u.devices.computer + '</b>ua.desktop (' + pct(u.devices.computer) + ')</div></div>' +
-        '<h2>by_day [' + days.length + ']</h2>' + (days.length ? '<div class="tablewrap"><table><thead><tr><th>date</th><th class="num">uniq</th><th>pageviews</th></tr></thead><tbody>' +
-          days.map(function (d) { var x = u.byDay[d]; return '<tr><td>' + esc(d) + '</td><td class="num">' + x.visitors + '</td><td><span class="u-bar" style="--w:' + Math.round(x.views / maxV * 100) + '%"></span>' + x.views + '</td></tr>'; }).join('') +
+        '<h2>by_day [' + days.length + ']</h2>' + (days.length ? '<div class="tablewrap"><table border="1" cellpadding="3"><thead><tr><th>date</th><th class="num">uniq</th><th>pageviews</th></tr></thead><tbody>' +
+          days.map(function (d) { var x = u.byDay[d]; return '<tr><td>' + esc(d) + '</td><td class="num">' + x.visitors + '</td><td><progress max="100" value="' + Math.round(x.views / maxV * 100) + '"></progress> ' + x.views + '</td></tr>'; }).join('') +
           '</tbody></table></div>' : '<p class="muted">0 rows</p>') +
-        '<h2>top_routes [' + pages.length + ']</h2>' + (pages.length ? '<div class="tablewrap"><table><thead><tr><th>route_key</th><th>resolved</th><th class="num">hits</th></tr></thead><tbody>' +
+        '<h2>top_routes [' + pages.length + ']</h2>' + (pages.length ? '<div class="tablewrap"><table border="1" cellpadding="3"><thead><tr><th>route_key</th><th>resolved</th><th class="num">hits</th></tr></thead><tbody>' +
           pages.map(function (p) { return '<tr><td><code>' + esc(p) + '</code></td><td>' + esc(pageName(p)) + '</td><td class="num">' + u.pages[p] + '</td></tr>'; }).join('') + '</tbody></table></div>' : '<p class="muted">0 rows</p>') +
         '<h2>consent</h2><p class="mono">stats=' + u.consent.stats + ' essential_only=' + u.consent.essential +
         ' <span class="muted">(unanswered excluded)</span></p>';
@@ -266,9 +266,9 @@
   }
   function imageField(value, onSet) {
     var wrap = document.createElement('div'); wrap.className = 'row grow';
-    wrap.innerHTML = (value ? '<img class="thumb" alt="" src="' + esc(value) + '">' : '') +
+    wrap.innerHTML = (value ? '<img class="thumb" width="64" height="40" alt="" src="' + esc(value) + '">' : '') +
       '<input type="url" class="grow" placeholder="image_url" value="' + esc(value) + '">' +
-      '<label style="cursor:pointer"><u>[upload]</u><input type="file" accept="image/*" hidden></label>';
+      '<label><u>[upload]</u><input type="file" accept="image/*" hidden></label>';
     wrap.querySelector('input[type=url]').addEventListener('input', function (e) { onSet(e.target.value.trim()); markDirty(); });
     wrap.querySelector('input[type=file]').addEventListener('change', function (e) {
       var f = e.target.files[0]; if (!f) return;
@@ -303,7 +303,7 @@
     });
 
     (c.sections || []).forEach(function (sec, si) {
-      var hd = document.createElement('div'); hd.className = 'row'; hd.style.marginTop = '26px';
+      var hd = document.createElement('div'); hd.className = 'row';
       hd.innerHTML = '<code>sections[' + si + ']</code><input type="text" class="grow sec-title" value="' + esc(sec.title) + '" aria-label="Section title">' +
         '<button type="button" class="small up">↑</button><button type="button" class="small down">↓</button>' +
         '<button type="button" class="small danger del">rm</button>';
@@ -333,7 +333,7 @@
       add.addEventListener('click', function () { sec.cards.push({ title: '', url: '' }); markDirty(); drawContent(); });
       box.appendChild(add);
     });
-    var addSec = document.createElement('div'); addSec.className = 'row'; addSec.style.marginTop = '22px';
+    var addSec = document.createElement('div'); addSec.className = 'row';
     addSec.innerHTML = '<button type="button" class="small">sections.push()</button>';
     addSec.firstChild.addEventListener('click', function () { c.sections.push({ title: 'New section', cards: [] }); markDirty(); drawContent(); });
     box.appendChild(addSec);
@@ -375,7 +375,7 @@
     api('GET', 'sessions').then(function (list) {
       sbox.innerHTML = '<div class="row"><span class="muted grow">active_sessions=' + list.length + ' max_ttl=21600s store=kv auto_refresh=60s (' + autoLeft + ' left)</span>' +
         '<button type="button" class="small refresh">refresh</button><button type="button" class="small danger all">revoke --all --except-self</button></div>' +
-        '<div class="tablewrap"><table><thead><tr><th>sid</th><th>account</th><th>iat</th><th>exp</th><th>ua</th><th>geo</th><th>ip</th><th></th></tr></thead><tbody>' +
+        '<div class="tablewrap"><table border="1" cellpadding="3"><thead><tr><th>sid</th><th>account</th><th>iat</th><th>exp</th><th>ua</th><th>geo</th><th>ip</th><th></th></tr></thead><tbody>' +
         list.map(function (s) {
           return '<tr><td><code>' + esc(String(s.id).slice(0, 10)) + '…</code></td><td>' + esc(s.account) + '</td><td>' + when(s.created) + '</td><td>' + left(s.expires) + '</td><td><span title="' + esc(s.device) + '">' + esc(device(s.device)) +
             '</span></td><td>' + esc(s.country || '-') + '</td><td><code>' + esc(s.ip || '-') + '</code></td><td>' +
@@ -508,7 +508,7 @@
       '<h2>list[' + onList.length + ']</h2><div class="box"><div class="row"><input type="text" class="up-find grow" placeholder="filter: username" autocomplete="off">' +
       '<span class="muted">select:</span><button type="button" class="small up-q" data-q="all">*</button><button type="button" class="small up-q" data-q="user">role=user</button>' +
       '<button type="button" class="small up-q" data-q="none">none</button></div>' +
-      '<div class="tablewrap"><table><thead><tr><th>on_list</th><th>uid</th><th>username</th><th>role</th><th>last_note</th></tr></thead><tbody>' +
+      '<div class="tablewrap"><table border="1" cellpadding="3"><thead><tr><th>on_list</th><th>uid</th><th>username</th><th>role</th><th>last_note</th></tr></thead><tbody>' +
       d.accounts.map(function (a) {
         var u = a.upd;
         return '<tr data-id="' + esc(a.id) + '"><td><input type="checkbox" class="up-cb"' + (upSubs[a.id] ? ' checked' : '') + ' aria-label="' + esc(a.username) + ' on the update list"></td>' +
@@ -516,7 +516,7 @@
           (u ? (u.seen ? 'read=' + when(u.seen) : 'unread=' + (u.n || 0) + ' since ' + when(u.t)) : '-') + '</td></tr>';
       }).join('') + '</tbody></table></div>' +
       '<div class="savebar"><button type="button" class="btn-main up-save" disabled>PUT list</button><span class="muted up-state">state=clean kv_key=updates:subs</span></div></div>' +
-      '<h2>sent_log[' + d.log.length + ']</h2>' + (d.log.length ? '<div class="tablewrap"><table><thead><tr><th>ts</th><th>by</th><th class="num">sent</th><th class="num">skipped</th><th>bullets</th></tr></thead><tbody>' +
+      '<h2>sent_log[' + d.log.length + ']</h2>' + (d.log.length ? '<div class="tablewrap"><table border="1" cellpadding="3"><thead><tr><th>ts</th><th>by</th><th class="num">sent</th><th class="num">skipped</th><th>bullets</th></tr></thead><tbody>' +
         d.log.map(function (l) {
           return '<tr><td>' + esc(iso(l.t)) + '</td><td>' + esc(l.by) + '</td><td class="num">' + l.sent + '</td><td class="num">' + l.skipped + '</td><td>' + l.bullets.map(function (b) { return '- ' + esc(b); }).join('<br>') + '</td></tr>';
         }).join('') + '</tbody></table></div>' : '<p class="muted">0 rows</p>');
@@ -594,7 +594,7 @@
     api('GET', 'accounts').then(function (list) {
       abox.innerHTML = '<p class="muted">rows=' + list.length + ' admins=' + list.filter(function (a) { return a.role === 'admin'; }).length +
         ' banned=' + list.filter(function (a) { return a.banned; }).length + ' sessions=' + list.reduce(function (n, a) { return n + (a.signedIn || 0); }, 0) + ' store=kv:accounts</p>' +
-        '<div class="tablewrap"><table><thead><tr><th>uid</th><th>username</th><th>role</th><th>email</th><th class="num">sess</th><th>ops</th></tr></thead><tbody>' +
+        '<div class="tablewrap"><table border="1" cellpadding="3"><thead><tr><th>uid</th><th>username</th><th>role</th><th>email</th><th class="num">sess</th><th>ops</th></tr></thead><tbody>' +
         list.map(function (a) {
           return '<tr data-id="' + esc(a.id) + '"><td><code>' + esc(a.id) + '</code></td><td>' + esc(a.username) + (a.you ? ' <span class="muted">[self]</span>' : '') +
             (a.banned ? '<br><span class="ban-tag">BANNED ' + when(a.banned) + '</span>' : '') +
@@ -762,12 +762,12 @@
       };
       bbox.innerHTML = '<h2>bans [' + b.accounts.length + ']</h2>' +
         '<p class="muted">match: email | jbr_dev cookie. signup attempt → ip signup block, ttl=30d (sign-in unaffected).</p>' +
-        (b.accounts.length ? '<div class="tablewrap"><table><thead><tr><th>uid</th><th>username</th><th>banned_at</th><th>attempts</th><th></th></tr></thead><tbody>' +
+        (b.accounts.length ? '<div class="tablewrap"><table border="1" cellpadding="3"><thead><tr><th>uid</th><th>username</th><th>banned_at</th><th>attempts</th><th></th></tr></thead><tbody>' +
           b.accounts.map(function (r) {
             return '<tr><td><code>' + esc(r.id) + '</code></td><td>' + esc(r.username) + (r.gone ? ' <span class="muted">[deleted]</span>' : '') + (r.email ? '<br><span class="muted">' + esc(r.email) + '</span>' : '') +
               '</td><td>' + when(r.t) + '</td><td>' + tries(r) + '</td><td><button type="button" class="small bunban" data-id="' + esc(r.id) + '" data-name="' + esc(r.username) + '">unban</button></td></tr>';
           }).join('') + '</tbody></table></div>' : '') +
-        (b.ips.length ? '<h3>ip_signup_blocks [' + b.ips.length + ']</h3><div class="tablewrap"><table><thead><tr><th>ip</th><th>trigger</th><th>expires</th><th></th></tr></thead><tbody>' +
+        (b.ips.length ? '<h3>ip_signup_blocks [' + b.ips.length + ']</h3><div class="tablewrap"><table border="1" cellpadding="3"><thead><tr><th>ip</th><th>trigger</th><th>expires</th><th></th></tr></thead><tbody>' +
           b.ips.map(function (x) {
             return '<tr><td><code>' + esc(x.ip) + '</code></td><td>' + esc(x.username) + ' @ ' + when(x.t) + '</td><td>' +
               iso(x.until) + '</td><td><button type="button" class="small lift" data-ip="' + esc(x.ip) + '">lift</button></td></tr>';
@@ -790,7 +790,7 @@
   function showKey(nb, key) {
     var link = location.origin + '/?key=' + key;
     nb.innerHTML = '<p><b>WARNING: secret shown once. Store it now.</b></p>' +
-      '<p class="muted">browser agents: entry url</p><input type="text" class="grow keyout" style="width:100%" readonly value="' + esc(link) + '">' +
+      '<p class="muted">browser agents: entry url</p><input type="text" class="grow keyout" size="80" readonly value="' + esc(link) + '">' +
       '<p class="muted">http clients: <code>?key=' + esc(key) + '</code> or header <code>Authorization: Bearer ' + esc(key) + '</code></p>' +
       '<button type="button" class="small copy">copy</button>';
     nb.querySelector('.copy').addEventListener('click', function () {
@@ -805,7 +805,7 @@
       var day = function (t) { return t ? iso(t) : 'null'; };
       kbox.innerHTML = '<h2>api_keys [' + list.length + ']</h2>' +
         '<p class="muted">bearer tokens for agents/scripts. scope=role:user (never admin). stored as sha256; revoke to invalidate.</p>' +
-        (list.length ? '<div class="tablewrap"><table><thead><tr><th>kid</th><th>label</th><th>created</th><th>last_used</th><th></th></tr></thead><tbody>' +
+        (list.length ? '<div class="tablewrap"><table border="1" cellpadding="3"><thead><tr><th>kid</th><th>label</th><th>created</th><th>last_used</th><th></th></tr></thead><tbody>' +
           list.map(function (k) {
             return '<tr><td><code>' + esc(k.id) + '</code></td><td>' + esc(k.label) + '</td><td>' + day(k.created) + '</td><td>' + day(k.lastUsed) + '</td>' +
               '<td><button type="button" class="small danger revoke" data-id="' + esc(k.id) + '">revoke</button></td></tr>';

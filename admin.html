@@ -5,68 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>jbr-hub/admin</title>
   <meta name="robots" content="noindex, nofollow">
-  <meta name="color-scheme" content="light dark">
-  <!-- deliberately plain: browser default fonts and system colours, no site styles -->
-  <style>
-    body { margin: 8px; font: 15px/1.35 'Times New Roman', Times, serif; background: Canvas; color: CanvasText; }
-    code, pre, kbd, tt, .mono, table, input, select, button, .notice, .sysbar, .reqlog, .muted { font-family: ui-monospace, Menlo, Consolas, 'Courier New', monospace; font-size: 12px; }
-    h1 { font-size: 20px; margin: 0; } h2 { font-size: 16px; margin: 20px 0 6px; } h3 { font-size: 14px; margin: 16px 0 4px; } h4 { font-size: 13px; margin: 12px 0 2px; }
-    hr { border: 0; border-top: 1px solid GrayText; }
-    a { color: LinkText; }
-    .muted { color: GrayText; }
-    .top { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: baseline; justify-content: space-between; }
-    .top-actions { display: flex; gap: 6px; flex-wrap: wrap; }
-    .sysbar { color: GrayText; margin: 4px 0; overflow-wrap: anywhere; }
-    .tabs { margin: 8px 0; border-bottom: 1px solid GrayText; padding-bottom: 6px; display: flex; flex-wrap: wrap; gap: 4px; }
-    .tabs button.on { font-weight: bold; text-decoration: underline; }
-    .notice { min-height: 1.4em; margin: 4px 0; white-space: pre-wrap; overflow-wrap: anywhere; }
-    .notice.err { color: #c00; }
-    .box { border: 1px solid GrayText; padding: 6px 8px; margin: 0 0 8px; }
-    .row { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; margin: 4px 0; }
-    .grow { flex: 1 1 200px; }
-    label.lbl { display: flex; flex-direction: column; gap: 2px; flex: 1 1 200px; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 11px; color: GrayText; }
-    input[type=text], input[type=url], input[type=password], select { min-width: 0; }
-    .thumb { width: 64px; height: 40px; object-fit: cover; border: 1px solid GrayText; }
-    button.danger { color: #c00; }
-    .savebar { position: sticky; bottom: 0; background: Canvas; padding: 6px 0; border-top: 1px solid GrayText; display: flex; gap: 6px; flex-wrap: wrap; }
-    .tablewrap { max-width: 100%; overflow-x: auto; }
-    table { border-collapse: collapse; width: 100%; }
-    th, td { border: 1px solid GrayText; padding: 2px 5px; text-align: left; vertical-align: top; }
-    th { background: color-mix(in srgb, GrayText 18%, Canvas); font-weight: bold; white-space: nowrap; }
-    td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
-    tr.act-sel td { background: color-mix(in srgb, GrayText 12%, Canvas); }
-    .act-head { margin-top: 18px; border-top: 2px solid CanvasText; padding-top: 6px; }
-    .act-tl { margin: 0; padding-left: 0; list-style: none; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12px; }
-    .act-tl time { color: GrayText; margin-right: 8px; }
-    .act-live { color: #080; font-weight: bold; }
-    .u-tiles { display: flex; flex-wrap: wrap; gap: 0; margin: 8px 0; }
-    .u-tiles div { border: 1px solid GrayText; padding: 3px 8px; margin: 0 -1px -1px 0; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12px; }
-    .u-tiles b { margin-right: 6px; }
-    .u-bar { display: inline-block; height: 8px; width: calc(var(--w) * .6); max-width: 60%; min-width: 1px; background: CanvasText; margin-right: 6px; vertical-align: middle; }
-    .em-ok { color: #080; white-space: nowrap; }
-    .ban-tag { color: #c00; font-weight: bold; white-space: nowrap; }
-    .quick-maint.on { color: #c00; font-weight: bold; }
-    dialog { border: 1px solid CanvasText; background: Canvas; color: CanvasText; padding: 10px; width: min(380px, 92vw); }
-    dialog::backdrop { background: rgba(0, 0, 0, .35); }
-    .ask-q { margin: 0 0 6px; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12px; }
-    .ask-in { width: 100%; box-sizing: border-box; margin: 0 0 8px; }
-    .ask-btns { display: flex; gap: 6px; justify-content: flex-end; }
-    .msgdlg { width: min(560px, 94vw); }
-    .msg-logo { display: flex; gap: 6px; align-items: center; margin: 0 0 6px; font-size: 12px; font-family: ui-monospace, Menlo, Consolas, monospace; }
-    .msg-tools { display: flex; flex-wrap: wrap; gap: 2px; padding: 3px; border: 1px solid GrayText; border-bottom: 0; }
-    .msg-color { display: inline-flex; align-items: center; gap: 2px; border: 1px solid GrayText; padding: 0 4px; font-weight: bold; }
-    .msg-color input { width: 20px; height: 16px; padding: 0; border: 0; }
-    .msg-ed { min-height: 160px; max-height: 50vh; overflow: auto; padding: 6px; margin-bottom: 8px; border: 1px solid GrayText; outline: none; font: 14px/1.4 sans-serif; }
-    .msg-ed h3 { margin: 6px 0 4px; } .msg-ed p { margin: 0 0 6px; }
-    /* phones: tables keep their columns and scroll sideways */
-    @media (max-width: 700px) { table { width: max-content; min-width: 100%; } td .row { flex-wrap: nowrap; } }
-    .up-bul { width: 100%; box-sizing: border-box; font: 13px/1.4 ui-monospace, Menlo, Consolas, monospace; }
-    .up-prev { border: 1px dashed GrayText; padding: 4px 10px; margin: 6px 0; font: 14px/1.4 sans-serif; }
-    .up-prev h4 { margin: 4px 0 2px; font-size: 13px; } .up-prev ul { margin: 0 0 6px; padding-left: 20px; }
-    .up-src li { margin: 0 0 2px; } .up-src button { margin-left: 4px; }
-    .reqlog { margin-top: 24px; border-top: 1px solid GrayText; padding-top: 4px; color: GrayText; }
-    .reqlog pre { margin: 0; max-height: 9.5em; overflow: auto; white-space: pre; font-size: 11px; }
-  </style>
+  <!-- no CSS at all: raw browser-default HTML -->
 </head>
 <body>
   <div class="admin">
@@ -76,7 +15,7 @@
     </header>
     <div class="sysbar">build=<span id="sys-build">…</span> · branch=<span id="sys-branch">…</span> · edge=<span id="sys-colo">…</span> · operator=<span id="sys-op">…</span> · utc=<span id="sys-utc">…</span></div>
     <nav class="tabs" role="tablist">
-      <button type="button" role="tab" data-tab="content" class="on">hub.json</button>
+      <button type="button" role="tab" data-tab="content" aria-selected="true" disabled>hub.json</button>
       <button type="button" role="tab" data-tab="sessions">sessions</button>
       <button type="button" role="tab" data-tab="activity">activity_log</button>
       <button type="button" role="tab" data-tab="accounts">accounts</button>
@@ -92,12 +31,13 @@
     <section id="tab-updates" hidden></section>
     <section id="tab-maintenance" hidden><div id="takedown-box"></div><div id="maint-box"></div></section>
     <section id="tab-usage" hidden></section>
+    <hr>
     <footer class="reqlog"><div>request log (this tab, newest first) · <span id="sys-bind"></span></div><pre id="reqlog"></pre></footer>
   </div>
   <dialog class="ask"><form method="dialog"><p class="ask-q"></p><input class="ask-in"><div class="ask-btns">
     <button value="cancel" type="submit">cancel</button><button value="ok" type="submit">ok</button></div></form></dialog>
   <dialog class="ask msgdlg"><form method="dialog"><p class="ask-q"></p>
-    <input class="ask-in msg-title" placeholder="title (optional)" maxlength="120">
+    <input class="ask-in msg-title" placeholder="title (optional)" maxlength="120" size="40">
     <label class="msg-logo"><input type="checkbox"> logo=true</label>
     <div class="msg-tools" role="toolbar" aria-label="Formatting">
       <button type="button" data-cmd="bold" title="Bold"><b>B</b></button><button type="button" data-cmd="italic" title="Italic"><i>I</i></button>
@@ -108,8 +48,8 @@
       <label title="Text colour" class="msg-color">A<input type="color" value="#c0392b"></label>
       <button type="button" data-cmd="removeFormat" title="Clear formatting">clr</button>
     </div>
-    <div class="msg-ed" contenteditable="true" aria-label="Message"></div>
+    <fieldset><legend>message</legend><div class="msg-ed" contenteditable="true" aria-label="Message"><p><br></p></div></fieldset>
     <div class="ask-btns"><button value="cancel" type="submit">cancel</button><button value="ok" type="submit">commit</button></div></form></dialog>
-  <script src="admin.js?v=4"></script>
+  <script src="admin.js?v=5"></script>
 </body>
 </html>
