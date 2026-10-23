@@ -27,8 +27,8 @@
       "subject": "Physics",
       "origin": "https://physq.pages.dev",
       "color": "#067BC2",
-      "questions": 11310,
-      "papers": 884,
+      "questions": 11305,
+      "papers": 883,
       "image": ""
     },
     {
@@ -37,7 +37,7 @@
       "subject": "Maths",
       "origin": "https://mathsq.pages.dev",
       "color": "#6750D5",
-      "questions": 15670,
+      "questions": 15682,
       "papers": 996,
       "image": ""
     },
@@ -57,7 +57,7 @@
       "subject": "Computer Science",
       "origin": "https://csq-o88.pages.dev",
       "color": "#33312E",
-      "questions": 2157,
+      "questions": 2160,
       "papers": 252,
       "image": ""
     },
@@ -67,7 +67,7 @@
       "subject": "Spanish",
       "origin": "https://spanishq.pages.dev",
       "color": "#E0453A",
-      "questions": 478,
+      "questions": 481,
       "papers": 44,
       "image": ""
     },
@@ -77,8 +77,8 @@
       "subject": "English Language",
       "origin": "https://englangq.pages.dev",
       "color": "#D6457A",
-      "questions": 279,
-      "papers": 51,
+      "questions": 809,
+      "papers": 140,
       "image": "",
       "pair": "english",
       "pairName": "English"
@@ -89,8 +89,8 @@
       "subject": "English Literature",
       "origin": "https://englitq.pages.dev",
       "color": "#A8326B",
-      "questions": 898,
-      "papers": 52,
+      "questions": 2143,
+      "papers": 141,
       "image": "",
       "pair": "english",
       "pairName": "English"
@@ -101,8 +101,8 @@
       "subject": "History",
       "origin": "https://historyq.pages.dev",
       "color": "#7B4FA6",
-      "questions": 934,
-      "papers": 64,
+      "questions": 3888,
+      "papers": 621,
       "image": ""
     },
     {
@@ -111,8 +111,8 @@
       "subject": "Religion and Philosophy",
       "origin": "https://rpq.pages.dev",
       "color": "#D9A514",
-      "questions": 60,
-      "papers": 15,
+      "questions": 576,
+      "papers": 206,
       "image": ""
     },
     {
@@ -121,8 +121,8 @@
       "subject": "Sports Science (PE)",
       "origin": "https://peq.pages.dev",
       "color": "#1F6B6E",
-      "questions": 245,
-      "papers": 14,
+      "questions": 662,
+      "papers": 38,
       "image": ""
     },
     {
@@ -131,8 +131,8 @@
       "subject": "Design and Technology",
       "origin": "https://dtq.pages.dev",
       "color": "#D9734A",
-      "questions": 180,
-      "papers": 7,
+      "questions": 450,
+      "papers": 42,
       "image": ""
     },
     {
@@ -141,8 +141,8 @@
       "subject": "French",
       "origin": "https://frenchq.pages.dev",
       "color": "#4A9BD6",
-      "questions": 209,
-      "papers": 28,
+      "questions": 639,
+      "papers": 66,
       "image": ""
     }
   ],
