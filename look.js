@@ -26,6 +26,50 @@
     try { localStorage.setItem('jbr-look', l); } catch (er) {}
     b.title = label(); b.setAttribute('aria-label', label());
   });
+  // Your settings (/settings) are kept with your account, so they follow you to every subject site and device: the
+  // saved ones are copied into this browser on each page (at most once a minute), and a change made here with the
+  // light/dark or look button is saved back. Only while signed in (the jbr_who cookie).
+  var KEYS = { theme: 'hub-theme', look: 'jbr-look', csLang: 'jbr-cs-lang' }, saved = null, timer = 0;
+  function get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+  function set(k, v) { try { if (v == null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch (e) {} }
+  function here() { return { theme: root.getAttribute('data-theme') || 'device', look: root.getAttribute('data-look') || 'soft' }; }
+  function apply(p) {
+    if (p.theme) { set(KEYS.theme, p.theme === 'device' ? null : p.theme); if (p.theme === 'device') root.removeAttribute('data-theme'); else root.setAttribute('data-theme', p.theme); }
+    if (p.look) { set(KEYS.look, p.look); root.setAttribute('data-look', p.look); }
+    if (p.csLang) set(KEYS.csLang, p.csLang);
+  }
+  function save(p) {
+    return fetch('/api/prefs', { method: 'PUT', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify(p) })
+      .then(function (r) { return r.ok ? r.json() : null; }).then(function (j) { if (j) { saved = j; keep(j); } return j; });
+  }
+  function keep(p) { try { sessionStorage.setItem('jbr-prefs-at', String(Date.now())); sessionStorage.setItem('jbr-prefs', JSON.stringify(p)); } catch (e) {} }
+  function changed() {
+    if (!saved) return;
+    var now = here(), p = {};
+    if (now.theme !== (saved.theme || 'device')) p.theme = now.theme;
+    if (now.look !== (saved.look || 'soft')) p.look = now.look;
+    if (!p.theme && !p.look) return;
+    clearTimeout(timer); timer = setTimeout(function () { save(p); }, 400);
+  }
+  function sync() {
+    if (!/(^|;\s*)jbr_who=/.test(document.cookie)) return;
+    var last = 0; try { last = Number(sessionStorage.getItem('jbr-prefs-at')) || 0; saved = JSON.parse(sessionStorage.getItem('jbr-prefs') || 'null'); } catch (e) {}
+    new MutationObserver(changed).observe(root, { attributes: true, attributeFilter: ['data-theme', 'data-look'] });
+    // the programming language is picked on the computer science site, which saves it only in this browser
+    var lang = get(KEYS.csLang), langMoved = saved && lang && lang !== saved.csLang;
+    if (saved && Date.now() - last < 60000) { if (langMoved) save({ csLang: lang }); return; }
+    fetch('/api/prefs', { credentials: 'same-origin', cache: 'no-store' }).then(function (r) { return r.ok ? r.json() : null; }).then(function (p) {
+      if (!p) return;
+      keep(p);
+      // nothing saved yet: this browser's choices become the account's
+      if (!p.t) { saved = p; var first = { theme: get(KEYS.theme) || 'device', look: here().look }; if (lang) first.csLang = lang; save(first); return; }
+      if (langMoved) { p.csLang = lang; save({ csLang: lang }); }
+      saved = p; apply(p);
+    }).catch(function () {});
+  }
+  window.JBR_PREFS = { apply: apply, save: function (p) { apply(p); return save(p); }, keys: KEYS };
+  sync();
+
   // the header is drawn (and redrawn) by the app, so put the button back whenever it changes
   function start() { place(); new MutationObserver(place).observe(document.body, { childList: true, subtree: true }); }
   if (document.body) start(); else document.addEventListener('DOMContentLoaded', start);

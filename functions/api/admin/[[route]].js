@@ -34,7 +34,7 @@ import { getKeys, newKey, saveKeys, sha256 } from '../../_lib/keys.js';
 import { SOURCES, load as loadDeploys, sync as syncDeploys, upsert as upsertDeploys } from '../../_lib/deploylog.js';
 import { KEEP_DAYS, SITES, db as activityDb, forget as forgetActivity, schema as activitySchema } from '../../_lib/activity.js';
 import { cleanHtml } from '../../_lib/richtext.js';
-import { applyFix, fixKey, setFixFlag } from '../../_lib/mockfix.js';
+import { applyFix, fixKey, setFixFlag, wipeProgress } from '../../_lib/mockfix.js';
 import { MAX_BULLETS, MAX_LEN, forgetUpd, getAuto, getLog, getSubs, listUpd, saveSubs, sendUpdate, setAuto, sinceLast, writeBullets } from '../../_lib/updates.js';
 import { ban, getBans, liftIp, unban } from '../../_lib/bans.js';
 import { changeAccounts, clearVerifyFlag, endSessions, getAccounts, hashPassword, hubContent, json, listSessions, randomToken, refreshNoteFlag, saveAccounts, setNoteFlag } from '../../_lib/auth.js';
@@ -488,21 +488,8 @@ async function mockAdmin(env, id, mid, method, body) {
   return [{ ok: true }];
 }
 
-// wipe an account's progress. Its browsers keep a copy and sync it back, so the time of the wipe is kept with its mock
-// fixes (_lib/mockfix.js) and everything from before it is dropped from every copy, stored or in a browser.
+// wipe an account's progress (_lib/mockfix.js, shared with Settings → Clear my progress)
 async function clearProgress(env, id) {
   if (!(await getAccounts(env)).find(x => x.id === id)) return [{ error: 'No such account.' }, 404];
-  const fix = (await env.HUB_KV.get(fixKey(id), 'json')) || { t: 0, gone: {}, edit: {} };
-  const prog = await env.HUB_KV.get('prog:' + id, 'json');
-  const was = { questions: Object.keys((prog && prog.items) || {}).length, mocks: ((prog && prog.mocks) || []).length };
-  // their mocks' share codes stop working too
-  for (const m of (prog && prog.mocks) || []) {
-    if (m && m.share) await env.HUB_KV.delete('share:' + m.share);
-    if (m && m.id) await env.HUB_KV.delete('shared:' + id + ':' + String(m.id).slice(0, 40));
-  }
-  fix.clear = fix.t = Date.now();
-  await env.HUB_KV.put(fixKey(id), JSON.stringify(fix));
-  await env.HUB_KV.put('prog:' + id, JSON.stringify({ v: 1, items: {}, mocks: [], plan: null, t: fix.t }));
-  await setFixFlag(env, id, fix.t);
-  return [{ ok: true, ...was }];
+  return [{ ok: true, ...await wipeProgress(env, id) }];
 }

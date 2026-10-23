@@ -47,3 +47,22 @@ export async function setFixFlag(env, accountId, t) {
     await env.HUB_KV.put('sess:' + token, JSON.stringify(info), { expiration: Math.floor(info.expires / 1000), metadata: info });
   }
 }
+
+// wipe an account's progress (Admin console → manage → clear progress, or Settings → Clear my progress). Its browsers
+// keep a copy and sync it back, so the time of the wipe is kept with its mock fixes and everything from before it is
+// dropped from every copy, stored or in a browser. Returns how much there was.
+export async function wipeProgress(env, id) {
+  const fix = (await env.HUB_KV.get(fixKey(id), 'json')) || { t: 0, gone: {}, edit: {} };
+  const prog = await env.HUB_KV.get('prog:' + id, 'json');
+  const was = { questions: Object.keys((prog && prog.items) || {}).length, mocks: ((prog && prog.mocks) || []).length };
+  // their mocks' share codes stop working too
+  for (const m of (prog && prog.mocks) || []) {
+    if (m && m.share) await env.HUB_KV.delete('share:' + m.share);
+    if (m && m.id) await env.HUB_KV.delete('shared:' + id + ':' + String(m.id).slice(0, 40));
+  }
+  fix.clear = fix.t = Date.now();
+  await env.HUB_KV.put(fixKey(id), JSON.stringify(fix));
+  await env.HUB_KV.put('prog:' + id, JSON.stringify({ v: 1, items: {}, mocks: [], plan: null, t: fix.t }));
+  await setFixFlag(env, id, fix.t);
+  return was;
+}

@@ -388,3 +388,66 @@ footer p { margin: 0 0 8px; }
 .email-nudge span { flex: 1 1 260px; }
 @media (max-width: 480px) { .email-nudge .btn-quiet { flex: 1 1 0; } }
 
+
+/* ------------------------------------------------------------------ Settings (/settings, settings.js)
+   Uses the look's colours and corners (look.css), so it follows Studio and Bubbly. Spacing: 8 12 16 24 32. */
+html[data-look] .wrap.set { max-width: 800px !important; }
+.toast.bad { background: #d33c3c; color: #fff; }
+.set-sec { margin: 0 0 32px; border: 1px solid var(--hl, var(--line)); border-radius: var(--r, 12px); background: var(--cardx, var(--card)); }
+.set-sec h2 { margin: 0; padding: 16px 24px; border-bottom: 1px solid var(--hl, var(--line)); font-family: var(--fh, inherit); font-stretch: 116%;
+  font-size: 15px; font-weight: 700; letter-spacing: -.01em; }
+.set-row { display: flex; align-items: center; justify-content: space-between; gap: 16px 24px; padding: 16px 24px; }
+.set-row + .set-row { border-top: 1px solid var(--hl, var(--line)); }
+.set-what { min-width: 0; flex: 1 1 240px; }
+.set-what b { display: block; font-size: 15px; font-weight: 600; }
+.set-what p { margin: 4px 0 0; font-size: 14px; line-height: 1.45; color: var(--mu, var(--muted)); overflow-wrap: anywhere; }
+.set-ctl { flex: 0 0 auto; display: flex; gap: 8px; }
+.set-col { flex-direction: column; align-items: stretch; }
+.set-col .set-what { flex: none; }
+.set-tag { display: inline-block; margin-left: 4px; padding: 0 8px; border-radius: 999px; font-size: 12px; line-height: 20px; background: var(--soft2, #eee); color: var(--mu, var(--muted)); }
+.set-tag.ok { background: color-mix(in srgb, #2E9E4F 14%, transparent); color: #2E9E4F; }
+/* buttons and the username box: one height, 36px */
+.set-btn { display: inline-flex; align-items: center; height: 36px; padding: 0 12px; border: 1px solid var(--hl, var(--line)); border-radius: var(--r-s, 8px);
+  background: var(--cardx, var(--card)); color: var(--tx, var(--ink)); font: inherit; font-size: 14px; font-weight: 500; text-decoration: none; cursor: pointer; white-space: nowrap; }
+.set-btn:hover:not(:disabled) { background: var(--soft2, var(--bg)); }
+.set-btn:disabled { opacity: .5; cursor: default; }
+.set-btn.warn { color: #B4560F; }
+.set-btn.danger { color: #d33c3c; border-color: color-mix(in srgb, #d33c3c 40%, transparent); }
+.set-name { display: flex; gap: 8px; }
+.set-name input { width: 200px; height: 36px; padding: 0 12px; border: 1px solid var(--hl, var(--line)); border-radius: var(--r-s, 8px); background: var(--pg, var(--bg));
+  color: var(--tx, var(--ink)); font: inherit; font-size: 14px; }
+.set-name input:focus { outline: 2px solid var(--tx, var(--ink)); outline-offset: 1px; }
+/* a choice of a few, as one strip */
+.set-seg { display: inline-flex; padding: 2px; gap: 2px; border: 1px solid var(--hl, var(--line)); border-radius: var(--r-s, 8px); background: var(--soft2, var(--bg)); }
+.set-seg button { height: 30px; padding: 0 12px; border: 0; border-radius: calc(var(--r-s, 8px) - 2px); background: transparent; color: var(--mu, var(--muted));
+  font: inherit; font-size: 14px; font-weight: 500; cursor: pointer; white-space: nowrap; }
+.set-seg button[aria-checked="true"] { background: var(--cardx, var(--card)); color: var(--tx, var(--ink)); box-shadow: 0 0 0 1px var(--hl, var(--line)), 0 1px 2px rgba(0,0,0,.06); }
+/* the two looks, each drawn in its own style */
+.set-looks { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.set-look { display: flex; flex-direction: column; gap: 12px; padding: 12px; text-align: left; border: 1px solid var(--hl, var(--line)); border-radius: var(--r, 12px);
+  background: var(--cardx, var(--card)); color: var(--tx, var(--ink)); font: inherit; cursor: pointer; }
+.set-look[aria-checked="true"] { border-color: var(--tx, var(--ink)); box-shadow: 0 0 0 1px var(--tx, var(--ink)); }
+.set-pv { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; padding: 12px; border-radius: 6px; background: var(--soft2, var(--bg)); }
+.set-pv i { height: 36px; background: var(--cardx, var(--card)); border: 1px solid var(--hl2, var(--line)); border-radius: 3px; }
+.set-pv i:nth-child(1) { border-top: 3px solid #17A398; }
+.set-pv i:nth-child(2) { border-top: 3px solid #067BC2; }
+.set-pv i:nth-child(3) { border-top: 3px solid #6750D5; }
+.set-look-bold .set-pv { border-radius: 14px; }
+.set-look-bold .set-pv i { border: 0; border-radius: 12px; box-shadow: 0 2px 0 var(--hl2, var(--line)); }
+.set-look-bold .set-pv i:nth-child(1) { background: color-mix(in srgb, #17A398 22%, var(--cardx, #fff)); }
+.set-look-bold .set-pv i:nth-child(2) { background: color-mix(in srgb, #067BC2 22%, var(--cardx, #fff)); }
+.set-look-bold .set-pv i:nth-child(3) { background: color-mix(in srgb, #6750D5 22%, var(--cardx, #fff)); }
+.set-ln b { display: block; font-size: 15px; font-weight: 600; }
+.set-ln span { display: block; margin-top: 4px; font-size: 13px; color: var(--mu, var(--muted)); }
+@media (max-width: 600px) {
+  .set-sec h2, .set-row { padding-left: 16px; padding-right: 16px; }
+  .set-row { flex-direction: column; align-items: stretch; }
+  .set-what { flex: none; }
+  .set-ctl, .set-name { flex-wrap: wrap; }
+  .set-name input { flex: 1 1 140px; width: auto; }
+  .set-seg { display: flex; }
+  .set-seg button { flex: 1 1 0; padding: 0 8px; }
+  .set-looks { gap: 8px; }
+}
+html[data-look] .set > header.top { margin-bottom: 32px !important; }
+html[data-look] .set-sec { overflow: hidden; }

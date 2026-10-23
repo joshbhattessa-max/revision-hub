@@ -119,11 +119,9 @@
       '<span class="user-name">' + esc(me.username) + '</span>' + CHEVRON + '</button>' +
       '<div class="user-pop"><div class="user-card" role="menu">' +
       '<div class="user-head"><b>' + esc(me.username) + '</b><span>Signed in until ' + until + '</span></div>' +
+      '<a role="menuitem" href="/settings">Settings</a>' +
       (me.role === 'admin' ? '<a role="menuitem" href="/admin">Admin console</a>' : '') +
-      (me.email ? '<a role="menuitem" href="/verify?next=/">' + (me.email.verified ? 'Change email' : 'Add email') + '</a>' : '') +
-      (me.viaKey ? '' : '<button type="button" role="menuitem" data-act="password">Change password</button>') +
       '<button type="button" role="menuitem" data-act="logout">Log out</button>' +
-      (me.viaKey ? '' : '<button type="button" role="menuitem" data-act="delete" class="danger">Delete account</button>') +
       '</div></div></div>';
   }
 
@@ -139,7 +137,7 @@
       var b = e.target.closest('[data-act]');
       if (!b) return;
       setOpen(false); box.classList.add('shut');
-      ({ password: changePassword, logout: logOut, delete: deleteAccount })[b.getAttribute('data-act')]();
+      ({ logout: logOut })[b.getAttribute('data-act')]();
     });
   }
 
@@ -161,75 +159,6 @@
 
   function logOut() {
     fetch('/api/logout', { method: 'POST', credentials: 'same-origin' }).then(function () { location.replace('/login'); });
-  }
-
-  // one small dialog for both account forms; resolves when the server says yes
-  function dialog(opts) {
-    var d = document.createElement('dialog');
-    d.className = 'acct-dlg';
-    d.innerHTML = '<form method="dialog" novalidate><h3>' + esc(opts.title) + '</h3>' + (opts.text ? '<p>' + opts.text + '</p>' : '') +
-      opts.fields.map(function (f) {
-        return '<label>' + esc(f.label) + '<input type="password" name="' + f.name + '" autocomplete="' + f.auto + '" required></label>';
-      }).join('') +
-      '<p class="acct-err" role="alert"></p><div class="acct-btns"><button type="button" class="acct-cancel">Cancel</button>' +
-      '<button type="submit" class="acct-go' + (opts.danger ? ' danger' : '') + '">' + esc(opts.button) + '</button></div></form>';
-    document.body.appendChild(d);
-    var form = d.querySelector('form'), err = d.querySelector('.acct-err'), go = d.querySelector('.acct-go');
-    d.querySelector('.acct-cancel').addEventListener('click', function () { d.close(); });
-    d.addEventListener('close', function () { d.remove(); });
-    form.addEventListener('submit', function (e) {
-      e.preventDefault();
-      err.textContent = '';
-      var v = {};
-      opts.fields.forEach(function (f) { v[f.name] = form[f.name].value; });
-      var problem = opts.check(v);
-      if (problem) { err.textContent = problem; return; }
-      go.disabled = true;
-      fetch('/api/account', { method: opts.method, credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify(opts.body(v)) })
-        .then(function (r) { return r.json().catch(function () { return {}; }).then(function (j) { return { ok: r.ok, j: j }; }); })
-        .then(function (res) {
-          if (!res.ok) throw new Error(res.j.error || 'Something went wrong. Try again.');
-          opts.done(d, res.j);
-        })
-        .catch(function (e2) { err.textContent = e2.message; go.disabled = false; });
-    });
-    d.showModal();
-    form.querySelector('input').focus();
-  }
-
-  function changePassword() {
-    dialog({
-      title: 'Change password', button: 'Change password', method: 'POST',
-      fields: [{ name: 'current', label: 'Current password', auto: 'current-password' },
-               { name: 'password', label: 'New password', auto: 'new-password' },
-               { name: 'again', label: 'New password again', auto: 'new-password' }],
-      check: function (v) {
-        if (!v.current || !v.password) return 'Fill in every box.';
-        if (v.password.length < 6) return 'New passwords need at least 6 characters.';
-        if (v.password !== v.again) return "The new passwords don't match.";
-      },
-      body: function (v) { return { current: v.current, password: v.password }; },
-      done: function (d) { d.close(); toast('Password changed.'); }
-    });
-  }
-
-  function deleteAccount() {
-    dialog({
-      title: 'Delete your account?', button: 'Delete my account', method: 'DELETE', danger: true,
-      text: "This can't be undone. You'll be signed out on every device. Type your password to confirm.",
-      fields: [{ name: 'password', label: 'Password', auto: 'current-password' }],
-      check: function (v) { if (!v.password) return 'Type your password to confirm.'; },
-      body: function (v) { return { password: v.password }; },
-      done: function () { location.replace('/login'); }
-    });
-  }
-
-  function toast(text) {
-    var t = document.createElement('div');
-    t.className = 'toast'; t.setAttribute('role', 'status'); t.textContent = text;
-    document.body.appendChild(t);
-    setTimeout(function () { t.classList.add('out'); }, 2200);
-    setTimeout(function () { t.remove(); }, 2700);
   }
 
   // ------------------------------------------------------------------ the greeting above your subjects
