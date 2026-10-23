@@ -55,9 +55,9 @@
 
   // ---------------------------------------------------------------- drawing
   // charts are drawn for the space they get: narrower and a little taller on a phone, so the text stays readable
-  var W = 640, H = 230, L = 44, R = 16, T = 40, B = 34;
+  var W = 640, H = 250, L = 50, R = 16, T = 40, B = 38;
   function narrow() { return (window.innerWidth || 1000) < 600; }
-  function size() { if (narrow()) { W = 360; H = 250; L = 38; R = 10; } else { W = 640; H = 230; L = 44; R = 16; } }
+  function size() { if (narrow()) { W = 360; H = 270; L = 44; R = 12; } else { W = 640; H = 250; L = 50; R = 16; } }
   // redraw when a phone turns sideways (or a window is resized) across the phone/desktop size
   var redraw = null, wasNarrow = null;
   function onResize(fn) {
@@ -72,8 +72,8 @@
   }
   // just the title: the line of text that used to sit under it is gone
   function frame(title) {
-    T = 32;
-    return '<text x="0" y="16" font-size="14" font-weight="700" fill="currentColor">' + esc(title) + '</text>';
+    T = 38;
+    return '<text x="0" y="18" font-size="16" font-weight="700" fill="currentColor">' + esc(title) + '</text>';
   }
   function xLabels(bs, X) {
     var step = Math.max(1, Math.ceil(bs.length / (W < 500 ? 4 : 8))), s = '', pick = [];
@@ -84,14 +84,14 @@
       if (pick.indexOf(i) < 0) return;
       // labels at either end line up with the edge instead of hanging over it
       var x = X(i), anchor = x > W - 26 ? 'end' : x < L + 18 ? 'start' : 'middle';
-      s += '<text x="' + (anchor === 'end' ? W - 2 : anchor === 'start' ? Math.max(2, x - 6) : x).toFixed(1) + '" y="' + (H - B + 16) + '" font-size="10" text-anchor="' + anchor + '" fill="currentColor" fill-opacity=".65">' + esc(b.label) + '</text>';
+      s += '<text x="' + (anchor === 'end' ? W - 2 : anchor === 'start' ? Math.max(2, x - 6) : x).toFixed(1) + '" y="' + (H - B + 19) + '" font-size="12" text-anchor="' + anchor + '" fill="currentColor" fill-opacity=".85">' + esc(b.label) + '</text>';
     });
     return s;
   }
   function yGrid(ticks, Y, label) {
-    return ticks.map(function (v) {
-      return '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + Y(v).toFixed(1) + '" y2="' + Y(v).toFixed(1) + '" stroke="currentColor" stroke-opacity=".12"/>' +
-        '<text x="' + (L - 6) + '" y="' + (Y(v) + 3.5).toFixed(1) + '" font-size="10" text-anchor="end" fill="currentColor" fill-opacity=".65">' + esc(label(v)) + '</text>';
+    return '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + (H - B) + '" y2="' + (H - B) + '" stroke="currentColor" stroke-opacity=".45"/>' + ticks.map(function (v) {
+      return '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + Y(v).toFixed(1) + '" y2="' + Y(v).toFixed(1) + '" stroke="currentColor" stroke-opacity=".2"/>' +
+        '<text x="' + (L - 6) + '" y="' + (Y(v) + 4.2).toFixed(1) + '" font-size="12" text-anchor="end" fill="currentColor" fill-opacity=".85">' + esc(label(v)) + '</text>';
     }).join('');
   }
   function svg(body) {
@@ -107,19 +107,19 @@
     var Y = function (v) { return T + (H - T - B) * (1 - v); };
     var s = frame(title, sub) + yGrid([0, 0.25, 0.5, 0.75, 1], Y, function (v) { return Math.round(v * 100) + '%'; });
     (refs || []).forEach(function (r) {
-      s += '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + Y(r.v).toFixed(1) + '" y2="' + Y(r.v).toFixed(1) + '" stroke="currentColor" stroke-opacity=".35" stroke-dasharray="4 4"/>' +
-        '<text x="' + (L + 4) + '" y="' + (Y(r.v) - 4).toFixed(1) + '" font-size="9.5" text-anchor="start" fill="currentColor" fill-opacity=".6">' + esc(r.label) + '</text>';
+      s += '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + Y(r.v).toFixed(1) + '" y2="' + Y(r.v).toFixed(1) + '" stroke="currentColor" stroke-opacity=".5" stroke-dasharray="4 4"/>' +
+        '<text x="' + (L + 4) + '" y="' + (Y(r.v) - 4).toFixed(1) + '" font-size="11.5" text-anchor="start" fill="currentColor" fill-opacity=".8">' + esc(r.label) + '</text>';
     });
     series.forEach(function (sr) {
       var seg = [], segs = [];
       sr.vals.forEach(function (v, i) { if (v == null) { if (seg.length) segs.push(seg); seg = []; } else seg.push([X(i), Y(v)]); });
       if (seg.length) segs.push(seg);
       segs.forEach(function (sg) {
-        if (sg.length > 1) s += '<polyline points="' + sg.map(function (p) { return p[0].toFixed(1) + ',' + p[1].toFixed(1); }).join(' ') + '" fill="none" stroke="' + sr.color + '" stroke-width="2.4" stroke-linejoin="round"/>';
+        if (sg.length > 1) s += '<polyline points="' + sg.map(function (p) { return p[0].toFixed(1) + ',' + p[1].toFixed(1); }).join(' ') + '" fill="none" stroke="' + sr.color + '" stroke-width="3" stroke-linejoin="round"/>';
       });
       sr.vals.forEach(function (v, i) {
         if (v == null) return;
-        s += '<circle cx="' + X(i).toFixed(1) + '" cy="' + Y(v).toFixed(1) + '" r="3.6" fill="' + sr.color + '"><title>' + esc((sr.name ? sr.name + ', ' : '') + bs[i].unit + ' of ' + bs[i].label + ': ' +
+        s += '<circle cx="' + X(i).toFixed(1) + '" cy="' + Y(v).toFixed(1) + '" r="4.5" fill="' + sr.color + '"><title>' + esc((sr.name ? sr.name + ', ' : '') + bs[i].unit + ' of ' + bs[i].label + ': ' +
           Math.round(v * 100) + '% of the marks' + (sr.n ? ' on ' + sr.n[i] + ' question' + (sr.n[i] === 1 ? '' : 's') : '')) + '</title></circle>';
       });
     });
@@ -130,7 +130,7 @@
     size();
     var tot = bs.map(function (b, i) { return series.reduce(function (a, sr) { return a + sr.vals[i]; }, 0); });
     var max = niceMax(Math.max.apply(null, tot.concat([4])));
-    var slot = (W - L - R) / bs.length, bw = Math.min(34, slot * 0.7);
+    var slot = (W - L - R) / bs.length, bw = Math.min(38, slot * 0.7);
     var X = function (i) { return L + slot * (i + 0.5); };
     var Y = function (v) { return T + (H - T - B) * (1 - v / max); };
     var s = frame(title, sub) + yGrid([0, max / 4, max / 2, 3 * max / 4, max], Y, function (v) { return Math.round(v); });
@@ -143,7 +143,7 @@
           '<title>' + esc((sr.name ? sr.name + ', ' : '') + b.unit + ' of ' + b.label + ': ' + v + ' question' + (v === 1 ? '' : 's')) + '</title></rect>';
         y0 += v;
       });
-      if (tot[i] && series.length > 1) s += '<text x="' + X(i).toFixed(1) + '" y="' + (Y(tot[i]) - 4).toFixed(1) + '" font-size="9.5" text-anchor="middle" fill="currentColor" fill-opacity=".7">' + tot[i] + '</text>';
+      if (tot[i] && series.length > 1) s += '<text x="' + X(i).toFixed(1) + '" y="' + (Y(tot[i]) - 4).toFixed(1) + '" font-size="12" font-weight="600" text-anchor="middle" fill="currentColor" fill-opacity=".9">' + tot[i] + '</text>';
     });
     return svg(s + xLabels(bs, X));
   }
@@ -154,29 +154,29 @@
     var Y = function (v) { return T + (H - T - B) * (1 - v); };
     var s = frame(title, sub) + yGrid([0, 0.25, 0.5, 0.75, 1], Y, function (v) { return Math.round(v * 100) + '%'; });
     (refs || []).forEach(function (r) {
-      s += '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + Y(r.v).toFixed(1) + '" y2="' + Y(r.v).toFixed(1) + '" stroke="currentColor" stroke-opacity=".35" stroke-dasharray="4 4"/>' +
-        '<text x="' + (L + 4) + '" y="' + (Y(r.v) - 4).toFixed(1) + '" font-size="9.5" text-anchor="start" fill="currentColor" fill-opacity=".6">' + esc(r.label) + '</text>';
+      s += '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + Y(r.v).toFixed(1) + '" y2="' + Y(r.v).toFixed(1) + '" stroke="currentColor" stroke-opacity=".5" stroke-dasharray="4 4"/>' +
+        '<text x="' + (L + 4) + '" y="' + (Y(r.v) - 4).toFixed(1) + '" font-size="11.5" text-anchor="start" fill="currentColor" fill-opacity=".8">' + esc(r.label) + '</text>';
     });
     var by = {}, placed = [];
     mocks.forEach(function (m) { (by[m.s] = by[m.s] || []).push(m); });
     Object.keys(by).forEach(function (k) {
       var xs = by[k], c = colorOf(k);
-      if (xs.length > 1) s += '<polyline points="' + xs.map(function (m) { return X(m.t).toFixed(1) + ',' + Y(m.pct).toFixed(1); }).join(' ') + '" fill="none" stroke="' + c + '" stroke-width="2" stroke-opacity=".55"/>';
+      if (xs.length > 1) s += '<polyline points="' + xs.map(function (m) { return X(m.t).toFixed(1) + ',' + Y(m.pct).toFixed(1); }).join(' ') + '" fill="none" stroke="' + c + '" stroke-width="2.5" stroke-opacity=".7"/>';
       xs.forEach(function (m) {
-        s += '<circle cx="' + X(m.t).toFixed(1) + '" cy="' + Y(m.pct).toFixed(1) + '" r="5" fill="' + c + '" stroke="#fff" stroke-width="1.5"><title>' +
+        s += '<circle cx="' + X(m.t).toFixed(1) + '" cy="' + Y(m.pct).toFixed(1) + '" r="6" fill="' + c + '" style="stroke:var(--surface,#fff)" stroke-width="2"><title>' +
           esc(fmt(m.t, 'y') + ': ' + m.got + '/' + m.max + ', ' + Math.round(m.pct * 100) + '%' + (m.grade ? ', grade ' + m.grade : '')) + '</title></circle>';
-        var gx = X(m.t), ga = gx > W - 14 ? 'end' : 'middle', gy = Y(m.pct) - 9;
+        var gx = X(m.t), ga = gx > W - 14 ? 'end' : 'middle', gy = Y(m.pct) - 11;
         // a grade that would sit on top of another one (mocks a few days apart) goes under its dot instead
-        if (placed.some(function (q) { return Math.abs(q[0] - gx) < 16 && Math.abs(q[1] - gy) < 12; })) gy = Y(m.pct) + 18;
+        if (placed.some(function (q) { return Math.abs(q[0] - gx) < 20 && Math.abs(q[1] - gy) < 14; })) gy = Y(m.pct) + 21;
         placed.push([gx, gy]);
-        if (m.grade) s += '<text x="' + (ga === 'end' ? W - 1 : gx).toFixed(1) + '" y="' + gy.toFixed(1) + '" font-size="10.5" font-weight="700" text-anchor="' + ga + '" fill="currentColor">' + esc(m.grade) + '</text>';
+        if (m.grade) s += '<text x="' + (ga === 'end' ? W - 1 : gx).toFixed(1) + '" y="' + gy.toFixed(1) + '" font-size="12.5" font-weight="700" text-anchor="' + ga + '" fill="currentColor">' + esc(m.grade) + '</text>';
       });
     });
     var ticks = buckets(w), step = Math.max(1, Math.ceil(ticks.length / (W < 500 ? 4 : 7)));
     ticks.forEach(function (b, i) {
       if (i % step || b.a < w.from) return;
       var tx = X(b.a), ta = tx > W - 26 ? 'end' : 'middle';
-      s += '<text x="' + (ta === 'end' ? W - 2 : tx).toFixed(1) + '" y="' + (H - B + 16) + '" font-size="10" text-anchor="' + ta + '" fill="currentColor" fill-opacity=".65">' + esc(b.label) + '</text>';
+      s += '<text x="' + (ta === 'end' ? W - 2 : tx).toFixed(1) + '" y="' + (H - B + 19) + '" font-size="12" text-anchor="' + ta + '" fill="currentColor" fill-opacity=".85">' + esc(b.label) + '</text>';
     });
     return svg(s);
   }
@@ -199,14 +199,14 @@
     return '#ffffff';
   }
   function savePng(el, name, legend) {
-    var vb = el.viewBox.baseVal, extra = legend && legend.length > 1 ? 24 : 0, pad = 16, scale = 2;
+    var vb = el.viewBox.baseVal, extra = legend && legend.length > 1 ? 28 : 0, pad = 16, scale = 2;
     var clone = el.cloneNode(true);
     clone.setAttribute('width', vb.width); clone.setAttribute('height', vb.height);
     var color = getComputedStyle(el).color, bg = bgOf(el);
     var leg = '', x = pad;
     (extra ? legend : []).forEach(function (l) {
-      leg += '<rect x="' + x + '" y="' + (pad + vb.height + 8) + '" width="10" height="10" rx="2" fill="' + l.color + '"/><text x="' + (x + 14) + '" y="' + (pad + vb.height + 17) + '" font-size="11" fill="' + color + '">' + esc(l.name) + '</text>';
-      x += 26 + l.name.length * 6.2;
+      leg += '<rect x="' + x + '" y="' + (pad + vb.height + 8) + '" width="10" height="10" rx="2" fill="' + l.color + '"/><text x="' + (x + 14) + '" y="' + (pad + vb.height + 17) + '" font-size="13" fill="' + color + '">' + esc(l.name) + '</text>';
+      x += 28 + l.name.length * 7.2;
     });
     var outer = '<svg xmlns="' + NS + '" width="' + (vb.width + 2 * pad) + '" height="' + (vb.height + 2 * pad + extra) + '" style="font-family:' + FONT + '">' +
       '<rect width="100%" height="100%" fill="' + bg + '"/><g transform="translate(' + pad + ',' + pad + ')" style="color:' + color + '">' +
