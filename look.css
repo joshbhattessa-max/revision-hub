@@ -240,3 +240,34 @@ html[data-look="bold"] .look-btn svg rect:last-child { fill: var(--c, currentCol
 :root[data-look="bold"]:not([data-theme="light"]) .study-nav .spec-btn.on { color: color-mix(in srgb, var(--c) 60%, #fff) !important; }
 :root:not([data-theme="light"]) .look-btn:hover { background: rgba(255,255,255,.07); }
 }
+
+/* One spacing scale for both looks (4, 8, 12, 16, 24, 32, 48), so Soft and Bold share the same gutters, gaps and
+   section spacing on the hub and every subject site. These come last so they win over the per-look rules above. */
+:root { --gutter: 16px; }
+@media (min-width: 900px) { :root { --gutter: 24px; } }
+
+/* hub */
+html[data-look] .wrap { max-width: 1120px !important; padding: 0 var(--gutter) 48px !important; }
+html[data-look] header.top { padding: 32px 0 24px !important; }
+html[data-look] .wrap > h2 { margin: 0 0 16px !important; }
+html[data-look] .wrap > h2 ~ h2 { margin-top: 48px !important; }
+html[data-look] .grid { gap: 16px !important; }
+@media (max-width: 899px) {
+  html[data-look] header.top { padding: 24px 0 !important; }
+  html[data-look] .wrap > .grid:not(.links) { gap: 12px !important; }
+}
+
+/* subject sites: the same side gutter and top gap on every page, under the top bar or beside the sidebar */
+html[data-look] .page-content > :not(header) { margin-left: var(--gutter) !important; margin-right: var(--gutter) !important; }
+html[data-look] .page-content > header + * { padding-top: 24px !important; }
+html[data-look] .page-content > :last-child:not(header) { padding-bottom: 48px !important; }
+html[data-look] .page-container > footer .container { padding-left: var(--gutter) !important; padding-right: var(--gutter) !important; }
+html[data-look] .study .st-head { margin-bottom: 24px !important; }
+html[data-look] .study .pc { margin: 0 0 32px !important; }
+html[data-look] .study .st-area > h2 { margin: 32px 0 12px !important; }
+html[data-look] .study .sp-tools, html[data-look] .study .an-tools { margin: 0 0 24px !important; }
+html[data-look] .page-content > .row.g-0:not(:last-child) { padding-bottom: 24px !important; }
+html[data-look] .page-content > .row.g-0 + .mx-3 { margin-top: 0 !important; }
+@media (min-width: 900px) {
+  html:not([data-look="bold"]) .page-content > header .hdr { padding: 20px 14px !important; }
+}
