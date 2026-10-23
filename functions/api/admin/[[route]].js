@@ -21,6 +21,7 @@
 //   GET    /api/admin/usage?days=30           usage statistics (from visitors who accepted them) and cookie choices
 //   GET    /api/admin/accounts/:id/mocks          its handed-in mocks
 //   PATCH  /api/admin/accounts/:id/mocks/:mid {got, max, grade}    DELETE /api/admin/accounts/:id/mocks/:mid   (_lib/mockfix.js)
+//   POST   /api/admin/accounts/:id/clear-progress   wipe its progress: questions marked, mocks (handed in or started)
 //   GET    /api/admin/activity                 each account: the page it's on now and when it was last active
 //   GET    /api/admin/activity/:id?days=7       one account: its timeline, the exam papers it opened, its handed-in mocks
 //   GET    /api/admin/deploylog                  the deployment log: how many, the last sync, the latest few
@@ -191,6 +192,8 @@ export async function onRequest(ctx) {
   // an account's handed-in mocks: see them, correct a score or grade, or remove one handed in by accident
   const mocksRoute = route.match(/^accounts\/([\w-]+)\/mocks(?:\/([\w.:-]{1,60}))?$/);
   if (mocksRoute) return json(...await mockAdmin(env, mocksRoute[1], mocksRoute[2], method, body));
+  const clearRoute = route.match(/^accounts\/([\w-]+)\/clear-progress$/);
+  if (clearRoute && method === 'POST') return json(...await clearProgress(env, clearRoute[1]));
   if (acct && method === 'DELETE') {
     const list = await getAccounts(env);
     const a = list.find(x => x.id === acct[1]);
@@ -483,4 +486,23 @@ async function mockAdmin(env, id, mid, method, body) {
   await env.HUB_KV.put('prog:' + id, JSON.stringify(applyFix(prog, fix)));
   await setFixFlag(env, id, fix.t);
   return [{ ok: true }];
+}
+
+// wipe an account's progress. Its browsers keep a copy and sync it back, so the time of the wipe is kept with its mock
+// fixes (_lib/mockfix.js) and everything from before it is dropped from every copy, stored or in a browser.
+async function clearProgress(env, id) {
+  if (!(await getAccounts(env)).find(x => x.id === id)) return [{ error: 'No such account.' }, 404];
+  const fix = (await env.HUB_KV.get(fixKey(id), 'json')) || { t: 0, gone: {}, edit: {} };
+  const prog = await env.HUB_KV.get('prog:' + id, 'json');
+  const was = { questions: Object.keys((prog && prog.items) || {}).length, mocks: ((prog && prog.mocks) || []).length };
+  // their mocks' share codes stop working too
+  for (const m of (prog && prog.mocks) || []) {
+    if (m && m.share) await env.HUB_KV.delete('share:' + m.share);
+    if (m && m.id) await env.HUB_KV.delete('shared:' + id + ':' + String(m.id).slice(0, 40));
+  }
+  fix.clear = fix.t = Date.now();
+  await env.HUB_KV.put(fixKey(id), JSON.stringify(fix));
+  await env.HUB_KV.put('prog:' + id, JSON.stringify({ v: 1, items: {}, mocks: [], plan: null, t: fix.t }));
+  await setFixFlag(env, id, fix.t);
+  return [{ ok: true, ...was }];
 }

@@ -2,7 +2,26 @@
    Used by the progress page. */
 window.JBR_PROGRESS = (function () {
   'use strict';
-  var KEY = 'jbr-progress-v1';
+  // the browser's copy is kept per account (the jbr_who cookie, functions/_lib/who.js), so two accounts used in one
+  // browser never see or sync each other's work
+  function who() { var m = /(?:^|;\s*)jbr_who=([0-9a-f]+)/.exec(document.cookie); return m ? m[1] : ''; }
+  var WHO = who(), KEY = 'jbr-progress-v1:' + (WHO || 'none');
+  // the copies from before that (one for the whole browser: progress, and each subject's mock papers) go to the first
+  // account that opens a page here, in practice whoever was signed in when it changed, whose work is newest in them
+  (function adoptOld() {
+    if (!WHO) return;
+    try {
+      var keys = [];
+      for (var i = 0; i < localStorage.length; i++) keys.push(localStorage.key(i));
+      keys.forEach(function (k) {
+        if (!/^jbr-(progress-v1|mocks-[\w-]+|mock-cur-[\w-]+|mock-config-[\w-]+|mock-(?!print-)[\w-]+)$/.test(k)) return;
+        if (localStorage.getItem(k + ':' + WHO) === null) localStorage.setItem(k + ':' + WHO, localStorage.getItem(k));
+        localStorage.removeItem(k);
+      });
+    } catch (e) { /* storage blocked */ }
+  })();
+  // another account signed in from another tab: this page shows the account it was opened with, so it starts again
+  document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible' && who() !== WHO) location.reload(); });
   function blank() { return { v: 1, items: {}, mocks: [], plan: null, t: 0 }; }
   function load() {
     try { var p = JSON.parse(localStorage.getItem(KEY)); return p && p.v === 1 ? p : blank(); } catch (e) { return blank(); }
@@ -23,17 +42,18 @@ window.JBR_PROGRESS = (function () {
   var P = load(), timer = null, dirty = false;
   function writeLocal() { try { P = merge(load(), P); localStorage.setItem(KEY, JSON.stringify(P)); } catch (e) { /* storage full or blocked */ } }
   function push() {
-    if (!dirty) return;
+    if (!dirty || !WHO || who() !== WHO) return;
     dirty = false;
     var body = JSON.stringify(P);
-    fetch('/api/progress', { method: 'PUT', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: body, keepalive: body.length < 60000 })
-      .then(function (r) { if (!r.ok) dirty = true; }, function () { dirty = true; });
+    fetch('/api/progress', { method: 'PUT', credentials: 'same-origin', headers: { 'content-type': 'application/json', 'x-jbr-who': WHO }, body: body, keepalive: body.length < 60000 })
+      .then(function (r) { if (!r.ok && r.status !== 409) dirty = true; }, function () { dirty = true; });
   }
   function save(soon) { P.t = Date.now(); writeLocal(); dirty = true; clearTimeout(timer); timer = setTimeout(push, soon ? 3000 : 30000); }
   document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'hidden') push(); });
   function pull(done) {
-    fetch('/api/progress', { credentials: 'same-origin', cache: 'no-store' })
-      .then(function (r) { return r.ok ? r.json() : null; })
+    if (!WHO) { done && done(P); return; }
+    fetch('/api/progress', { credentials: 'same-origin', cache: 'no-store', headers: { 'x-jbr-who': WHO } })
+      .then(function (r) { return r.ok && (r.headers.get('x-jbr-who') || WHO) === WHO && who() === WHO ? r.json() : null; })
       .then(function (remote) { if (remote && remote.v === 1) { P = merge(load(), remote); try { localStorage.setItem(KEY, JSON.stringify(P)); } catch (e) { /* blocked */ } } done && done(P); },
         function () { done && done(P); });
   }

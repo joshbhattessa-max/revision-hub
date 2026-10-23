@@ -671,7 +671,8 @@
               (a.mustVerify ? '<br><button type="button" class="excuse" title="Let this account use the site without checking its email address">skip_verify: let in without checking email</button>' : '') +
               (a.email ? '<br><button type="button" class="noemail">email.unset: remove email address</button>' : '') +
             '</fieldset>' +
-            '<fieldset><legend>mock paper history</legend><button type="button" class="mocks">mocks: see / fix / remove handed-in mocks</button></fieldset>' +
+            '<fieldset><legend>progress</legend><button type="button" class="mocks">mocks: see / fix / remove handed-in mocks</button><br>' +
+              '<button type="button" class="clearprog">clear_progress: wipe questions done + mocks</button></fieldset>' +
             '<fieldset><legend>message (popup on their next page)</legend>' +
               (a.banned ? '<span class="muted">banned accounts don\'t get messages</span>' :
                 '<button type="button" class="msg">' + (pending ? 'msg.edit: change waiting message' : 'msg.send: write message') + '</button>') +
@@ -712,6 +713,11 @@
         });
         // a message shown to them once, on their next page (straight away if they're signed in now)
         tr.querySelector('.mocks').addEventListener('click', function () { openMocks(id, a.username); });
+        tr.querySelector('.clearprog').addEventListener('click', function () {
+          if (!confirm('CLEAR ALL PROGRESS for ' + a.label + ' (uid ' + id + ')?\n\n- every question they marked, in every subject\n- every mock paper, handed in or in progress (share codes stop working)\n' +
+            '- gone on every device, the next time they open a page\n\nTheir account, email and messages stay. This can\'t be undone.')) return;
+          api('POST', 'accounts/' + encodeURIComponent(id) + '/clear-progress').then(function (d) { say('progress cleared uid=' + id + ' questions=' + d.questions + ' mocks=' + d.mocks); loadAccounts(); }).catch(function (e) { say(e.message, true); });
+        });
         var msgb = tr.querySelector('.msg');
         if (msgb) msgb.addEventListener('click', function () {
           (a.note && !a.note.seen ? api('GET', 'accounts/' + id + '/note') : Promise.resolve(null)).then(function (n) {

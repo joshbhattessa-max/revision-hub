@@ -4,6 +4,7 @@
 // Each save is merged with what's stored (newest wins, item by item), so two tabs or devices never undo each other.
 import { json } from '../_lib/auth.js';
 import { applyFix, fixKey } from '../_lib/mockfix.js';
+import { whoTag } from '../_lib/who.js';
 
 const MAX_BYTES = 600 * 1024;
 const key = s => 'prog:' + s.accountId;
@@ -31,12 +32,21 @@ function merge(a, b) {
   return out;
 }
 
+// The pages say whose browser copy they're syncing (x-jbr-who, _lib/who.js). A page left open from before another
+// account signed in, in the same browser, is refused rather than saving its account's work into this one, and a read
+// says whose progress it is, so a page never takes another account's progress into its copy.
+async function sameAccount(ctx) {
+  const said = ctx.request.headers.get('x-jbr-who');
+  return !said || said === await whoTag(ctx.data.session.accountId);
+}
+
 export async function onRequestGet(ctx) {
   const [stored, fix] = await Promise.all([ctx.env.HUB_KV.get(key(ctx.data.session), 'json'), ctx.env.HUB_KV.get(fixKey(ctx.data.session.accountId), 'json')]);
-  return json(applyFix(stored || blank(), fix), 200, { 'cache-control': 'no-store' });
+  return json(applyFix(stored || blank(), fix), 200, { 'cache-control': 'no-store', 'x-jbr-who': await whoTag(ctx.data.session.accountId) });
 }
 
 export async function onRequestPut(ctx) {
+  if (!await sameAccount(ctx)) return json({ error: 'Another account is signed in now.', otherAccount: true }, 409);
   const text = await ctx.request.text();
   if (text.length > MAX_BYTES) return json({ error: 'Your progress is too big to save. Ask Josh to have a look.' }, 413);
   let incoming;

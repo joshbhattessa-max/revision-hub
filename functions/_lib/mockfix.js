@@ -5,24 +5,36 @@
 //   - to the stored progress every time it's read or saved (functions/api/progress.js), and
 //   - to the browser's copy, by a small script put at the top of every page while the account's sessions carry the
 //     `mockfix` flag (functions/_middleware.js), before the subject site's own script reads it.
-// mockfix:<account> = { t, gone: { <mockId>: removedAt }, edit: { <mockId>: { got, max, pct, grade } } }
+// mockfix:<account> = { t, gone: { <mockId>: removedAt }, edit: { <mockId>: { got, max, pct, grade } }, clear? }
+// clear (Admin console → manage → clear progress) is when the account's progress was wiped: every question marked and
+// mock handed in (or started) before then is dropped, wherever a copy of it turns up.
 import { listSessions } from './auth.js';
 
 export const fixKey = id => 'mockfix:' + id;
 
 export function applyFix(prog, fix) {
   if (!prog || !fix || !Array.isArray(prog.mocks)) return prog;
+  if (fix.clear) {
+    for (const k of Object.keys(prog.items || {})) if (!prog.items[k] || prog.items[k].t <= fix.clear) delete prog.items[k];
+    prog.mocks = prog.mocks.filter(m => m && m.t > fix.clear);
+    if (prog.plan && (prog.plan.t || 0) <= fix.clear) prog.plan = null;
+  }
   prog.mocks = prog.mocks.filter(m => m && !(fix.gone || {})[m.id]);
   for (const m of prog.mocks) if ((fix.edit || {})[m.id]) Object.assign(m, fix.edit[m.id]);
   return prog;
 }
 
-// the same as applyFix, for the browser's copy (localStorage jbr-progress-v1), as an inline script
-export function fixScript(fix) {
-  const data = JSON.stringify({ gone: fix.gone || {}, edit: fix.edit || {} }).replace(/</g, '\\u003c');
-  return '<script>(function(){try{var f=' + data + ',k="jbr-progress-v1",p=JSON.parse(localStorage.getItem(k));' +
-    'if(!p||!p.mocks)return;var n=JSON.stringify(p);p.mocks=p.mocks.filter(function(m){return m&&!f.gone[m.id]});' +
-    'p.mocks.forEach(function(m){var e=f.edit[m.id];if(e)for(var x in e)m[x]=e[x]});' +
+// the same as applyFix, for the browser's copy (localStorage jbr-progress-v1:<who>, _lib/who.js), as an inline script;
+// a clear also drops the mock papers started before it (jbr-mocks-<subject>:<who>)
+export function fixScript(fix, who) {
+  const data = JSON.stringify({ gone: fix.gone || {}, edit: fix.edit || {}, clear: fix.clear || 0 }).replace(/</g, '\\u003c');
+  return '<script>(function(){try{var f=' + data + ',w=' + JSON.stringify(':' + who) + ',k="jbr-progress-v1"+w,p=JSON.parse(localStorage.getItem(k));' +
+    'if(f.clear)for(var i=localStorage.length-1;i>=0;i--){var q=localStorage.key(i);if(q&&q.indexOf("jbr-mocks-")===0&&q.slice(-w.length)===w){' +
+    'var l=JSON.parse(localStorage.getItem(q))||[],r=l.filter(function(m){return m&&(m.created||0)>f.clear});if(r.length!==l.length)localStorage.setItem(q,JSON.stringify(r))}}' +
+    'if(!p||!p.mocks)return;var n=JSON.stringify(p);' +
+    'if(f.clear){for(var x in p.items)if(!p.items[x]||p.items[x].t<=f.clear)delete p.items[x];p.mocks=p.mocks.filter(function(m){return m&&m.t>f.clear});if(p.plan&&(p.plan.t||0)<=f.clear)p.plan=null}' +
+    'p.mocks=p.mocks.filter(function(m){return m&&!f.gone[m.id]});' +
+    'p.mocks.forEach(function(m){var e=f.edit[m.id];if(e)for(var y in e)m[y]=e[y]});' +
     'var o=JSON.stringify(p);if(o!==n)localStorage.setItem(k,o)}catch(e){}})()</script>';
 }
 
