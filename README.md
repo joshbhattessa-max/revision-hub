@@ -152,6 +152,7 @@ prints or saves it. The mark scheme goes at the back, or in a PDF of its own (th
   topics, rarer words counting for more. It's free and gives the same answer every run (no AI), and is right for most
   parts, with the odd near miss.
 
+- Shared mock papers: a handed-in mock can get a 6-character code (`/api/share`, KV keys `share:<code>`, kept a year, and `shared:<account>:<mock id>` so sharing again gives the same code). Anyone signed in types the code on a subject's Mock paper page to sit the same questions; it shows the sharer's username and, only if they ticked the box, their score. 30 new codes per account a day.
 - Progress lives in the browser and syncs to your account through `/api/progress` (KV key `prog:<account id>`; merged
   item by item, newest wins). Deleting an account deletes its progress.
 - `study-meta.json` and `study/<subject>.json` are built from the subject sites by `examq_cop/tools/build_study_meta.py`;
