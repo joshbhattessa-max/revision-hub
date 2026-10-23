@@ -95,7 +95,8 @@
     }).join('');
   }
   function svg(body) {
-    return '<svg xmlns="' + NS + '" viewBox="0 0 ' + W + ' ' + H + '" width="100%" role="img" style="font-family:' + FONT + ';display:block">' + body + '</svg>';
+    var t = /<text[^>]*>([^<]*)</.exec(body);   // the chart's title (already escaped) names it for screen readers
+    return '<svg xmlns="' + NS + '" viewBox="0 0 ' + W + ' ' + H + '" width="100%" role="img" aria-label="' + (t && t[1] ? t[1] : 'Chart') + '" style="font-family:' + FONT + ';display:block">' + body + '</svg>';
   }
   function niceMax(v) { var steps = [4, 8, 12, 20, 40, 60, 80, 100, 160, 200, 300, 400, 600, 800, 1000]; for (var i = 0; i < steps.length; i++) if (v <= steps[i]) return steps[i]; return Math.ceil(v / 500) * 500; }
 
