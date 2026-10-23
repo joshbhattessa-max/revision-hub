@@ -101,6 +101,8 @@ export async function onRequest(ctx) {
   if (ADMIN(path) && session.role !== 'admin') {
     return path.startsWith('/api/') ? json({ error: 'Admin only' }, 403) : Response.redirect(url.origin + '/', 302);
   }
+  // the revision planner was removed: old links and bookmarks go to the home page
+  if (path === '/planner' || path === '/planner.html') return Response.redirect(url.origin + '/', 302);
   // a past version of the site (/v/) only reads: nothing it sends can change anything
   if (!['GET', 'HEAD'].includes(ctx.request.method) && /^\/v\//.test(refererPath(ctx.request, url))) {
     return json({ error: 'This is a past version of the site, so nothing is saved.' }, 403);
