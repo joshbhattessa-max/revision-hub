@@ -127,8 +127,9 @@ export async function onRequest(ctx) {
   out.headers.set('cache-control', 'private, no-store');
   if (keyCookie) out.headers.append('set-cookie', keyCookie);
   if (devCookie) out.headers.append('set-cookie', devCookie);
-  // (a past version keeps its own pages as they were, without today's cookie popup)
-  return path.startsWith('/v/') ? out : withConsent(out, true, session.note);
+  // (a past version keeps its own pages as they were, without today's cookie popup; the admin console stays bare HTML
+  // with no CSS, so it gets none of the styled popups either)
+  return path.startsWith('/v/') || path === '/admin' || path === '/admin.html' ? out : withConsent(out, true, session.note);
 }
 
 // the pages, styles and scripts anyone can open (sign-in, Privacy Policy, Terms, hub.css...) are fetched fresh every
