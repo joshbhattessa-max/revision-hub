@@ -8,10 +8,16 @@
   var ICON = '<svg viewBox="0 0 20 20" aria-hidden="true"><rect x="2.5" y="2.5" width="9" height="9" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.6"/><rect x="8.5" y="8.5" width="9" height="9" rx="2.5" fill="currentColor"/></svg>';
   function label() { return root.getAttribute('data-look') === 'bold' ? 'Switch to the soft look' : 'Switch to the bold look'; }
   function place() {
+    var btn = '<button type="button" class="look-btn" title="' + label() + '" aria-label="' + label() + '">' + ICON + '</button>';
     var t = document.querySelector('.theme-toggle');
-    if (!t || (t.previousElementSibling && t.previousElementSibling.classList.contains('look-btn'))) return;
+    if (!t) {   // the front page and "Try a few questions" have no light/dark button: it goes first in the top bar
+      var nav = document.querySelector('.nav-r');
+      if (nav && !nav.querySelector('.look-btn')) nav.insertAdjacentHTML('afterbegin', btn);
+      return;
+    }
+    if (t.previousElementSibling && t.previousElementSibling.classList.contains('look-btn')) return;
     var old = document.querySelector('.look-btn'); if (old) old.remove();
-    t.insertAdjacentHTML('beforebegin', '<button type="button" class="look-btn" title="' + label() + '" aria-label="' + label() + '">' + ICON + '</button>');
+    t.insertAdjacentHTML('beforebegin', btn);
   }
   document.addEventListener('click', function (e) {
     var b = e.target.closest && e.target.closest('.look-btn'); if (!b) return;
