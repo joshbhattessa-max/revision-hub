@@ -138,6 +138,9 @@ export async function createSession(env, account, request, dev) {
   // a message from the admin console, or update notes, waiting for this account: the pages of this session show them
   // (functions/api/note.js)
   if (await hasUnread(env, account.id)) info.note = true;
+  // the admin removed or corrected one of its mocks: its pages fix the browser's copy too (_lib/mockfix.js)
+  const fix = await env.HUB_KV.get('mockfix:' + account.id, 'json');
+  if (fix) info.mockfix = fix.t;
   // the key expires with the session; the metadata lets the admin console list sessions without reading each one
   await env.HUB_KV.put('sess:' + token, JSON.stringify(info), { expiration: Math.floor(info.expires / 1000), metadata: info });
   return token;

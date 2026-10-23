@@ -19,6 +19,8 @@
 //   GET    /api/admin/sys                     build and runtime details for the console's header and footer
 //   GET    /api/admin/keys    POST /api/admin/keys {label} -> {key} (shown once)    DELETE /api/admin/keys/:id
 //   GET    /api/admin/usage?days=30           usage statistics (from visitors who accepted them) and cookie choices
+//   GET    /api/admin/accounts/:id/mocks          its handed-in mocks
+//   PATCH  /api/admin/accounts/:id/mocks/:mid {got, max, grade}    DELETE /api/admin/accounts/:id/mocks/:mid   (_lib/mockfix.js)
 //   GET    /api/admin/activity                 each account: the page it's on now and when it was last active
 //   GET    /api/admin/activity/:id?days=7       one account: its timeline, the exam papers it opened, its handed-in mocks
 //   GET    /api/admin/deploylog                  the deployment log: how many, the last sync, the latest few
@@ -31,6 +33,7 @@ import { getKeys, newKey, saveKeys, sha256 } from '../../_lib/keys.js';
 import { SOURCES, load as loadDeploys, sync as syncDeploys, upsert as upsertDeploys } from '../../_lib/deploylog.js';
 import { KEEP_DAYS, SITES, db as activityDb, forget as forgetActivity, schema as activitySchema } from '../../_lib/activity.js';
 import { cleanHtml } from '../../_lib/richtext.js';
+import { applyFix, fixKey, setFixFlag } from '../../_lib/mockfix.js';
 import { MAX_BULLETS, MAX_LEN, forgetUpd, getAuto, getLog, getSubs, listUpd, saveSubs, sendUpdate, setAuto, sinceLast, writeBullets } from '../../_lib/updates.js';
 import { ban, getBans, liftIp, unban } from '../../_lib/bans.js';
 import { changeAccounts, clearVerifyFlag, endSessions, getAccounts, hashPassword, hubContent, json, listSessions, randomToken, refreshNoteFlag, saveAccounts, setNoteFlag } from '../../_lib/auth.js';
@@ -185,6 +188,9 @@ export async function onRequest(ctx) {
     await liftIp(env, decodeURIComponent(ipRoute[1]));
     return json({ ok: true });
   }
+  // an account's handed-in mocks: see them, correct a score or grade, or remove one handed in by accident
+  const mocksRoute = route.match(/^accounts\/([\w-]+)\/mocks(?:\/([\w.:-]{1,60}))?$/);
+  if (mocksRoute) return json(...await mockAdmin(env, mocksRoute[1], mocksRoute[2], method, body));
   if (acct && method === 'DELETE') {
     const list = await getAccounts(env);
     const a = list.find(x => x.id === acct[1]);
@@ -198,6 +204,7 @@ export async function onRequest(ctx) {
     await env.HUB_KV.delete('consent:' + a.id);
     await env.HUB_KV.delete('ecode:' + a.id);
     await env.HUB_KV.delete('note:' + a.id);
+    await env.HUB_KV.delete(fixKey(a.id));
     await forgetUpd(env, a.id);
     await forgetActivity(env, a.id);
     return json({ ok: true });
@@ -443,4 +450,37 @@ async function activityOf(env, account, days) {
   const mocks = ((prog && prog.mocks) || []).filter(m => m && m.t >= from).reverse().map(m => ({ t: m.t, s: m.s, board: m.board || '',
     qual: (m.paper && m.paper.qual) || '', got: m.got, max: m.max, pct: m.pct, grade: m.grade || '', used: m.used, minutes: m.minutes }));
   return { setup: true, days, events, papers, mocks, marked };
+}
+
+async function mockAdmin(env, id, mid, method, body) {
+  const a = (await getAccounts(env)).find(x => x.id === id);
+  if (!a) return [{ error: 'No such account.' }, 404];
+  const [prog, fix0] = await Promise.all([env.HUB_KV.get('prog:' + id, 'json'), env.HUB_KV.get(fixKey(id), 'json')]);
+  const fix = fix0 || { t: 0, gone: {}, edit: {} };
+  applyFix(prog, fix);
+  const mocks = (prog && prog.mocks) || [];
+  if (!mid && method === 'GET') {
+    return [{ username: a.username, mocks: mocks.slice().reverse().map(m => ({ id: m.id, s: m.s, board: m.board || '', t: m.t, got: m.got, max: m.max,
+      pct: m.pct, grade: m.grade || '', minutes: m.minutes || null, used: m.used != null ? m.used : null, questions: m.paper && m.paper.items ? m.paper.items.length : null,
+      share: m.share || '', fixed: !!fix.edit[m.id] })), removed: Object.keys(fix.gone).length }];
+  }
+  const m = mid && mocks.find(x => x.id === mid);
+  if (!m) return [{ error: 'No such mock (it may have been removed already).' }, 404];
+  if (method === 'PATCH') {
+    const max = Number(body.max), got = Number(body.got);
+    if (!Number.isFinite(max) || max <= 0 || max > 1000 || !Number.isFinite(got) || got < 0 || got > max) return [{ error: 'Marks must be a number from 0 to the total, and the total more than 0.' }, 400];
+    const grade = String(body.grade == null ? '' : body.grade).trim().slice(0, 4);
+    fix.edit[mid] = { got, max, pct: got / max, grade: grade || null };
+  } else if (method === 'DELETE') {
+    fix.gone[mid] = Date.now();
+    delete fix.edit[mid];
+    // its share code stops working too
+    if (m.share) await env.HUB_KV.delete('share:' + m.share);
+    await env.HUB_KV.delete('shared:' + id + ':' + mid.slice(0, 40));
+  } else return [{ error: 'Not found' }, 404];
+  fix.t = Date.now();
+  await env.HUB_KV.put(fixKey(id), JSON.stringify(fix));
+  await env.HUB_KV.put('prog:' + id, JSON.stringify(applyFix(prog, fix)));
+  await setFixFlag(env, id, fix.t);
+  return [{ ok: true }];
 }

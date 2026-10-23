@@ -671,6 +671,7 @@
               (a.mustVerify ? '<br><button type="button" class="excuse" title="Let this account use the site without checking its email address">skip_verify: let in without checking email</button>' : '') +
               (a.email ? '<br><button type="button" class="noemail">email.unset: remove email address</button>' : '') +
             '</fieldset>' +
+            '<fieldset><legend>mock paper history</legend><button type="button" class="mocks">mocks: see / fix / remove handed-in mocks</button></fieldset>' +
             '<fieldset><legend>message (popup on their next page)</legend>' +
               (a.banned ? '<span class="muted">banned accounts don\'t get messages</span>' :
                 '<button type="button" class="msg">' + (pending ? 'msg.edit: change waiting message' : 'msg.send: write message') + '</button>') +
@@ -710,6 +711,7 @@
           if (confirm('Remove the email address from ' + a.label + '?\n(They can add one again from their account menu.)')) patch({ email: '' }, 'email=null uid=' + id);
         });
         // a message shown to them once, on their next page (straight away if they're signed in now)
+        tr.querySelector('.mocks').addEventListener('click', function () { openMocks(id, a.username); });
         var msgb = tr.querySelector('.msg');
         if (msgb) msgb.addEventListener('click', function () {
           (a.note && !a.note.seen ? api('GET', 'accounts/' + id + '/note') : Promise.resolve(null)).then(function (n) {
@@ -758,6 +760,42 @@
       loadBans();
       loadKeys();
     }).catch(function (e) { say(e.message, true); });
+  }
+
+  // an account's handed-in mocks (functions/_lib/mockfix.js): correct the marks or grade, or remove one
+  var mkdlg = document.querySelector('.mockdlg'), mkbody = mkdlg.querySelector('.mk-body');
+  function openMocks(id, name) {
+    mkdlg.querySelector('.mk-h').textContent = 'mocks: ' + name + ' (uid ' + id + ')';
+    mkbody.innerHTML = '<p class="muted">GET /api/admin/accounts/' + esc(id) + '/mocks …</p>';
+    if (!mkdlg.open) mkdlg.showModal();
+    api('GET', 'accounts/' + encodeURIComponent(id) + '/mocks').then(function (d) {
+      mkbody.innerHTML = '<p class="muted">rows=' + d.mocks.length + ' removed_by_admin=' + d.removed + ' store=kv:prog:' + esc(id) + ' fixes=kv:mockfix:' + esc(id) + '</p>' +
+        (d.mocks.length ? '<table border="1" cellpadding="3"><thead><tr><th>handed_in</th><th>subject</th><th>board</th><th>marks</th><th>grade</th><th>time</th><th></th></tr></thead><tbody>' +
+        d.mocks.map(function (m) {
+          return '<tr data-mid="' + esc(m.id) + '"><td>' + esc(iso(m.t)) + '<br><code class="muted">' + esc(m.id) + '</code>' + (m.fixed ? '<br><span class="muted">[edited by admin]</span>' : '') + '</td>' +
+            '<td>' + esc(m.s) + (m.questions != null ? '<br><span class="muted">q=' + m.questions + '</span>' : '') + '</td><td>' + esc(m.board || '-') + '</td>' +
+            '<td><label><input type="text" inputmode="decimal" class="mk-got" size="4" value="' + esc(m.got) + '" aria-label="marks got"></label> / ' +
+            '<label><input type="text" inputmode="decimal" class="mk-max" size="4" value="' + esc(m.max) + '" aria-label="out of"></label>' +
+            '<br><span class="muted">' + (m.pct != null ? Math.round(m.pct * 100) + '%' : '') + '</span></td>' +
+            '<td><input type="text" class="mk-grade" size="3" maxlength="4" value="' + esc(m.grade) + '" aria-label="grade" placeholder="-"></td>' +
+            '<td>' + (m.used != null ? esc(m.used) + (m.minutes ? '/' + esc(m.minutes) : '') + 'min' : '-') + '</td>' +
+            '<td><button type="button" class="mk-save">PATCH: save marks</button><br><button type="button" class="mk-del">DELETE: remove mock</button></td></tr>';
+        }).join('') + '</tbody></table><p class="muted">Changing the marks here changes the score, percentage and grade they see. The marks for each question inside the paper stay as they were.</p>'
+          : '<p>No handed-in mocks.</p>');
+      Array.prototype.forEach.call(mkbody.querySelectorAll('tr[data-mid]'), function (tr) {
+        var mid = tr.getAttribute('data-mid'), m = d.mocks.filter(function (x) { return x.id === mid; })[0];
+        var path = 'accounts/' + encodeURIComponent(id) + '/mocks/' + encodeURIComponent(mid), what = m.s + ' mock from ' + iso(m.t) + ' (' + m.got + '/' + m.max + ')';
+        tr.querySelector('.mk-save').addEventListener('click', function () {
+          var got = tr.querySelector('.mk-got').value.trim(), max = tr.querySelector('.mk-max').value.trim(), grade = tr.querySelector('.mk-grade').value.trim();
+          if (!confirm('Change ' + name + '\'s ' + what + ' to ' + got + '/' + max + (grade ? ', grade ' + grade : ', no grade') + '?')) return;
+          api('PATCH', path, { got: +got, max: +max, grade: grade }).then(function () { say('mock updated uid=' + id + ' mid=' + mid); openMocks(id, name); }).catch(function (e) { say(e.message, true); alert(e.message); });
+        });
+        tr.querySelector('.mk-del').addEventListener('click', function () {
+          if (!confirm('Remove ' + name + '\'s ' + what + '?\n\nIt goes from their past mocks and progress on every device' + (m.share ? ', and its share code ' + m.share + ' stops working' : '') + '. This can\'t be undone.')) return;
+          api('DELETE', path).then(function () { say('mock removed uid=' + id + ' mid=' + mid); openMocks(id, name); }).catch(function (e) { say(e.message, true); alert(e.message); });
+        });
+      });
+    }).catch(function (e) { mkbody.innerHTML = '<p><b>ERR</b> ' + esc(e.message) + '</p>'; });
   }
 
   // pick several accounts (tick boxes, or the quick picks) and send them all one message, or cancel theirs

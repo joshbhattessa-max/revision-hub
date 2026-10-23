@@ -16,7 +16,7 @@
     <div class="sysbar">build=<span id="sys-build">…</span> · branch=<span id="sys-branch">…</span> · edge=<span id="sys-colo">…</span> · operator=<span id="sys-op">…</span> · utc=<span id="sys-utc">…</span></div>
     <details class="help"><summary>help: what each tab is for</summary>
       <dl>
-        <dt>[1] accounts</dt><dd>Everyone's account: set a password, rename, make admin, message, sign out, ban or delete. Add an account or an agent key at the bottom.</dd>
+        <dt>[1] accounts</dt><dd>Everyone's account: set a password, rename, make admin, fix their handed-in mocks, message, sign out, ban or delete. Add an account or an agent key at the bottom.</dd>
         <dt>[2] activity_log</dt><dd>Who is on the site right now and what they opened. Press <i>trace</i> on a row for one person's history.</dd>
         <dt>[3] sessions</dt><dd>Every signed-in browser. Sign one out, or everyone except you.</dd>
         <dt>[4] hub.json</dt><dd>The home page: its title, subject cards and your own links. Nothing changes on the site until you press <i>commit</i>.</dd>
@@ -64,6 +64,10 @@
     </div>
     <fieldset><legend>message (select text, then use the buttons above to format it)</legend><div class="msg-ed" contenteditable="true" aria-label="Message"><p><br></p></div></fieldset>
     <div class="ask-btns"><button value="cancel" type="submit">cancel</button> <button value="ok" type="submit">send message</button></div></form></dialog>
+  <dialog class="mockdlg"><h2 class="mk-h"></h2>
+    <p>Fix a mock handed in by accident: change its marks or grade and press <i>save</i>, or <i>remove</i> it. The change shows on every device they use, from their next page.</p>
+    <div class="mk-body"></div>
+    <form method="dialog"><p><button type="submit">close</button></p></form></dialog>
   <script src="admin.js?v=6"></script>
 </body>
 </html>
