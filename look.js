@@ -3,6 +3,9 @@
 // script in the page head; the styles are in look.css.
 (function () {
   var root = document.documentElement;
+  // On phones and tablets the light/dark circle animation (a view transition) can stick halfway in Safari and leave the
+  // page stuck between themes, so there the theme just switches; the pages fall back to that when this is missing.
+  try { if (document.startViewTransition && matchMedia('(pointer: coarse)').matches) document.startViewTransition = null; } catch (e) {}
   if (!root.hasAttribute('data-look')) { var l0 = 'soft'; try { l0 = localStorage.getItem('jbr-look') || 'soft'; } catch (e) {} root.setAttribute('data-look', l0); }
   // two overlapping squares, one outlined and one filled: "change the look"
   var ICON = '<svg viewBox="0 0 20 20" aria-hidden="true"><rect x="2.5" y="2.5" width="9" height="9" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.6"/><rect x="8.5" y="8.5" width="9" height="9" rx="2.5" fill="currentColor"/></svg>';
