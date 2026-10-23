@@ -7,6 +7,7 @@ import { NEW_SITE, isOldAddress, movedPage } from './_lib/moved.js';
 import { canSend } from './_lib/email.js';
 import { tagSession } from './_lib/bans.js';
 import { TAKEDOWN_PAGE, takedown } from './_lib/takedown.js';
+import { autoUpdate } from './_lib/updates.js';
 
 // what anyone can open without signing in (the login page, the front page and "Try a few questions", Privacy, Terms)
 const OPEN = new Set(['/login', '/login.html', '/login.js', '/hub.css', '/fonts.css', '/favicon.svg', '/favicon-32.png',
@@ -33,6 +34,8 @@ const SETUP = `<!doctype html><meta charset="utf-8"><meta name="viewport" conten
 <title>Setup needed</title><body style="font:16px/1.5 system-ui,sans-serif;max-width:560px;margin:60px auto;padding:0 16px">
 <h1>Sign-in isn't set up yet</h1><p>This site needs a Cloudflare KV namespace bound as <code>HUB_KV</code>
 (Pages project → Settings → Bindings). See the README.</p></body>`;
+
+let lastAuto = 0;
 
 export async function onRequest(ctx) {
   const url = new URL(ctx.request.url);
@@ -106,6 +109,9 @@ export async function onRequest(ctx) {
     return json({ error: 'This is a past version of the site, so nothing is saved.' }, 403);
   }
   ctx.data.session = session;
+  // update notes write and send themselves after an update (_lib/updates.js): looked at in the background, at most
+  // every 10 minutes by each server
+  if (Date.now() - lastAuto > 10 * 60 * 1000) { lastAuto = Date.now(); ctx.waitUntil(autoUpdate(ctx).catch(() => {})); }
   const devCookie = await tagSession(ctx.env, ctx.request, session).catch(() => null);
   const res = await ctx.next();
   // pages that don't exist get the 404 page (404.html only makes Pages answer 404 instead of the home page)
