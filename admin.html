@@ -14,31 +14,45 @@
       <div class="top-actions"><button type="button" class="quick-maint" hidden></button><a href="/">[exit to /]</a></div>
     </header>
     <div class="sysbar">build=<span id="sys-build">…</span> · branch=<span id="sys-branch">…</span> · edge=<span id="sys-colo">…</span> · operator=<span id="sys-op">…</span> · utc=<span id="sys-utc">…</span></div>
-    <nav class="tabs" role="tablist">
-      <button type="button" role="tab" data-tab="content" aria-selected="true" disabled>hub.json</button>
-      <button type="button" role="tab" data-tab="sessions">sessions</button>
-      <button type="button" role="tab" data-tab="activity">activity_log</button>
-      <button type="button" role="tab" data-tab="accounts">accounts</button>
-      <button type="button" role="tab" data-tab="updates">update_notes</button>
-      <button type="button" role="tab" data-tab="maintenance">site_state</button>
-      <button type="button" role="tab" data-tab="usage">telemetry</button>
+    <details class="help"><summary>help: what each tab is for</summary>
+      <dl>
+        <dt>[1] accounts</dt><dd>Everyone's account: set a password, rename, make admin, message, sign out, ban or delete. Add an account or an agent key at the bottom.</dd>
+        <dt>[2] activity_log</dt><dd>Who is on the site right now and what they opened. Press <i>trace</i> on a row for one person's history.</dd>
+        <dt>[3] sessions</dt><dd>Every signed-in browser. Sign one out, or everyone except you.</dd>
+        <dt>[4] hub.json</dt><dd>The home page: its title, subject cards and your own links. Nothing changes on the site until you press <i>commit</i>.</dd>
+        <dt>[5] update_notes</dt><dd>The short "what's new" popup for accounts on the list.</dd>
+        <dt>[6] site_state</dt><dd>Maintenance page and the full takedown switch.</dd>
+        <dt>[7] telemetry</dt><dd>Visitor numbers (only people who accepted cookies).</dd>
+      </dl>
+      <p>Keys: press 1 to 7 to switch tab (when you are not typing). Anything that can't be undone asks first. The result of every action shows in the status line under the tabs.</p>
+    </details>
+    <nav class="tabs" role="tablist" aria-label="Sections">
+      <button type="button" role="tab" data-tab="accounts" title="key 1">[1] accounts</button>
+      <button type="button" role="tab" data-tab="activity" title="key 2">[2] activity_log</button>
+      <button type="button" role="tab" data-tab="sessions" title="key 3">[3] sessions</button>
+      <button type="button" role="tab" data-tab="content" title="key 4">[4] hub.json</button>
+      <button type="button" role="tab" data-tab="updates" title="key 5">[5] update_notes</button>
+      <button type="button" role="tab" data-tab="maintenance" title="key 6">[6] site_state</button>
+      <button type="button" role="tab" data-tab="usage" title="key 7">[7] telemetry</button>
     </nav>
-    <p class="notice" role="status"></p>
-    <section id="tab-content"><p class="muted">GET /api/admin/hub …</p></section>
-    <section id="tab-sessions" hidden></section>
-    <section id="tab-activity" hidden></section>
+    <p class="notice" role="status" aria-live="polite"><samp>status: ready</samp></p>
     <section id="tab-accounts" hidden></section>
+    <section id="tab-activity" hidden></section>
+    <section id="tab-sessions" hidden></section>
+    <section id="tab-content" hidden></section>
     <section id="tab-updates" hidden></section>
-    <section id="tab-maintenance" hidden><div id="takedown-box"></div><div id="maint-box"></div></section>
+    <section id="tab-maintenance" hidden><h2>site_state</h2>
+      <p>Two ways to close the site. Admins can always still use it. Use <b>maintenance</b> for a short break; <b>takedown</b> hides the whole site.</p>
+      <div id="maint-box"></div><div id="takedown-box"></div></section>
     <section id="tab-usage" hidden></section>
     <hr>
     <footer class="reqlog"><div>request log (this tab, newest first) · <span id="sys-bind"></span></div><pre id="reqlog"></pre></footer>
   </div>
-  <dialog class="ask"><form method="dialog"><p class="ask-q"></p><input class="ask-in"><div class="ask-btns">
-    <button value="cancel" type="submit">cancel</button><button value="ok" type="submit">ok</button></div></form></dialog>
+  <dialog class="ask"><form method="dialog"><p><label><span class="ask-q"></span><br><input class="ask-in" size="40"></label></p><p class="ask-hint"></p><div class="ask-btns">
+    <button value="cancel" type="submit" formnovalidate>cancel</button> <button value="ok" type="submit" class="ask-ok">ok</button></div></form></dialog>
   <dialog class="ask msgdlg"><form method="dialog"><p class="ask-q"></p>
-    <input class="ask-in msg-title" placeholder="title (optional)" maxlength="120" size="40">
-    <label class="msg-logo"><input type="checkbox"> logo=true</label>
+    <p><label>title (optional, shown in bold at the top)<br><input class="ask-in msg-title" maxlength="120" size="40"></label></p>
+    <p><label class="msg-logo"><input type="checkbox"> show the JBR logo above it (logo=true)</label></p>
     <div class="msg-tools" role="toolbar" aria-label="Formatting">
       <button type="button" data-cmd="bold" title="Bold"><b>B</b></button><button type="button" data-cmd="italic" title="Italic"><i>I</i></button>
       <button type="button" data-cmd="underline" title="Underline"><u>U</u></button><button type="button" data-cmd="formatBlock" data-arg="h3" title="Heading">h3</button>
@@ -48,8 +62,8 @@
       <label title="Text colour" class="msg-color">A<input type="color" value="#c0392b"></label>
       <button type="button" data-cmd="removeFormat" title="Clear formatting">clr</button>
     </div>
-    <fieldset><legend>message</legend><div class="msg-ed" contenteditable="true" aria-label="Message"><p><br></p></div></fieldset>
-    <div class="ask-btns"><button value="cancel" type="submit">cancel</button><button value="ok" type="submit">commit</button></div></form></dialog>
-  <script src="admin.js?v=5"></script>
+    <fieldset><legend>message (select text, then use the buttons above to format it)</legend><div class="msg-ed" contenteditable="true" aria-label="Message"><p><br></p></div></fieldset>
+    <div class="ask-btns"><button value="cancel" type="submit">cancel</button> <button value="ok" type="submit">send message</button></div></form></dialog>
+  <script src="admin.js?v=6"></script>
 </body>
 </html>
