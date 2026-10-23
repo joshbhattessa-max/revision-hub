@@ -486,12 +486,18 @@
     var deps = d.since.deploys;
     upbox.innerHTML = '<p class="muted">list=' + onList.length + '/' + d.accounts.length + ' reachable=' + reach + ' notes_sent=' + d.log.length +
       ' store=kv:updates:subs,updates:log,upd:&lt;uid&gt; delivery=popup on next page load; unread notes stack newest-first under date headings</p>' +
-      '<h2>compose</h2><div class="box">' +
+      '<div class="box"><div class="row"><b class="grow mono">AUTO_WRITE = ' + (d.auto.off ? '0' : '1') + '</b>' +
+      '<button type="button" class="small up-auto">' + (d.auto.off ? 'set auto=1' : 'set auto=0') + '</button></div>' +
+      '<p class="muted">' + (d.auto.off ? 'off: notes are only sent from compose below.' :
+        'on: after each update (once nothing new has deployed for 15 min) the bullets are written from the PR titles and sent to the list; admin-only changes are skipped. ' +
+        'checked ≤ every 10 min. since=' + (d.auto.since ? iso(d.auto.since) : 'first check') + ' last_check=' + (d.auto.ran ? iso(d.auto.ran) : '-')) + '</p>' +
+      (!d.auto.off && d.draft.length ? '<p class="muted">next auto note (so far): ' + d.draft.map(function (b) { return '- ' + esc(b); }).join(' ') + '</p>' : '') + '</div>' +
+      '<h2>compose (manual)</h2><div class="box">' +
       [0, 1].map(function (i) {
         return '<label class="lbl">bullet[' + i + ']' + (i ? ' (optional)' : '') + '<input type="text" class="up-bul" data-i="' + i + '" maxlength="' + d.maxLen + '" autocomplete="off"></label>';
       }).join('') +
       '<div class="up-prev"><div class="muted">preview (newest block of the popup):</div><h4>Latest update · ' + esc(new Date().toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'long', year: 'numeric' })) + '</h4><ul class="up-prev-ul"></ul></div>' +
-      '<div class="row"><button type="button" class="small up-draft"' + (deps.length ? '' : ' disabled') + '>draft from deploys</button>' +
+      '<div class="row"><button type="button" class="small up-draft"' + (d.draft.length ? '' : ' disabled') + '>draft from deploys</button>' +
       '<span class="grow"></span><button type="button" class="btn-main up-send">POST /updates → ' + reach + ' accounts</button></div>' +
       '<h3>deploys since ' + (d.since.last ? 'last note (' + iso(d.since.last) + ')' : 'ever (last 10)') + ' [' + deps.length + ']</h3>' +
       (deps.length ? '<ul class="up-src mono">' + deps.map(function (x, di) {
@@ -532,10 +538,11 @@
       b.addEventListener('click', function () { var x = deps[+b.getAttribute('data-d')]; put(upSite(x.site) + x.titles[+b.getAttribute('data-t')]); });
     });
     upbox.querySelector('.up-draft').addEventListener('click', function () {
-      var all = [];
-      deps.forEach(function (x) { x.titles.forEach(function (t) { all.push(upSite(x.site) + t); }); });
-      Array.prototype.forEach.call(buls, function (b, i) { b.value = all[i] || ''; });
+      Array.prototype.forEach.call(buls, function (b, i) { b.value = d.draft[i] || ''; });
       preview(); say('drafted from ' + deps.length + ' deploys; edit the wording before sending');
+    });
+    upbox.querySelector('.up-auto').addEventListener('click', function () {
+      api('PUT', 'updates/auto', { on: !!d.auto.off }).then(function (a) { say('auto_write=' + (a.off ? 0 : 1)); loadUpdates(); }).catch(function (e) { say(e.message, true); });
     });
     send.addEventListener('click', function () {
       var b = bullets();
