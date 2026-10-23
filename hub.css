@@ -84,8 +84,7 @@ footer { color: var(--muted); font-size: .8rem; margin-top: 48px; }
 .theme-toggle { --size: 40px; width: var(--size); height: var(--size); flex: none; border-radius: 50%; border: 1px solid var(--line);
   background: var(--card); color: var(--ink); cursor: pointer; display: grid; place-items: center; padding: 0;
   box-shadow: var(--shadow); transition: transform .25s ease, border-color .25s ease; -webkit-tap-highlight-color: transparent; }
-.theme-toggle:hover { transform: rotate(-12deg) scale(1.06); border-color: var(--muted); }
-.theme-toggle:active { transform: scale(.92); }
+.theme-toggle:hover { border-color: var(--muted); }
 .theme-toggle:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
 .theme-toggle svg { width: 24px; height: 24px; overflow: visible; }
 .sun-core { transition: r .5s cubic-bezier(.34, 1.56, .64, 1); }
@@ -101,8 +100,6 @@ footer { color: var(--muted); font-size: .8rem; margin-top: 48px; }
 [data-mode="dark"] .stars circle:nth-child(2) { transition-delay: .12s; }
 [data-mode="dark"] .stars circle:nth-child(3) { transition-delay: .22s; }
 
-/* the new theme spreads out in a circle from the button (browsers with view transitions) */
-::view-transition-old(root), ::view-transition-new(root) { animation: none; mix-blend-mode: normal; }
 /* elsewhere colours simply fade */
 body, .subject, .card, .theme-toggle { transition: background-color .35s ease, color .35s ease, border-color .35s ease; }
 @media (prefers-reduced-motion: reduce) {
