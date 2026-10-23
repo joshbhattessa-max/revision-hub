@@ -233,19 +233,17 @@
   }
 
   // ------------------------------------------------------------------ the greeting above your subjects
-  // It reacts to what you've been doing: a mock you've just handed in, a streak, a topic that keeps beating you, a
-  // topic you've nailed, questions due for another go, or a long gap. Worked out in the browser from your saved
-  // progress (progress.js); nothing new is stored. The wording is picked by the date so it doesn't change on a reload.
+  // It reacts to what you've been doing and suggests what to do next: a mock you've just handed in, a subject going
+  // well, a streak, a weak or secure topic, questions due for review, or a long gap. Worked out in the browser from your
+  // saved progress (progress.js); nothing new is stored.
   var DAY = 864e5;
   function first(me) { var n = String(me.username || ''); return n.charAt(0).toUpperCase() + n.slice(1); }
-  function pick(list, salt) { var d = new Date(), k = d.getFullYear() * 400 + d.getMonth() * 32 + d.getDate() + (salt || 0); return list[k % list.length]; }
   function timeHello(me) {
     var n = first(me), hr = new Date().getHours();
-    if (hr < 5) return pick(['Still up, ' + n + '?', 'Burning the midnight oil, ' + n + '?']);
-    if (hr < 12) return pick(['Good morning, ' + n, 'Morning, ' + n]);
-    if (hr < 18) return pick(['Good afternoon, ' + n, 'Afternoon, ' + n]);
-    if (hr < 22) return pick(['Good evening, ' + n, 'Evening, ' + n]);
-    return pick(['Late one tonight, ' + n + '?', 'Night owl mode, ' + n + '?']);
+    if (hr < 5 || hr >= 22) return 'Working late, ' + n + '.';
+    if (hr < 12) return 'Good morning, ' + n + '.';
+    if (hr < 18) return 'Good afternoon, ' + n + '.';
+    return 'Good evening, ' + n + '.';
   }
   function dayKey(t) { var d = new Date(t); return d.getFullYear() + '-' + d.getMonth() + '-' + d.getDate(); }
   function topicName(meta, s, id) {
@@ -266,8 +264,7 @@
     var mocks = (P.mocks || []).slice().sort(function (a, b) { return b.t - a.t; });
     var out = { title: timeHello(me), line: '', chips: [] };
     if (!items.length && !mocks.length) {
-      out.line = pick(['A clean slate. Pick a subject below and try a few questions; this bit starts talking back once you do.',
-        'Nothing done yet, which means nothing to fix yet. Pick a subject below and have a go.']);
+      out.line = 'Choose a subject below and answer a few questions. This space will then suggest what to work on next.';
       return out;
     }
     var week = items.filter(function (v) { return now - v.t < 7 * DAY; }), wg = 0, wm = 0;
@@ -290,25 +287,33 @@
     var due = S && S.review ? items.filter(function (v) { var r = S.review(v); return r && r.now; }).length : 0;
     var mock = mocks[0] && now - mocks[0].t < 3 * DAY ? mocks[0] : null;
     var lines = [];
+    // the subject going best this week (at least 5 questions and 70% of marks)
+    var subj = {};
+    week.forEach(function (v) { var b = subj[v.s] = subj[v.s] || { s: v.s, g: 0, m: 0, n: 0 }; b.g += v.g || 0; b.m += v.m || 0; b.n++; });
+    var best = Object.keys(subj).map(function (k) { var b = subj[k]; b.pct = b.m ? b.g / b.m : 0; return b; })
+      .filter(function (b) { return b.n >= 5 && b.pct >= .7; }).sort(function (a, b) { return b.pct - a.pct; })[0];
 
     if (mock) {
       var ms = subjName(meta, data, mock.s), sc = mock.got + '/' + mock.max + ' on ' + ms + (mock.grade ? ' (' + (/^(8|11|18|[AEFHILMNORSX]\b)/.test(String(mock.grade)) ? 'an ' : 'a ') + mock.grade + ')' : '');
-      if (mock.pct >= .8) { out.title = pick(['Nice mock, ' + n + '.', 'Look at you, ' + n + '.']); lines.push(sc + '. Frame it, then get back to work.'); }
-      else if (mock.pct >= .6) { out.title = pick(['Solid mock, ' + n + '.', 'Good mock, ' + n + '.']); lines.push(sc + '. A few marks off something great.'); }
-      else { out.title = 'That ' + ms + ' mock bit back.'; lines.push(mock.got + '/' + mock.max + ' this time. Have a look at the ones that got away, then go again.'); }
+      if (mock.pct >= .8) { out.title = 'Strong ' + ms + ' mock, ' + n + '.'; lines.push(sc + '. Check the few marks you dropped, then move on to a topic you know less well.'); }
+      else if (mock.pct >= .6) { out.title = 'Good ' + ms + ' mock, ' + n + '.'; lines.push(sc + '. The quickest gains are in the questions you only half got.'); }
+      else { out.title = ms + ' needs another look, ' + n + '.'; lines.push(mock.got + '/' + mock.max + ' on your last mock. Go through the questions you missed before trying another.'); }
     } else if (away >= 7) {
-      out.title = 'Long time no see, ' + n + '.';
-      lines.push('The questions missed you.' + (last ? ' You were last on ' + subjName(meta, data, last.s) + '.' : ''));
+      out.title = 'Welcome back, ' + n + '.';
+      lines.push('It has been ' + away + ' days.' + (last ? ' A short set of ' + subjName(meta, data, last.s) + ' questions is a good way back in.' : ''));
+    } else if (best) {
+      out.title = subjName(meta, data, best.s) + ' going well, ' + n + '.';
+      lines.push(Math.round(best.pct * 100) + '% of marks across ' + best.n + ' questions this week.');
     } else if (streak >= 3) {
       out.title = streak + ' days in a row, ' + n + '.';
-      lines.push(pick(['Your future self says thanks.', 'Don\'t break the chain now.', 'Habit: officially forming.']));
+      lines.push('Steady practice like this is what moves grades.');
     }
-    if (weak && weak.pct < .5 && lines.length < 2) lines.push(weak.name + ' is putting up a fight (' + Math.round(weak.pct * 100) + '% lately). Fancy a rematch?');
-    else if (strong && strong.pct >= .85 && lines.length < 2) lines.push('You\'re flying through ' + strong.name + ' at the moment (' + Math.round(strong.pct * 100) + '%).');
-    if (due >= 3 && lines.length < 2) lines.push(due + ' questions are due another go. Small effort, big payoff.');
+    if (weak && weak.pct < .5 && lines.length < 2) lines.push('Suggested next: ' + weak.name + ' in ' + subjName(meta, data, weak.s) + ', at ' + Math.round(weak.pct * 100) + '% recently.');
+    else if (strong && strong.pct >= .85 && lines.length < 2) lines.push(strong.name + ' looks secure at ' + Math.round(strong.pct * 100) + '%, so a less familiar topic is the better use of time.');
+    if (due >= 3 && lines.length < 2) lines.push(due + ' questions are due for review, which is a good place to start.');
     if (!lines.length && last) {
       var tn = topicName(meta, last.s, (last.tp || [])[0]);
-      lines.push(tn ? 'Last time it was ' + tn + ' in ' + subjName(meta, data, last.s) + '. Pick up where you left off?' : 'Last time it was ' + subjName(meta, data, last.s) + '. Pick up where you left off?');
+      lines.push('Last session: ' + (tn ? tn + ' in ' : '') + subjName(meta, data, last.s) + '. Carry on there, or choose a new topic below.');
     }
     out.line = lines.slice(0, 2).join(' ');
     if (week.length) out.chips.push(['' + week.length, week.length === 1 ? 'question this week' : 'questions this week']);
