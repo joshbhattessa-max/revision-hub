@@ -46,4 +46,23 @@ dialog::backdrop { background: rgba(0, 0, 0, .45); }
 .msg-ed { min-height: 120px; padding: 8px; border: 1px solid var(--line); border-radius: 5px; background: var(--bg); }
 progress { accent-color: var(--acc); }
 hr { border: 0; border-top: 1px solid var(--line); }
-@media (max-width: 640px) { .admin { padding: 10px; } .tabs button { flex: 1 1 auto; } }
+@media (max-width: 640px) {
+  .admin { padding: 10px; }
+  /* tabs: one swipeable row that scrolls away, not a sticky block covering half the screen */
+  .tabs { position: static; flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .tabs button { flex: 0 0 auto; white-space: nowrap; min-height: 40px; }
+  /* every button, menu and field is a comfortable thumb target */
+  button, summary, select, input:not([type=checkbox]):not([type=radio]) { min-height: 40px; }
+  summary { display: list-item; padding: 8px 0; }
+  input[type=checkbox], input[type=radio] { width: 22px; height: 22px; }
+  input, select, textarea { font-size: 16px; }
+  fieldset button { max-width: 100%; white-space: normal; text-align: left; }
+  /* tables become cards (labels come from data-label) so nothing sits off-screen to the right */
+  .tablewrap { overflow-x: visible; }
+  table, tbody, tr, td { display: block; width: auto; }
+  thead { display: none; }
+  tr { margin: 0 0 10px; border: 1px solid var(--line); border-radius: 6px; background: var(--card); }
+  td { border: 0; border-bottom: 1px solid var(--line); overflow-wrap: anywhere; }
+  td[data-label]::before { content: attr(data-label) ": "; color: var(--mut); }
+  td.num { text-align: left; }
+}
