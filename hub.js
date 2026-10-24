@@ -22,7 +22,7 @@
 
     // a few words that change with what you've been doing (filled in by personal() once your progress is in)
     if (me) h += '<section class="hi" aria-live="polite"><p class="hi-date">' + esc(new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' })) + '</p>' +
-      '<p class="hi-title">' + esc(timeHello(me)) + '</p><p class="hi-line"></p><div class="hi-chips"></div></section>';
+      '<p class="hi-title">' + esc(timeHello(me)) + '</p><div class="hi-chips"></div></section>';
     h += '<h2>' + (me ? 'Your subjects' : 'Subjects') + '</h2><div class="grid">';
     // sites sharing a "pair" (English Language and Literature) share one card that asks which one to open
     var paired = {}, pairs = {}, no = 0;
@@ -80,8 +80,7 @@
   // the inside of a subject card: its number and site name, the subject, its size, and how much of it you've tried
   function cardInside(no, key, name, stats) {
     return '<div class="sc-top"><span class="sc-no">' + (no < 10 ? '0' : '') + no + '</span><span class="sc-key">' + esc(key) + '</span></div>' +
-      '<div class="name">' + esc(name) + '</div><div class="stats">' + stats + '</div>' +
-      '<div class="sc-prog" hidden><span class="sc-bar"><i></i></span><span class="sc-pct"></span></div>';
+      '<div class="name">' + esc(name) + '</div><div class="stats">' + stats + '</div>';
   }
 
   // one card for a pair: named by the shared subject ("English"), coloured by its first site
@@ -252,7 +251,7 @@
     return out;
   }
 
-  // fills the greeting and the cards' progress bars, first from this browser's copy, then again once your account's
+  // fills the greeting, first from this browser's copy, then again once your account's
   // copy has synced
   function personal(me, data) {
     var S = window.JBR_PROGRESS, meta = null;
@@ -262,25 +261,7 @@
       if (!box) return;
       var say = sayHello(me, P, meta, data);
       box.querySelector('.hi-title').textContent = say.title;
-      box.querySelector('.hi-line').textContent = say.line;
       box.querySelector('.hi-chips').innerHTML = say.chips.map(function (c) { return '<span class="hi-chip"><b>' + esc(c[0]) + '</b> ' + esc(c[1]) + '</span>'; }).join('');
-      // each card: the share of its topics you've tried at least once
-      Array.prototype.forEach.call(document.querySelectorAll('.sc[data-subj]'), function (card) {
-        var subs = card.getAttribute('data-subj').split(' '), all = 0, seen = {};
-        subs.forEach(function (s) { var m = meta && meta.subjects && meta.subjects[s]; all += m && m.topics ? m.topics.length : 0; });
-        Object.keys(P.items || {}).forEach(function (k) {
-          var v = P.items[k];
-          if (subs.indexOf(v.s) < 0 || !S.mine(k)) return;
-          (v.tp || []).forEach(function (t) { seen[v.s + '|' + t] = 1; });
-        });
-        var done = Object.keys(seen).length, bar = card.querySelector('.sc-prog');
-        if (!all || !bar) return;
-        var pct = Math.min(100, Math.round(done / all * 100));
-        bar.hidden = false;
-        bar.querySelector('i').style.width = pct + '%';
-        bar.querySelector('.sc-pct').textContent = pct + '%';
-        bar.title = done + ' of ' + all + ' topics tried';
-      });
     }
     fetch('/study-meta.json', { credentials: 'same-origin' }).then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; })
       .then(function (m) { meta = m; fill(); S.pull(fill); });
