@@ -137,7 +137,8 @@ window.JBR_OFFLINE = (function () {
         });
       }, Promise.resolve());
     }).then(function () {
-      // then everything, a few at a time; pictures already here are kept (they never change at one address)
+      // then everything, 16 at a time (each file is a round trip through the sign-in check, so more at once is what
+      // makes it quick); pictures already here are kept (they never change at one address)
       var i = 0, lock = null;
       try { if (navigator.wakeLock) navigator.wakeLock.request('screen').then(function (l) { lock = l; }, function () {}); } catch (e) { /* no wake lock */ }
       function worker() {
@@ -149,7 +150,7 @@ window.JBR_OFFLINE = (function () {
           .then(function () { done++; if (done % 10 === 0 || done === list.length) report('Downloading…'); return worker(); });
       }
       var workers = [];
-      for (var w = 0; w < 6; w++) workers.push(worker());
+      for (var w = 0; w < 16; w++) workers.push(worker());
       return Promise.all(workers).then(function (x) { if (lock) lock.release().catch(function () {}); return x; },
         function (e) { if (lock) lock.release().catch(function () {}); throw e; });
     }).then(function () {
