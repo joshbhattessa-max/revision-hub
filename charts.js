@@ -4,7 +4,7 @@
 (function () {
   'use strict';
   var DAY = 864e5, WEEK = 7 * DAY, NS = 'http://www.w3.org/2000/svg';
-  var FONT = "Inter, system-ui, -apple-system, 'Segoe UI', sans-serif";
+  var FONT = "Figtree, system-ui, -apple-system, 'Segoe UI', sans-serif";
   var RANGES = [['4w', '4 weeks', 28], ['3m', '3 months', 91], ['1y', '12 months', 365], ['all', 'All time', 0]];
 
   function esc(s) {

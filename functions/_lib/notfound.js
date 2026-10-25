@@ -119,7 +119,7 @@ ${digit(0, x0, 130)}</g></g>`);
 <circle cx="-15" cy="-38" r="3.6" fill="url(#nf-skin)"/>`));
   s.push(`<g><animateTransform attributeName="transform" type="translate" values="0 0;0 -6;0 0" keyTimes="0;.5;1" calcMode="spline" keySplines=".45 0 .55 1;.45 0 .55 1" dur="2.4s" repeatCount="indefinite"/>
 <circle cx="${bx + 34}" cy="${by - 150}" r="21" fill="#fff" stroke="#e1dace" stroke-width="2"/><path d="M${bx + 20} ${by - 134} l-8 13 l16 -7z" fill="#fff"/>
-<text x="${bx + 34}" y="${by - 140}" text-anchor="middle" font-family="Inter, system-ui, sans-serif" font-size="28" font-weight="800" fill="#33312e">?</text></g>`);
+<text x="${bx + 34}" y="${by - 140}" text-anchor="middle" font-family="Figtree, system-ui, sans-serif" font-size="28" font-weight="800" fill="#33312e">?</text></g>`);
 
   // site sign with the JBR logo, cones, a barrier and a pallet of spare blocks
   s.push(`<rect x="118" y="${G - 120}" width="8" height="120" fill="#8f979e"/><rect x="190" y="${G - 120}" width="8" height="120" fill="#7a8289"/>
@@ -148,7 +148,7 @@ export function notFoundPage(path) {
 <title>Page not found · JB Revision</title>
 <script>try { var t = localStorage.getItem('hub-theme'); if (t) document.documentElement.setAttribute('data-theme', t); } catch (e) {}</script>
 ${ICON_LINKS}
-<link rel="stylesheet" href="/fonts.css?v=2">
+<link rel="stylesheet" href="/fonts.css?v=3">
 <style>
 :root { --bg: #f4f1ea; --ink: #2b2925; --muted: #6b6862; --nf-ground-top: #ddd6c8; --nf-ground-bottom: #e9e4da; --nf-ground-line: #cbc2b1; }
 :root[data-theme="dark"] { --bg: #17171a; --ink: #ecebe8; --muted: #a3a09a; --nf-ground-top: #2a2a2f; --nf-ground-bottom: #1d1d21; --nf-ground-line: #3a3a41; }
@@ -157,7 +157,7 @@ ${ICON_LINKS}
 }
 * { box-sizing: border-box; }
 html, body { margin: 0; height: 100%; overflow: hidden; }
-body { background: var(--bg); color: var(--ink); font-family: Inter, "Segoe UI", system-ui, -apple-system, Roboto, Helvetica, Arial, sans-serif; }
+body { background: var(--bg); color: var(--ink); font-family: Figtree, "Segoe UI", system-ui, -apple-system, Roboto, Helvetica, Arial, sans-serif; }
 .stage { position: fixed; inset: 0; }
 .stage > svg { width: 100%; height: 100%; display: block; overflow: visible; }
 .copy { position: fixed; top: clamp(20px, 5vh, 56px); left: clamp(20px, 4vw, 64px); max-width: 420px; z-index: 2; }
