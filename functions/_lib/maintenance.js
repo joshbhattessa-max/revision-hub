@@ -52,7 +52,7 @@ ${ICON_LINKS}
 }
 * { box-sizing: border-box; }
 body { margin: 0; min-height: 100vh; display: grid; place-items: center; padding: 24px 16px; background: var(--bg); color: var(--ink);
-  font-family: Inter, "Segoe UI", system-ui, -apple-system, Roboto, Helvetica, Arial, sans-serif; }
+  font-family: Figtree, "Segoe UI", system-ui, -apple-system, Roboto, Helvetica, Arial, sans-serif; }
 main { width: min(440px, 100%); background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 26px 24px; }
 ${SCENE_CSS}
 h1 { font-size: 1.3rem; line-height: 1.3; margin: 0 0 8px; letter-spacing: -.2px; }

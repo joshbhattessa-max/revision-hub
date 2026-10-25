@@ -61,7 +61,7 @@
     '.jbr-ck{--ck-bg:#fff;--ck-ink:#1d1d1f;--ck-muted:#5f5f5f;--ck-line:rgba(0,0,0,.14);--ck-btn:#1d1d1f;--ck-on:#fff;' +
     'position:fixed;left:12px;right:12px;bottom:12px;z-index:2147483000;max-width:560px;margin:0 auto;background:var(--ck-bg);color:var(--ck-ink);' +
     'border:1px solid var(--ck-line);border-radius:14px;box-shadow:0 10px 40px rgba(0,0,0,.18);padding:16px 18px;' +
-    'font:14px/1.45 Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;box-sizing:border-box;max-height:calc(100vh - 24px);overflow-y:auto}' +
+    'font:14px/1.45 Figtree,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;box-sizing:border-box;max-height:calc(100vh - 24px);overflow-y:auto}' +
     '.jbr-ck *{box-sizing:border-box}' +
     '.jbr-ck h2{font-size:15px;font-weight:700;margin:0 0 6px;color:inherit}' +
     '.jbr-ck p{margin:0 0 12px;color:var(--ck-muted)}' +

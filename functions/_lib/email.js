@@ -49,7 +49,7 @@ async function send(env, to, code, reset) {
   const subject = reset ? `${code} is your JB Revision password reset code` : `${code} is your JB Revision code`;
   const text = `Your JB Revision code is ${code}\n\nType it in to ${what}. It works for 15 minutes.\n\n` +
     `If you didn't ask for this, you can ignore this email: nothing changes unless the code is typed in.\n\nJB Revision · jbrevision.co.uk`;
-  const html = `<div style="font-family:Inter,Segoe UI,Arial,sans-serif;max-width:420px;margin:0 auto;padding:24px;color:#33312e">` +
+  const html = `<div style="font-family:Figtree,Segoe UI,Arial,sans-serif;max-width:420px;margin:0 auto;padding:24px;color:#33312e">` +
     `<p style="font-size:15px;margin:0 0 6px">Your JB Revision code is</p>` +
     `<p style="font-size:32px;font-weight:700;letter-spacing:6px;margin:0 0 14px">${code}</p>` +
     `<p style="font-size:15px;line-height:1.5;margin:0 0 14px">Type it in to ${what}. It works for 15 minutes.</p>` +
@@ -79,7 +79,7 @@ export async function sendMail(env, { to, subject, text, html, from, replyTo, he
 export function plainHtml(text) {
   const esc = String(text).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
     .replace(/(https:\/\/jbrevision\.co\.uk[^\s<]*)/g, '<a href="$1" style="color:#33312e">$1</a>');
-  return '<div style="font-family:Inter,Segoe UI,Arial,sans-serif;max-width:560px;font-size:15px;line-height:1.55;color:#33312e;white-space:pre-wrap">' + esc + '</div>';
+  return '<div style="font-family:Figtree,Segoe UI,Arial,sans-serif;max-width:560px;font-size:15px;line-height:1.55;color:#33312e;white-space:pre-wrap">' + esc + '</div>';
 }
 
 // email a new code to `email` and keep its hash (never the code) under `key` for 15 minutes; `salt` ties the hash to

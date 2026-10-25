@@ -217,7 +217,7 @@ export function movedPage(url) {
 * { box-sizing: border-box; }
 html, body { overflow-x: hidden; }
 body { margin: 0; min-height: 100vh; display: grid; place-items: center; padding: 24px 16px; background: var(--bg); color: var(--ink);
-  font-family: Inter, "Segoe UI", system-ui, -apple-system, Roboto, Helvetica, Arial, sans-serif; }
+  font-family: Figtree, "Segoe UI", system-ui, -apple-system, Roboto, Helvetica, Arial, sans-serif; }
 .moved { width: min(480px, 100%); background: var(--card); border: 1px solid var(--line); border-radius: 18px; padding: 22px 24px 24px;
   box-shadow: 0 24px 60px rgba(0, 0, 0, .16), 0 2px 8px rgba(0, 0, 0, .06); animation: pop .45s cubic-bezier(.2, .9, .3, 1.2) both; }
 @keyframes pop { from { opacity: 0; transform: translateY(14px) scale(.96); } to { opacity: 1; transform: none; } }

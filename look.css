@@ -4,13 +4,12 @@
    Bubbly: the same layout and spacing, rounder and softer, with tinted subject cards.
    One spacing scale everywhere: 4 8 12 16 24 32 48; gutter 16 (phone) / 24. */
 
-@font-face { font-family: "Geist"; src: url(look-fonts/geist.woff2) format("woff2"); font-weight: 100 900; font-display: swap; }
 @font-face { font-family: "Geist Mono"; src: url(look-fonts/geist-mono.woff2) format("woff2"); font-weight: 100 900; font-display: swap; }
 @font-face { font-family: "Archivo"; src: url(look-fonts/archivo.woff2) format("woff2"); font-weight: 100 900; font-stretch: 62% 125%; font-display: swap; }
 
 /* ------------------------------------------------------------------ tokens */
 html[data-look] { --pg: #FAFAFA; --cardx: #FFFFFF; --soft2: #F4F4F5; --tx: #0A0A0A; --tx2: #3F3F46; --mu: #71717A; --hl: #E4E4E7; --hl2: #D4D4D8; --btn: #0A0A0A; --on-btn: #FAFAFA;
-  --f: Geist, Inter, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; --fm: "Geist Mono", ui-monospace, Menlo, Consolas, monospace; --fh: Archivo, Geist, Inter, sans-serif;
+  --f: Figtree, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; --fm: "Geist Mono", ui-monospace, Menlo, Consolas, monospace; --fh: Archivo, Figtree, sans-serif;
   --r: 10px; --r-s: 6px; --gutter: 16px; }
 html[data-look][data-theme="dark"] { --pg: #09090B; --cardx: #111113; --soft2: #18181B; --tx: #FAFAFA; --tx2: #D4D4D8; --mu: #8B8B94; --hl: #232326; --hl2: #2E2E33; --btn: #FAFAFA; --on-btn: #09090B; }
 @media (min-width: 900px) { A { --gutter: 24px; } }
