@@ -54,9 +54,19 @@ window.JBR_PROGRESS = (function () {
     if (!WHO) { done && done(P); return; }
     fetch('/api/progress', { credentials: 'same-origin', cache: 'no-store', headers: { 'x-jbr-who': WHO } })
       .then(function (r) { return r.ok && (r.headers.get('x-jbr-who') || WHO) === WHO && who() === WHO ? r.json() : null; })
-      .then(function (remote) { if (remote && remote.v === 1) { P = merge(load(), remote); try { localStorage.setItem(KEY, JSON.stringify(P)); } catch (e) { /* blocked */ } } done && done(P); },
+      .then(function (remote) {
+        if (remote && remote.v === 1) {
+          P = merge(load(), remote);
+          try { localStorage.setItem(KEY, JSON.stringify(P)); } catch (e) { /* blocked */ }
+          // marks made on this device that the account hasn't got yet (offline, say) go up now, as on the subject sites
+          if ((P.t || 0) > (remote.t || 0)) { dirty = true; push(); }
+        }
+        done && done(P);
+      },
         function () { done && done(P); });
   }
+  // back online (after a flight with offline mode, say): fetch the account's copy and send up what's newer here
+  window.addEventListener('online', function () { pull(); });
   // computer science is done in one programming language (chosen on the subject site, C# unless changed): progress on
   // another language's programming papers doesn't count. AQA Paper 1A/1B/1C = C#/Python/VB.NET; Edexcel International
   // GCSE Paper 2A/2B/2C = Python/C#/Java; every other paper is for all.
