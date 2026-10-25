@@ -1,5 +1,5 @@
 /* Settings (/settings): your account (username, email, password), how the site looks (light/dark/device, Studio or
-   Bubbly), study choices, and your data. Looks and study choices are kept with your account (functions/api/prefs.js)
+   Bubbly), study choices, offline mode (offline.js), and your data. Looks and study choices are kept with your account (functions/api/prefs.js)
    and copied into each browser by look.js, so they apply on every subject site and device. */
 (function () {
   'use strict';
@@ -63,6 +63,9 @@
       row('Programming language', 'For Computer Science: the questions, mocks and progress you see.', seg('csLang', LANGS, lang())) +
       '</section>';
 
+    // Offline: download subjects to this device (offline.js)
+    h += '<section class="set-sec" id="offline"></section>';
+
     if (!key) h += '<section class="set-sec"><h2>Your data</h2>' +
       row('Download your data', 'Your account details, settings, every question you marked and every mock you handed in, as one file.', '<button type="button" class="set-btn" data-act="download">Download</button>') +
       row('Clear your progress', 'Removes every question you marked and every mock, on all subjects. Your account stays.', '<button type="button" class="set-btn warn" data-act="clear">Clear progress</button>') +
@@ -75,6 +78,8 @@
     h += '</div>';
     app.innerHTML = h;
     wire(me);
+    if (window.JBR_OFFLINE) window.JBR_OFFLINE.mount(app.querySelector('#offline'), toast);
+    if (location.hash === '#offline') app.querySelector('#offline').scrollIntoView();
   }
 
   function wire(me) {

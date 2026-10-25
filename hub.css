@@ -408,6 +408,7 @@ html[data-look] .wrap.set { max-width: 800px !important; }
   background: var(--cardx, var(--card)); color: var(--tx, var(--ink)); font: inherit; font-size: 14px; font-weight: 500; text-decoration: none; cursor: pointer; white-space: nowrap; }
 .set-btn:hover:not(:disabled) { background: var(--soft2, var(--bg)); }
 .set-btn:disabled { opacity: .5; cursor: default; }
+.set-btn[hidden] { display: none; }
 .set-btn.warn { color: #B4560F; }
 .set-btn.danger { color: #d33c3c; border-color: color-mix(in srgb, #d33c3c 40%, transparent); }
 .set-name { display: flex; gap: 8px; }
@@ -436,6 +437,21 @@ html[data-look] .wrap.set { max-width: 800px !important; }
 .set-look-bold .set-pv i:nth-child(3) { background: color-mix(in srgb, #6750D5 22%, var(--cardx, #fff)); }
 .set-ln b { display: block; font-size: 15px; font-weight: 600; }
 .set-ln span { display: block; margin-top: 4px; font-size: 13px; color: var(--mu, var(--muted)); }
+/* Settings → Offline (offline.js): the subjects to download, as tick chips */
+.off-subj { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 8px; }
+.off-chip { display: flex; align-items: center; gap: 8px; min-height: 44px; padding: 8px 12px; text-align: left; border: 1px solid var(--hl, var(--line));
+  border-radius: var(--r-s, 8px); background: var(--cardx, var(--card)); color: var(--tx, var(--ink)); font: inherit; font-size: 14px; cursor: pointer; }
+.off-chip i { flex: none; width: 18px; height: 18px; border: 1.5px solid var(--hl2, var(--line)); border-radius: 5px; }
+.off-chip b { flex: 1; min-width: 0; font-weight: 600; }
+.off-chip small { color: var(--mu, var(--muted)); font-size: 12px; white-space: nowrap; }
+.off-chip[aria-checked="true"] { border-color: var(--c); box-shadow: inset 0 0 0 1px var(--c); }
+.off-chip[aria-checked="true"] i { border-color: var(--c); background: var(--c) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M3.5 8.5l3 3 6-7' fill='none' stroke='%23fff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/14px no-repeat; }
+.off-opts { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; }
+.off-all { border: 0; background: none; padding: 8px 4px; font: inherit; font-size: 14px; color: var(--mu, var(--muted)); text-decoration: underline; cursor: pointer; }
+.off-sum { margin: 0; font-size: 14px; color: var(--mu, var(--muted)); }
+.off-track { height: 8px; border-radius: 999px; background: var(--soft2, #eee); overflow: hidden; }
+.off-track span { display: block; height: 100%; width: 0; background: var(--tx, var(--ink)); border-radius: inherit; transition: width .3s; }
+.off-msg { margin: 8px 0 0; font-size: 14px; }
 @media (max-width: 600px) {
   .set-sec h2, .set-row { padding-left: 16px; padding-right: 16px; }
   .set-row { flex-direction: column; align-items: stretch; }
@@ -445,6 +461,8 @@ html[data-look] .wrap.set { max-width: 800px !important; }
   .set-seg { display: flex; }
   .set-seg button { flex: 1 1 0; padding: 0 8px; }
   .set-looks { gap: 8px; }
+  .off-subj { grid-template-columns: 1fr 1fr; }
+  .off-opts .set-seg { flex: 1 1 100%; }
 }
 html[data-look] .set > header.top { margin-bottom: 32px !important; }
 html[data-look] .set-sec { overflow: hidden; }
