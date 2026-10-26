@@ -20,7 +20,7 @@
 //   GET    /api/admin/sys                     build and runtime details for the console's header and footer
 //   GET    /api/admin/keys    POST /api/admin/keys {label} -> {key} (shown once)    DELETE /api/admin/keys/:id
 //   GET    /api/admin/usage?days=30           usage statistics (from visitors who accepted them) and cookie choices
-//   GET    /api/admin/accounts/:id/mocks          its handed-in mocks
+//   GET    /api/admin/accounts/:id/mocks          its handed-in mocks    GET .../mocks/:mid  one mock's questions + marks per question
 //   PATCH  /api/admin/accounts/:id/mocks/:mid {got, max, grade}    DELETE /api/admin/accounts/:id/mocks/:mid   (_lib/mockfix.js)
 //   POST   /api/admin/accounts/:id/clear-progress   wipe its progress: questions marked, mocks (handed in or started)
 //   GET    /api/admin/activity                 each account: the page it's on now and when it was last active
@@ -475,6 +475,15 @@ async function mockAdmin(env, id, mid, method, body) {
   }
   const m = mid && mocks.find(x => x.id === mid);
   if (!m) return [{ error: 'No such mock (it may have been removed already).' }, 404];
+  if (method === 'GET') {
+    // the exact paper: each question with the marks they got, so wrong ones stand out (paper.items[].a = mark per part)
+    const pp = m.paper || {};
+    const items = (pp.items || []).map(it => {
+      const a = it.a || {}, got = Object.values(a).reduce((n, v) => n + (Number(v) || 0), 0), max = Number.isFinite(it.mk) ? it.mk : null;
+      return { q: String(it.q || ''), parts: it.p || [], got, max, marked: Object.keys(a).length > 0, byPart: a };
+    });
+    return [{ id: m.id, s: m.s, board: m.board || '', t: m.t, got: m.got, max: m.max, grade: m.grade || '', from: pp.from || '', qual: pp.qual || '', items }];
+  }
   if (method === 'PATCH') {
     const max = Number(body.max), got = Number(body.got);
     if (!Number.isFinite(max) || max <= 0 || max > 1000 || !Number.isFinite(got) || got < 0 || got > max) return [{ error: 'Marks must be a number from 0 to the total, and the total more than 0.' }, 400];

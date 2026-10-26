@@ -805,12 +805,13 @@
             '<br><span class="muted">' + (m.pct != null ? Math.round(m.pct * 100) + '%' : '') + '</span></td>' +
             '<td><input type="text" class="mk-grade" size="3" maxlength="4" value="' + esc(m.grade) + '" aria-label="grade" placeholder="-"></td>' +
             '<td>' + (m.used != null ? esc(m.used) + (m.minutes ? '/' + esc(m.minutes) : '') + 'min' : '-') + '</td>' +
-            '<td><button type="button" class="mk-save">PATCH: save marks</button><br><button type="button" class="mk-del">DELETE: remove mock</button></td></tr>';
+            '<td><button type="button" class="mk-view">View questions</button><br><button type="button" class="mk-save">PATCH: save marks</button><br><button type="button" class="mk-del">DELETE: remove mock</button></td></tr>';
         }).join('') + '</tbody></table><p class="muted">Changing the marks here changes the score, percentage and grade they see. The marks for each question inside the paper stay as they were.</p>'
           : '<p>No handed-in mocks.</p>');
       Array.prototype.forEach.call(mkbody.querySelectorAll('tr[data-mid]'), function (tr) {
         var mid = tr.getAttribute('data-mid'), m = d.mocks.filter(function (x) { return x.id === mid; })[0];
         var path = 'accounts/' + encodeURIComponent(id) + '/mocks/' + encodeURIComponent(mid), what = m.s + ' mock from ' + iso(m.t) + ' (' + m.got + '/' + m.max + ')';
+        tr.querySelector('.mk-view').addEventListener('click', function () { viewMock(id, name, m); });
         tr.querySelector('.mk-save').addEventListener('click', function () {
           var got = tr.querySelector('.mk-got').value.trim(), max = tr.querySelector('.mk-max').value.trim(), grade = tr.querySelector('.mk-grade').value.trim();
           if (!confirm('Change ' + name + '\'s ' + what + ' to ' + got + '/' + max + (grade ? ', grade ' + grade : ', no grade') + '?')) return;
@@ -821,6 +822,29 @@
           api('DELETE', path).then(function () { say('mock removed uid=' + id + ' mid=' + mid); openMocks(id, name); }).catch(function (e) { say(e.message, true); alert(e.message); });
         });
       });
+    }).catch(function (e) { mkbody.innerHTML = '<p><b>ERR</b> ' + esc(e.message) + '</p>'; });
+  }
+
+  // one mock opened up: every question on the paper and the marks they got, wrong ones first-class
+  function viewMock(id, name, m) {
+    mkbody.innerHTML = '<p class="muted">Loading the paper…</p>';
+    api('GET', 'accounts/' + encodeURIComponent(id) + '/mocks/' + encodeURIComponent(m.id)).then(function (d) {
+      var wrong = d.items.filter(function (x) { return x.max != null && x.got < x.max; }), zero = d.items.filter(function (x) { return x.marked && x.got === 0; }), skipped = d.items.filter(function (x) { return !x.marked; });
+      function row(x, i) {
+        var st = !x.marked ? 'not marked' : x.max != null && x.got >= x.max ? 'full marks' : x.got === 0 ? 'wrong (0)' : 'partly';
+        var cls = !x.marked ? 'muted' : st === 'full marks' ? 'ok-tag' : 'ban-tag';
+        var parts = Object.keys(x.byPart).filter(function (k) { return k; }).map(function (k) { return esc(k) + '=' + esc(x.byPart[k]); }).join(' ');
+        return '<tr><td class="num">' + (i + 1) + '</td><td>' + esc(x.q) + '</td><td class="num">' + (x.marked ? x.got : '-') + ' / ' + (x.max == null ? '?' : x.max) + '</td><td class="' + cls + '">' + st + '</td><td class="muted">' + parts + '</td></tr>';
+      }
+            mkbody.innerHTML = '<p><button type="button" class="mk-back">&larr; Back to ' + esc(name) + '\'s mocks</button></p>' +
+        '<h3>' + esc(d.s) + ' mock, ' + esc(iso(d.t)) + '</h3>' +
+        '<p>' + esc(d.got) + '/' + esc(d.max) + (d.grade ? ', grade ' + esc(d.grade) : '') + (d.board ? ' · ' + esc(d.board) : '') + (d.qual ? ' · ' + esc(d.qual) : '') + (d.from ? '<br><span class="muted">' + esc(d.from) + '</span>' : '') + '</p>' +
+        (d.items.length ? '<p><b>' + wrong.length + ' of ' + d.items.length + ' questions lost marks</b>' + (zero.length ? ' (' + zero.length + ' got none)' : '') + (skipped.length ? ', ' + skipped.length + ' not marked' : '') + '.</p>' +
+          '<div class="tablewrap"><table><thead><tr><th class="num">#</th><th>Question</th><th class="num">Marks</th><th>Result</th><th>By part</th></tr></thead><tbody>' +
+          d.items.map(row).join('') + '</tbody></table></div>' +
+          '<p class="muted">Question text isn\'t stored on the hub, only its id. The student can reopen the paper itself from Past mocks on the subject site.</p>'
+          : '<p>This mock was handed in before papers were kept, so only the score is stored.</p>');
+      mkbody.querySelector('.mk-back').addEventListener('click', function () { openMocks(id, name); });
     }).catch(function (e) { mkbody.innerHTML = '<p><b>ERR</b> ' + esc(e.message) + '</p>'; });
   }
 
