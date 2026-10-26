@@ -1,51 +1,59 @@
-/* Light styling for the admin console: still a plain, technical console, just easier to read and use. */
-:root { color-scheme: light dark; --bg: #f6f6f4; --fg: #1b1b1a; --mut: #6b6a66; --line: #cfcec8; --card: #fff; --acc: #1f4fd8; --bad: #b3261e; --ok: #1f7a45; }
-@media (prefers-color-scheme: dark) { :root { --bg: #161615; --fg: #e8e7e3; --mut: #9a9993; --line: #3a3a37; --card: #1f1f1d; --acc: #7da2ff; --bad: #ff8a80; --ok: #6fd39a; } }
-body { margin: 0; background: var(--bg); color: var(--fg); font: 14px/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
-.admin { max-width: 1100px; margin: 0 auto; padding: 16px; }
-h1 { font-size: 18px; margin: 0; } h2 { font-size: 16px; margin: 20px 0 8px; } h3 { font-size: 14px; }
-a { color: var(--acc); }
-.top { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; padding-bottom: 8px; border-bottom: 1px solid var(--line); }
-.top-actions { display: flex; gap: 12px; align-items: center; }
-.sysbar, .muted, .ask-hint, .reqlog { color: var(--mut); font-size: 12px; }
-.sysbar { padding: 6px 0; overflow-wrap: anywhere; }
-details.help { margin: 8px 0; padding: 6px 10px; border: 1px solid var(--line); border-radius: 6px; background: var(--card); }
-details.help summary { cursor: pointer; }
-dt { font-weight: 700; margin-top: 6px; } dd { margin: 0 0 0 16px; color: var(--mut); }
-.tabs { position: sticky; top: 0; z-index: 5; display: flex; gap: 4px; flex-wrap: wrap; padding: 8px 0; background: var(--bg); }
-.tabs button { padding: 7px 12px; }
-.tabs button:disabled { background: var(--fg); color: var(--bg); border-color: var(--fg); opacity: 1; cursor: default; font-weight: 700; }
+/* Admin console, in the site's Studio look: Figtree, warm neutrals, soft cards. */
+:root { color-scheme: light dark; --bg: #f7f7f5; --fg: #33312e; --mut: #6b6862; --line: #e4e2dd; --card: #fff; --acc: #33312e; --on-acc: #fff; --bad: #c8372d; --ok: #2e8a47; --soft: #f1f0ec; --r: 12px; }
+@media (prefers-color-scheme: dark) { :root { --bg: #161615; --fg: #ecebe8; --mut: #9a9993; --line: #34332f; --card: #1f1f1d; --acc: #ecebe8; --on-acc: #161615; --bad: #ff8a80; --ok: #6fd39a; --soft: #272725; } }
+body { margin: 0; background: var(--bg); color: var(--fg); font: 15px/1.5 Figtree, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+.admin { max-width: 1100px; margin: 0 auto; padding: 24px 20px 48px; }
+h1 { font-size: 22px; margin: 0; letter-spacing: -.01em; } h2 { font-size: 20px; margin: 8px 0 12px; letter-spacing: -.01em; } h3 { font-size: 15px; margin: 18px 0 8px; }
+a { color: var(--fg); text-underline-offset: 3px; }
+.top { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; padding-bottom: 12px; }
+.top-actions { display: flex; gap: 14px; align-items: center; }
+.sysbar, .muted, .ask-hint, .reqlog { color: var(--mut); font-size: 13px; }
+.sysbar { padding: 0 0 10px; overflow-wrap: anywhere; }
+details.help { margin: 0 0 12px; padding: 8px 14px; border: 1px solid var(--line); border-radius: var(--r); background: var(--card); }
+details.help summary { cursor: pointer; font-weight: 600; }
+dt { font-weight: 700; margin-top: 8px; } dd { margin: 0 0 0 16px; color: var(--mut); }
+.tabs { position: sticky; top: 0; z-index: 5; display: flex; gap: 6px; flex-wrap: wrap; padding: 10px 0; background: var(--bg); }
+.tabs button { padding: 8px 16px; border-radius: 999px; font-weight: 600; }
+.tabs button:disabled { background: var(--acc); color: var(--on-acc); border-color: var(--acc); opacity: 1; cursor: default; }
+.badge { display: inline-block; min-width: 18px; padding: 0 6px; margin-left: 4px; border-radius: 999px; background: var(--bad); color: #fff; font-size: 12px; line-height: 18px; text-align: center; }
+.badge[hidden] { display: none; }
 button, input, select, textarea { font: inherit; color: inherit; }
-button, input[type=button], input[type=submit] { padding: 5px 11px; border: 1px solid var(--line); border-radius: 5px; background: var(--card); cursor: pointer; }
-button:hover:not(:disabled) { border-color: var(--acc); color: var(--acc); }
-button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible, summary:focus-visible { outline: 2px solid var(--acc); outline-offset: 1px; }
+button, input[type=button], input[type=submit] { padding: 7px 14px; border: 1px solid var(--line); border-radius: 999px; background: var(--card); cursor: pointer; transition: background .12s, border-color .12s; }
+button:hover:not(:disabled) { border-color: var(--fg); background: var(--soft); }
+button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible, summary:focus-visible { outline: 2px solid var(--fg); outline-offset: 2px; }
 button:disabled { opacity: .5; cursor: not-allowed; }
 button.del, button.ban, button.revoke, .quick-maint { border-color: var(--bad); color: var(--bad); }
-button.del:hover:not(:disabled), button.ban:hover:not(:disabled) { background: var(--bad); color: #fff; }
-button.save, button.up-save, button.up-send, button.pick-send, .ask-ok { background: var(--acc); border-color: var(--acc); color: #fff; }
-button.save:hover:not(:disabled), button.up-send:hover:not(:disabled), .ask-ok:hover { color: #fff; filter: brightness(1.1); }
-input:not([type=checkbox]):not([type=radio]), select, textarea { padding: 5px 8px; border: 1px solid var(--line); border-radius: 5px; background: var(--card); max-width: 100%; box-sizing: border-box; }
-.notice { margin: 4px 0 12px; padding: 8px 10px; border: 1px solid var(--line); border-left: 4px solid var(--ok); border-radius: 4px; background: var(--card); overflow-wrap: anywhere; }
+button.del:hover:not(:disabled), button.ban:hover:not(:disabled) { background: var(--bad); border-color: var(--bad); color: #fff; }
+button.save, button.up-save, button.up-send, button.pick-send, .ask-ok { background: var(--acc); border-color: var(--acc); color: var(--on-acc); }
+button.save:hover:not(:disabled), button.up-send:hover:not(:disabled), button.pick-send:hover:not(:disabled), button.up-save:hover:not(:disabled), .ask-ok:hover { background: var(--acc); color: var(--on-acc); filter: opacity(.85); }
+input:not([type=checkbox]):not([type=radio]), select, textarea { padding: 7px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--card); max-width: 100%; box-sizing: border-box; }
+input[type=checkbox], input[type=radio] { accent-color: var(--fg); }
+.notice { margin: 4px 0 16px; padding: 10px 14px; border: 1px solid var(--line); border-left: 4px solid var(--ok); border-radius: 8px; background: var(--card); overflow-wrap: anywhere; }
 .notice.err { border-left-color: var(--bad); color: var(--bad); }
-.tablewrap { overflow-x: auto; }
-table { border-collapse: collapse; width: 100%; background: var(--card); }
-th, td { border: 1px solid var(--line); padding: 5px 8px; text-align: left; vertical-align: top; }
-th { background: color-mix(in srgb, var(--fg) 7%, var(--card)); position: sticky; top: 0; }
-tbody tr:nth-child(even) { background: color-mix(in srgb, var(--fg) 3%, var(--card)); }
-tbody tr:hover { background: color-mix(in srgb, var(--acc) 9%, var(--card)); }
+.notice samp { font-family: inherit; }
+.tablewrap { overflow-x: auto; border: 1px solid var(--line); border-radius: var(--r); background: var(--card); margin: 8px 0 16px; }
+table { border-collapse: collapse; width: 100%; border: 0; }
+th, td { border: 0; border-bottom: 1px solid var(--line); padding: 10px 12px; text-align: left; vertical-align: top; }
+tr:last-child td { border-bottom: 0; }
+th { background: var(--soft); font-size: 13px; color: var(--mut); font-weight: 600; position: sticky; top: 0; }
+tbody tr:hover { background: var(--soft); }
 td.num, th.num { text-align: right; }
-fieldset { border: 1px solid var(--line); border-radius: 6px; margin: 8px 0; background: var(--card); }
-legend { padding: 0 6px; font-weight: 700; }
-details > summary { cursor: pointer; }
+td.reply-text { white-space: pre-wrap; min-width: 220px; }
+fieldset { border: 1px solid var(--line); border-radius: 10px; margin: 10px 0; background: var(--card); padding: 10px 14px; }
+legend { padding: 0 6px; font-weight: 700; font-size: 13px; color: var(--mut); }
+details > summary { cursor: pointer; font-weight: 600; }
+details[open] > summary { margin-bottom: 6px; }
 .ban-tag { color: var(--bad); font-weight: 700; }
-pre, code, samp { font-family: inherit; } pre#reqlog { max-height: 220px; overflow: auto; padding: 8px; border: 1px solid var(--line); border-radius: 4px; background: var(--card); font-size: 12px; }
-dialog { border: 1px solid var(--line); border-radius: 8px; background: var(--card); color: var(--fg); max-width: min(560px, 94vw); }
+code, samp, pre { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: .9em; }
+pre#reqlog { max-height: 220px; overflow: auto; padding: 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--card); font-size: 12px; }
+dialog { border: 1px solid var(--line); border-radius: 16px; background: var(--card); color: var(--fg); max-width: min(560px, 94vw); padding: 20px; box-shadow: 0 20px 60px rgba(0,0,0,.2); }
 dialog::backdrop { background: rgba(0, 0, 0, .45); }
 .ask-btns { display: flex; gap: 8px; justify-content: flex-end; }
-.msg-tools { display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 6px; }
-.msg-ed { min-height: 120px; padding: 8px; border: 1px solid var(--line); border-radius: 5px; background: var(--bg); }
-progress { accent-color: var(--acc); }
-hr { border: 0; border-top: 1px solid var(--line); }
+.msg-tools { display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 8px; }
+.msg-tools button { padding: 4px 10px; }
+.msg-ed { min-height: 120px; padding: 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); }
+progress { accent-color: var(--fg); }
+hr { border: 0; border-top: 1px solid var(--line); margin: 24px 0 12px; }
 @media (max-width: 640px) {
   .admin { padding: 10px; }
   /* tabs: one swipeable row that scrolls away, not a sticky block covering half the screen */
@@ -58,10 +66,10 @@ hr { border: 0; border-top: 1px solid var(--line); }
   input, select, textarea { font-size: 16px; }
   fieldset button { max-width: 100%; white-space: normal; text-align: left; }
   /* tables become cards (labels come from data-label) so nothing sits off-screen to the right */
-  .tablewrap { overflow-x: visible; }
+  .tablewrap { overflow-x: visible; border: 0; background: none; }
   table, tbody, tr, td { display: block; width: auto; }
   thead { display: none; }
-  tr { margin: 0 0 10px; border: 1px solid var(--line); border-radius: 6px; background: var(--card); }
+  tr { margin: 0 0 10px; border: 1px solid var(--line); border-radius: var(--r); background: var(--card); overflow: hidden; }
   td { border: 0; border-bottom: 1px solid var(--line); overflow-wrap: anywhere; }
   td[data-label]::before { content: attr(data-label) ": "; color: var(--mut); }
   td.num { text-align: left; }

@@ -110,7 +110,7 @@
   Array.prototype.forEach.call(tabs, function (b) {
     b.addEventListener('click', function () { show(b.getAttribute('data-tab')); });
   });
-  var TABS = ['accounts', 'activity', 'sessions', 'content', 'updates', 'maintenance', 'usage'], current = null;
+  var TABS = ['accounts', 'replies', 'activity', 'sessions', 'content', 'updates', 'maintenance', 'usage'], current = null;
   // unsaved edits on hub.json or the update list: ask before leaving them
   function unsaved() { return current === 'content' ? dirty : current === 'updates' ? upDirty : false; }
   function show(name) {
@@ -121,20 +121,19 @@
     Array.prototype.forEach.call(tabs, function (b) {
       var on = b.getAttribute('data-tab') === name;
       b.disabled = on; b.setAttribute('aria-selected', on);
-      b.textContent = b.textContent.replace(/^[> ]+/, '').replace(/ <$/, '');
-      if (on) b.textContent = '> ' + b.textContent + ' <';
     });
     TABS.forEach(function (n) { document.getElementById('tab-' + n).hidden = n !== name; });
     say('');
     if (name === 'sessions') loadSessions();
     if (name === 'activity') loadActivity(); else stopActivity();
     if (name === 'accounts') loadAccounts();
+    if (name === 'replies') drawReplies();
     if (name === 'updates') loadUpdates();
     if (name === 'maintenance') loadMaintenance();
     if (name === 'usage') loadUsage();
   }
 
-  // keys 1-7 switch tab, unless you're typing in a box
+  // keys 1-8 switch tab, unless you're typing in a box
   document.addEventListener('keydown', function (e) {
     var t = e.target, typing = t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName);
     if (typing || e.ctrlKey || e.metaKey || e.altKey || document.querySelector('dialog[open]')) return;
@@ -647,13 +646,14 @@
   }
   // replies to messages that asked for one, newest first (each was also emailed to the owner)
   function drawReplies() {
-    var box = abox.querySelector('.replies');
+    var box = document.getElementById('tab-replies');
     if (!box) return;
     api('GET', 'replies').then(function (rs) {
-      if (!rs.length) { box.innerHTML = '<p class="muted">replies=0 (tick "ask for a reply" when writing a message)</p>'; return; }
-      box.innerHTML = '<h3>replies [' + rs.length + ']</h3><div class="tablewrap"><table border="1" cellpadding="3"><thead><tr><th>when</th><th>username</th><th>message</th><th>reply</th><th>emailed</th><th></th></tr></thead><tbody>' +
+      var bd = document.querySelector('.tabs .badge'); bd.textContent = rs.length; bd.hidden = !rs.length;
+      if (!rs.length) { box.innerHTML = '<h2>Replies</h2><p class="muted">No replies yet. Tick "ask for a reply" when you write a message to someone and their answer will show up here.</p>'; return; }
+      box.innerHTML = '<h2>Replies (' + rs.length + ')</h2><p class="muted">Newest first. Each one was also emailed to you.</p><div class="tablewrap"><table border="1" cellpadding="3"><thead><tr><th>When</th><th>From</th><th>Your message</th><th>Their reply</th><th>Emailed</th><th></th></tr></thead><tbody>' +
         rs.map(function (r) {
-          return '<tr data-key="' + esc(r.key) + '"><td>' + when(r.t) + '</td><td>' + esc(r.username) + '</td><td>' + esc(r.title || '') + '</td><td style="white-space:pre-wrap">' + esc(r.text) +
+          return '<tr data-key="' + esc(r.key) + '"><td>' + when(r.t) + '</td><td>' + esc(r.username) + '</td><td>' + esc(r.title || '') + '</td><td class="reply-text">' + esc(r.text) +
             '</td><td>' + (r.mailed ? 'yes' : 'no') + '</td><td><button type="button" class="rdel">delete</button></td></tr>';
         }).join('') + '</tbody></table></div>';
       Array.prototype.forEach.call(box.querySelectorAll('.rdel'), function (b) {
@@ -667,20 +667,19 @@
   function loadAccounts() {
     api('GET', 'accounts').then(function (list) {
       // one "manage" drop-down per row (only one open at a time), its buttons grouped by what they touch
-      abox.innerHTML = '<h2>accounts [' + list.length + ']</h2>' +
+      abox.innerHTML = '<h2>Accounts (' + list.length + ')</h2>' +
         '<p class="muted">rows=' + list.length + ' admins=' + list.filter(function (a) { return a.role === 'admin'; }).length +
         ' banned=' + list.filter(function (a) { return a.banned; }).length + ' sessions=' + list.reduce(function (n, a) { return n + (a.signedIn || 0); }, 0) + ' store=kv:accounts</p>' +
         '<p>To change one account, press <b>manage</b> on its row. To message several at once, tick them and use the box above the table. ' +
         'New accounts and agent keys are at the bottom (<a href="#acc-add">jump</a>).</p>' +
-        '<div class="replies"></div>' +
-        '<div class="tablewrap"><table border="1" cellpadding="3"><thead><tr><th>uid</th><th>username</th><th>role</th><th>email</th><th class="num">sess</th><th>ops</th></tr></thead><tbody>' +
+        '<div class="tablewrap"><table border="1" cellpadding="3"><thead><tr><th>ID</th><th>Username</th><th>Role</th><th>Email</th><th class="num">Signed in</th><th>Actions</th></tr></thead><tbody>' +
         list.map(function (a) {
           var pending = a.note && !a.note.seen;
           return '<tr data-id="' + esc(a.id) + '"><td><code>' + esc(a.id) + '</code></td><td>' + esc(a.username) + (a.you ? ' <span class="muted">[self]</span>' : '') +
             (a.banned ? '<br><b class="ban-tag">BANNED ' + when(a.banned) + '</b>' : '') +
             (a.note ? '<br><span class="muted">' + (a.note.seen ? 'msg.read=' + when(a.note.seen) : 'msg.pending since ' + when(a.note.t)) + (a.note.ask ? ' ask=true' : '') + '</span>' : '') + '</td>' +
             '<td>' + esc(a.role) + '</td><td>' + emailCell(a) + '</td><td class="num">' + (a.signedIn || 0) + '</td>' +
-            '<td><details name="acct-ops"><summary>manage</summary>' +
+            '<td><details name="acct-ops"><summary>Manage</summary>' +
             '<fieldset><legend>login</legend>' +
               '<button type="button" class="pw">passwd: set new password</button> ' +
               '<button type="button" class="rename">mv: rename</button><br>' +
@@ -710,7 +709,6 @@
         '<label>role <select class="nr"><option value="user">user (normal)</option><option value="admin">admin (+ this console)</option></select></label> ' +
         '<button type="submit" class="add">POST: create account</button>' +
         '<p class="muted">role=user: full site access. role=admin: + /admin. Password min 6 chars.</p></fieldset></form>';
-      drawReplies();
       Array.prototype.forEach.call(abox.querySelectorAll('tr[data-id]'), function (tr) {
         var id = tr.getAttribute('data-id'), a = list.filter(function (x) { return x.id === id; })[0];
         function patch(body, msg) { return api('PATCH', 'accounts/' + id, body).then(function () { say(msg); loadAccounts(); }).catch(function (e) { say(e.message, true); loadAccounts(); }); }
@@ -990,5 +988,6 @@
   }
 
   // opens on the tab in the address (#accounts, #maintenance from the banner on the home page, …), else accounts
+  drawReplies();  // fills the Replies tab and its count badge
   show(TABS.indexOf(location.hash.slice(1)) >= 0 ? location.hash.slice(1) : 'accounts');
 })();
