@@ -43,7 +43,7 @@ fieldset { border: 1px solid var(--line); border-radius: 10px; margin: 10px 0; b
 legend { padding: 0 6px; font-weight: 700; font-size: 13px; color: var(--mut); }
 details > summary { cursor: pointer; font-weight: 600; }
 details[open] > summary { margin-bottom: 6px; }
-.ban-tag { color: var(--bad); font-weight: 700; }
+.ban-tag { color: var(--bad); font-weight: 700; } .ok-tag { color: var(--ok); font-weight: 700; }
 code, samp, pre { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: .9em; }
 pre#reqlog { max-height: 220px; overflow: auto; padding: 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--card); font-size: 12px; }
 dialog { border: 1px solid var(--line); border-radius: 16px; background: var(--card); color: var(--fg); max-width: min(560px, 94vw); padding: 20px; box-shadow: 0 20px 60px rgba(0,0,0,.2); }
@@ -74,3 +74,4 @@ hr { border: 0; border-top: 1px solid var(--line); margin: 24px 0 12px; }
   td[data-label]::before { content: attr(data-label) ": "; color: var(--mut); }
   td.num { text-align: left; }
 }
+dialog.mockdlg { max-width: min(860px, 96vw); width: 860px; }
