@@ -12,7 +12,7 @@ import { fixKey, fixScript } from './_lib/mockfix.js';
 import { whoCookie, whoTag } from './_lib/who.js';
 
 // what anyone can open without signing in (the login page, the front page and "Try a few questions", Privacy, Terms)
-const OPEN = new Set(['/login', '/login.html', '/login.js', '/hub.css', '/look.css', '/look.js', '/fonts.css', '/favicon.svg', '/favicon-32.png',
+const OPEN = new Set(['/login', '/login.html', '/login.js', '/hub.css', '/look.css', '/look.js', '/fonts.css', '/favicon.svg', '/favicon-32.png', '/favicon-32-dark.png',
   '/apple-touch-icon.png', '/og.png', '/sitemap.xml', '/api/login', '/api/signup', '/api/status',
   '/privacy', '/privacy.html', '/terms', '/terms.html', '/consent.js', '/press.js', '/api/reset',
   '/welcome', '/welcome.html', '/welcome.css', '/look-landing.css', '/try', '/try.html', '/try.js']);
@@ -20,7 +20,7 @@ const OPEN = new Set(['/login', '/login.html', '/login.js', '/hub.css', '/look.c
 // screenshot
 const TRY = p => /^\/try\/[a-z-]+\.webp$/.test(p);
 // what still works for everyone during maintenance (so an admin can sign in)
-const DURING_MAINTENANCE = new Set(['/press.js', '/og.png', '/sitemap.xml', '/login.js', '/hub.css', '/look.css', '/look.js', '/fonts.css', '/favicon.svg', '/favicon-32.png', '/apple-touch-icon.png',
+const DURING_MAINTENANCE = new Set(['/press.js', '/og.png', '/sitemap.xml', '/login.js', '/hub.css', '/look.css', '/look.js', '/fonts.css', '/favicon.svg', '/favicon-32.png', '/favicon-32-dark.png', '/apple-touch-icon.png',
   '/api/login', '/api/logout', '/api/status', '/privacy', '/privacy.html', '/terms', '/terms.html']);
 const ADMIN = p => p === '/admin' || p === '/admin.html' || p === '/admin.js' || p === '/admin.css' || p.startsWith('/api/admin/') || p.startsWith('/v/');
 // the deployment log's CSV and PDF records for the owner's Google Sheet: no sign-in (Google fetches them), the key in
