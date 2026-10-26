@@ -21,7 +21,7 @@ window.JBR_OFFLINE = (function () {
   var HUB_PAGES = ['/', '/settings', '/progress'];
   var HUB_FILES = ['/api/me', '/api/hub', '/api/prefs', '/api/account', '/study-meta.json', '/favicon.svg', '/favicon-32.png', '/offline.js'];
   // what a subject page only asks for later: the mock PDF maker and its fonts, the resource pages, the spec points
-  var LATER = ['assets/js/vendor/jspdf.umd.min.js?v=4.2.1', 'assets/js/mockpdf.js?v=3', 'data/spec-points.js?v=3', 'favicon.svg',
+  var LATER = ['assets/js/vendor/jspdf.umd.min.js?v=4.2.1', 'assets/js/mockpdf.js?v=3', 'data/spec-points.js?v=5', 'favicon.svg',
     'assets/fonts/exam-sans-regular.ttf?v=1', 'assets/fonts/exam-sans-bold.ttf?v=1', 'assets/fonts/exam-sans-italic.ttf?v=1',
     'assets/fonts/exam-sans-bolditalic.ttf?v=1', 'assets/fonts/barlow-regular.ttf?v=1', 'assets/fonts/barlow-medium.ttf?v=1',
     'assets/resources/periodic-table.png', 'assets/resources/maths-formulae.png'];
