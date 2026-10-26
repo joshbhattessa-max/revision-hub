@@ -197,7 +197,7 @@ export async function onRequest(ctx) {
   }
   // an account's handed-in mocks: see them, correct a score or grade, or remove one handed in by accident
   const mocksRoute = route.match(/^accounts\/([\w-]+)\/mocks(?:\/([\w.:-]{1,60}))?$/);
-  if (mocksRoute) return json(...await mockAdmin(env, mocksRoute[1], mocksRoute[2], method, body));
+  if (mocksRoute) return json(...await mockAdmin(env, mocksRoute[1], mocksRoute[2], method, body, new URL(request.url).searchParams));
   const clearRoute = route.match(/^accounts\/([\w-]+)\/clear-progress$/);
   if (clearRoute && method === 'POST') return json(...await clearProgress(env, clearRoute[1]));
   if (acct && method === 'DELETE') {
@@ -461,7 +461,7 @@ async function activityOf(env, account, days) {
   return { setup: true, days, events, papers, mocks, marked };
 }
 
-async function mockAdmin(env, id, mid, method, body) {
+async function mockAdmin(env, id, mid, method, body, query) {
   const a = (await getAccounts(env)).find(x => x.id === id);
   if (!a) return [{ error: 'No such account.' }, 404];
   const [prog, fix0] = await Promise.all([env.HUB_KV.get('prog:' + id, 'json'), env.HUB_KV.get(fixKey(id), 'json')]);
@@ -482,6 +482,7 @@ async function mockAdmin(env, id, mid, method, body) {
       const a = it.a || {}, got = Object.values(a).reduce((n, v) => n + (Number(v) || 0), 0), max = Number.isFinite(it.mk) ? it.mk : null;
       return { q: String(it.q || ''), parts: it.p || [], got, max, marked: Object.keys(a).length > 0, byPart: a };
     });
+    if (query.get('paper')) return [{ username: a.username, id: m.id, s: m.s, board: m.board || '', t: m.t, got: m.got, max: m.max, pct: m.pct, grade: m.grade || '', minutes: m.minutes || null, used: m.used != null ? m.used : null, paper: m.paper || null }];
     return [{ id: m.id, s: m.s, board: m.board || '', t: m.t, got: m.got, max: m.max, grade: m.grade || '', from: pp.from || '', qual: pp.qual || '', items }];
   }
   if (method === 'PATCH') {
