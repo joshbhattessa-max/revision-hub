@@ -73,9 +73,10 @@
       mdlg.querySelector('.ask-q').textContent = question;
       mdlg.querySelector('.msg-title').value = (n && n.title) || '';
       mdlg.querySelector('.msg-logo input').checked = !!(n && n.logo);
+      mdlg.querySelector('.msg-ask input').checked = !!(n && n.ask);
       med.innerHTML = (n && (n.html || esc(n.text || '').replace(/\n/g, '<br>'))) || '<p><br></p>';  // never empty, or it has no height to click
       mdlg.onclose = function () {
-        resolve(mdlg.returnValue === 'ok' ? { title: mdlg.querySelector('.msg-title').value.trim(), logo: mdlg.querySelector('.msg-logo input').checked, html: med.innerHTML } : null);
+        resolve(mdlg.returnValue === 'ok' ? { title: mdlg.querySelector('.msg-title').value.trim(), logo: mdlg.querySelector('.msg-logo input').checked, ask: mdlg.querySelector('.msg-ask input').checked, html: med.innerHTML } : null);
       };
       mdlg.returnValue = ''; mdlg.showModal(); med.focus();
     });
@@ -644,6 +645,25 @@
     if (!a.email) return '<span class="muted">null' + (a.mustVerify ? ' (required)' : '') + '</span>';
     return esc(a.email) + ' <span class="' + (a.emailVerified ? 'em-ok' : 'muted') + '">' + (a.emailVerified ? 'verified=1' : 'verified=0') + '</span>';
   }
+  // replies to messages that asked for one, newest first (each was also emailed to the owner)
+  function drawReplies() {
+    var box = abox.querySelector('.replies');
+    if (!box) return;
+    api('GET', 'replies').then(function (rs) {
+      if (!rs.length) { box.innerHTML = '<p class="muted">replies=0 (tick "ask for a reply" when writing a message)</p>'; return; }
+      box.innerHTML = '<h3>replies [' + rs.length + ']</h3><div class="tablewrap"><table border="1" cellpadding="3"><thead><tr><th>when</th><th>username</th><th>message</th><th>reply</th><th>emailed</th><th></th></tr></thead><tbody>' +
+        rs.map(function (r) {
+          return '<tr data-key="' + esc(r.key) + '"><td>' + when(r.t) + '</td><td>' + esc(r.username) + '</td><td>' + esc(r.title || '') + '</td><td style="white-space:pre-wrap">' + esc(r.text) +
+            '</td><td>' + (r.mailed ? 'yes' : 'no') + '</td><td><button type="button" class="rdel">delete</button></td></tr>';
+        }).join('') + '</tbody></table></div>';
+      Array.prototype.forEach.call(box.querySelectorAll('.rdel'), function (b) {
+        b.addEventListener('click', function () {
+          var key = b.closest('tr').getAttribute('data-key');
+          if (confirm('Delete this reply from the list? (The email stays in your inbox.)')) api('DELETE', 'replies/' + encodeURIComponent(key)).then(drawReplies).catch(function (e) { say(e.message, true); });
+        });
+      });
+    }).catch(function (e) { say(e.message, true); });
+  }
   function loadAccounts() {
     api('GET', 'accounts').then(function (list) {
       // one "manage" drop-down per row (only one open at a time), its buttons grouped by what they touch
@@ -652,12 +672,13 @@
         ' banned=' + list.filter(function (a) { return a.banned; }).length + ' sessions=' + list.reduce(function (n, a) { return n + (a.signedIn || 0); }, 0) + ' store=kv:accounts</p>' +
         '<p>To change one account, press <b>manage</b> on its row. To message several at once, tick them and use the box above the table. ' +
         'New accounts and agent keys are at the bottom (<a href="#acc-add">jump</a>).</p>' +
+        '<div class="replies"></div>' +
         '<div class="tablewrap"><table border="1" cellpadding="3"><thead><tr><th>uid</th><th>username</th><th>role</th><th>email</th><th class="num">sess</th><th>ops</th></tr></thead><tbody>' +
         list.map(function (a) {
           var pending = a.note && !a.note.seen;
           return '<tr data-id="' + esc(a.id) + '"><td><code>' + esc(a.id) + '</code></td><td>' + esc(a.username) + (a.you ? ' <span class="muted">[self]</span>' : '') +
             (a.banned ? '<br><b class="ban-tag">BANNED ' + when(a.banned) + '</b>' : '') +
-            (a.note ? '<br><span class="muted">' + (a.note.seen ? 'msg.read=' + when(a.note.seen) : 'msg.pending since ' + when(a.note.t)) + '</span>' : '') + '</td>' +
+            (a.note ? '<br><span class="muted">' + (a.note.seen ? 'msg.read=' + when(a.note.seen) : 'msg.pending since ' + when(a.note.t)) + (a.note.ask ? ' ask=true' : '') + '</span>' : '') + '</td>' +
             '<td>' + esc(a.role) + '</td><td>' + emailCell(a) + '</td><td class="num">' + (a.signedIn || 0) + '</td>' +
             '<td><details name="acct-ops"><summary>manage</summary>' +
             '<fieldset><legend>login</legend>' +
@@ -689,6 +710,7 @@
         '<label>role <select class="nr"><option value="user">user (normal)</option><option value="admin">admin (+ this console)</option></select></label> ' +
         '<button type="submit" class="add">POST: create account</button>' +
         '<p class="muted">role=user: full site access. role=admin: + /admin. Password min 6 chars.</p></fieldset></form>';
+      drawReplies();
       Array.prototype.forEach.call(abox.querySelectorAll('tr[data-id]'), function (tr) {
         var id = tr.getAttribute('data-id'), a = list.filter(function (x) { return x.id === id; })[0];
         function patch(body, msg) { return api('PATCH', 'accounts/' + id, body).then(function () { say(msg); loadAccounts(); }).catch(function (e) { say(e.message, true); loadAccounts(); }); }
