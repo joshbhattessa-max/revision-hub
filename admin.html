@@ -5,39 +5,43 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>jbr-hub/admin</title>
   <meta name="robots" content="noindex, nofollow">
-  <link rel="stylesheet" href="admin.css?v=2">
+  <link rel="stylesheet" href="fonts.css?v=3">
+  <link rel="stylesheet" href="admin.css?v=3">
   <script src="press.js?v=2" defer></script>
 </head>
 <body>
   <div class="admin">
     <header class="top">
-      <h1>jbr-hub :: admin</h1>
-      <div class="top-actions"><button type="button" class="quick-maint" hidden></button><a href="/">[exit to /]</a></div>
+      <h1>JB Revision admin</h1>
+      <div class="top-actions"><button type="button" class="quick-maint" hidden></button><a href="/">Back to site</a></div>
     </header>
-    <div class="sysbar">build=<span id="sys-build">…</span> · branch=<span id="sys-branch">…</span> · edge=<span id="sys-colo">…</span> · operator=<span id="sys-op">…</span> · utc=<span id="sys-utc">…</span></div>
-    <details class="help"><summary>help: what each tab is for</summary>
+    <div class="sysbar">build <span id="sys-build">…</span> · branch <span id="sys-branch">…</span> · edge <span id="sys-colo">…</span> · signed in as <span id="sys-op">…</span> · <span id="sys-utc">…</span> UTC</div>
+    <details class="help"><summary>What does each tab do?</summary>
       <dl>
-        <dt>[1] accounts</dt><dd>Everyone's account: set a password, rename, make admin, fix their handed-in mocks, message, sign out, ban or delete. Add an account or an agent key at the bottom.</dd>
-        <dt>[2] activity_log</dt><dd>Who is on the site right now and what they opened. Press <i>trace</i> on a row for one person's history.</dd>
-        <dt>[3] sessions</dt><dd>Every signed-in browser. Sign one out, or everyone except you.</dd>
-        <dt>[4] hub.json</dt><dd>The home page: its title, subject cards and your own links. Nothing changes on the site until you press <i>commit</i>.</dd>
-        <dt>[5] update_notes</dt><dd>The short "what's new" popup for accounts on the list.</dd>
-        <dt>[6] site_state</dt><dd>Maintenance page and the full takedown switch.</dd>
-        <dt>[7] telemetry</dt><dd>Visitor numbers (only people who accepted cookies).</dd>
+        <dt>Accounts</dt><dd>Everyone's account: set a password, rename, make admin, fix their handed-in mocks, message, sign out, ban or delete. Add an account or an agent key at the bottom.</dd>
+        <dt>Replies</dt><dd>Answers students typed back to your messages. They are kept here, not in the accounts list.</dd>
+        <dt>Activity</dt><dd>Who is on the site right now and what they opened. Press <i>trace</i> on a row for one person's history.</dd>
+        <dt>Sessions</dt><dd>Every signed-in browser. Sign one out, or everyone except you.</dd>
+        <dt>Home page</dt><dd>The home page: its title, subject cards and your own links. Nothing changes on the site until you press <i>commit</i>.</dd>
+        <dt>Update notes</dt><dd>The short "what's new" popup for accounts on the list.</dd>
+        <dt>Site status</dt><dd>Maintenance page and the full takedown switch.</dd>
+        <dt>Visitors</dt><dd>Visitor numbers (only people who accepted cookies).</dd>
       </dl>
-      <p>Keys: press 1 to 7 to switch tab (when you are not typing). Anything that can't be undone asks first. The result of every action shows in the status line under the tabs.</p>
+      <p>Keys: press 1 to 8 to switch tab (when you are not typing). Anything that can't be undone asks first. The result of every action shows in the status line under the tabs.</p>
     </details>
     <nav class="tabs" role="tablist" aria-label="Sections">
-      <button type="button" role="tab" data-tab="accounts" title="key 1">[1] accounts</button>
-      <button type="button" role="tab" data-tab="activity" title="key 2">[2] activity_log</button>
-      <button type="button" role="tab" data-tab="sessions" title="key 3">[3] sessions</button>
-      <button type="button" role="tab" data-tab="content" title="key 4">[4] hub.json</button>
-      <button type="button" role="tab" data-tab="updates" title="key 5">[5] update_notes</button>
-      <button type="button" role="tab" data-tab="maintenance" title="key 6">[6] site_state</button>
-      <button type="button" role="tab" data-tab="usage" title="key 7">[7] telemetry</button>
+      <button type="button" role="tab" data-tab="accounts" title="key 1">Accounts</button>
+      <button type="button" role="tab" data-tab="replies" title="key 2">Replies <span class="badge" hidden></span></button>
+      <button type="button" role="tab" data-tab="activity" title="key 3">Activity</button>
+      <button type="button" role="tab" data-tab="sessions" title="key 4">Sessions</button>
+      <button type="button" role="tab" data-tab="content" title="key 5">Home page</button>
+      <button type="button" role="tab" data-tab="updates" title="key 6">Update notes</button>
+      <button type="button" role="tab" data-tab="maintenance" title="key 7">Site status</button>
+      <button type="button" role="tab" data-tab="usage" title="key 8">Visitors</button>
     </nav>
     <p class="notice" role="status" aria-live="polite"><samp>status: ready</samp></p>
     <section id="tab-accounts" hidden></section>
+    <section id="tab-replies" hidden></section>
     <section id="tab-activity" hidden></section>
     <section id="tab-sessions" hidden></section>
     <section id="tab-content" hidden></section>
@@ -70,6 +74,6 @@
     <p>Fix a mock handed in by accident: change its marks or grade and press <i>save</i>, or <i>remove</i> it. The change shows on every device they use, from their next page.</p>
     <div class="mk-body"></div>
     <form method="dialog"><p><button type="submit">close</button></p></form></dialog>
-  <script src="admin.js?v=6"></script>
+  <script src="admin.js?v=7"></script>
 </body>
 </html>
