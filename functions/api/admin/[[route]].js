@@ -9,6 +9,7 @@
 //   GET    /api/admin/bans                   banned accounts (deleted ones too), their attempts, blocked internet addresses
 //   DELETE /api/admin/bans/ip/:ip             let that internet address make new accounts again
 //   POST   /api/admin/notes                  {ids, title, logo, html} one message to many accounts    POST /api/admin/notes/clear {ids}
+//   GET    /api/admin/replies                replies to "ask for a reply" messages, newest first    DELETE /api/admin/replies/:key
 //   GET    /api/admin/updates                the update list, what each account has read, the notes sent, deploys since the last
 //   PUT    /api/admin/updates/subs {ids}      who is on the update list    POST /api/admin/updates {bullets} sends a note to them
 //   PUT    /api/admin/updates/auto {on}       whether the notes are written and sent by themselves after each update
@@ -36,6 +37,7 @@ import { KEEP_DAYS, SITES, db as activityDb, forget as forgetActivity, schema as
 import { cleanHtml } from '../../_lib/richtext.js';
 import { applyFix, fixKey, setFixFlag, wipeProgress } from '../../_lib/mockfix.js';
 import { MAX_BULLETS, MAX_LEN, forgetUpd, getAuto, getLog, getSubs, listUpd, saveSubs, sendUpdate, setAuto, sinceLast, writeBullets } from '../../_lib/updates.js';
+import { listReplies } from '../../_lib/replies.js';
 import { ban, getBans, liftIp, unban } from '../../_lib/bans.js';
 import { changeAccounts, clearVerifyFlag, endSessions, getAccounts, hashPassword, hubContent, json, listSessions, randomToken, refreshNoteFlag, saveAccounts, setNoteFlag } from '../../_lib/auth.js';
 
@@ -77,6 +79,10 @@ export async function onRequest(ctx) {
       accounts: accounts.map(a => ({ id: a.id, username: a.username, role: a.role, banned: a.banned || null, upd: upd[a.id] || null })) });
   }
   if (route === 'updates/subs' && method === 'PUT') return json({ ok: true, subs: await saveSubs(env, body.ids) });
+  // replies the accounts typed into a message that asked for one (also emailed to the owner: _lib/replies.js)
+  if (route === 'replies' && method === 'GET') return json(await listReplies(env));
+  const repRoute = route.match(/^replies\/([\w:-]+)$/);
+  if (repRoute && method === 'DELETE') { await env.HUB_KV.delete('reply:' + repRoute[1]); return json({ ok: true }); }
   if (route === 'updates' && method === 'POST') return json(...await sendUpdate(env, body, me.username));
   if (route === 'updates/auto' && method === 'PUT') return json(await setAuto(env, !!body.on));
 
@@ -137,8 +143,8 @@ export async function onRequest(ctx) {
     // a title, the JBR logo or not, and the message with its formatting (only what richtext.js keeps)
     const title = String(body.title || '').trim().slice(0, 120), html = cleanHtml(body.html);
     if (!title && !html.replace(/<[^>]*>|&nbsp;|\s/g, '')) return json({ error: 'Write a message.' }, 400);
-    const rec = { title, logo: !!body.logo, html, t: Date.now() };
-    await env.HUB_KV.put('note:' + a.id, JSON.stringify(rec), { metadata: { t: rec.t, len: html.length } });
+    const rec = { title, logo: !!body.logo, html, t: Date.now(), ...(body.ask ? { ask: true } : {}) };
+    await env.HUB_KV.put('note:' + a.id, JSON.stringify(rec), { metadata: { t: rec.t, len: html.length, ...(rec.ask ? { ask: 1 } : {}) } });
     await setNoteFlag(env, a.id, true);
     return json({ ok: true });
   }
@@ -347,12 +353,12 @@ async function batchNotes(env, body, clear) {
   if (!clear) {
     const title = String(body.title || '').trim().slice(0, 120), html = cleanHtml(body.html);
     if (!title && !html.replace(/<[^>]*>|&nbsp;|\s/g, '')) return [{ error: 'Write a message.' }, 400];
-    rec = JSON.stringify({ title, logo: !!body.logo, html, t }); len = html.length;
+    rec = JSON.stringify({ title, logo: !!body.logo, html, t, ...(body.ask ? { ask: true } : {}) }); len = html.length;
   }
   const ids = new Set(accounts.map(a => a.id)), keep = new Set();
   for (const a of accounts) {
     if (clear) await env.HUB_KV.delete('note:' + a.id);
-    else await env.HUB_KV.put('note:' + a.id, rec, { metadata: { t, len } });
+    else await env.HUB_KV.put('note:' + a.id, rec, { metadata: { t, len, ...(body.ask ? { ask: 1 } : {}) } });
   }
   // after clearing, accounts with update notes waiting keep the flag (refreshNoteFlag, for many accounts at once)
   if (clear) for (const [id, u] of Object.entries(await listUpd(env))) if (ids.has(id) && !u.seen && u.n) keep.add(id);

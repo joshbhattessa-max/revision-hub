@@ -86,6 +86,8 @@ New accounts give an email address when they sign up and have to type in a 6-dig
 
 `contact@jbrevision.co.uk` is set up in Cloudflare Email Routing: its rule forwards every email to the owner's own inbox.
 
+Replies to admin messages ("ask for a reply") are emailed to `contact@jbrevision.co.uk` (or the `REPLY_TO_EMAIL` variable) through Resend, from `<account name> <replies@jbrevision.co.uk>`; this needs the same `RESEND_API_KEY` and verified domain as the sign-in codes.
+
 ## The address
 
 The hub lives at `jbrevision.co.uk` (bought through Cloudflare Registrar and added under the Pages project's *Custom domains*, with `www.jbrevision.co.uk` as well). Every subject is at `jbrevision.co.uk/chemistry/` and so on.
