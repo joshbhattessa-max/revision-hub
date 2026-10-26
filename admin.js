@@ -825,6 +825,15 @@
     }).catch(function (e) { mkbody.innerHTML = '<p><b>ERR</b> ' + esc(e.message) + '</p>'; });
   }
 
+  // where a subject's site lives on the hub (hub.json): a mock's subject key (chemistry, chemq...) -> /chemistry/
+  var siteBase = null;
+  function siteLink(s, mid, uid) {
+    var go = function (sites) {
+      var k = String(s || '').toLowerCase(), f = sites.filter(function (x) { return [x.path, String(x.name || '').toLowerCase(), String(x.name || '').toLowerCase().replace(/q$/, '')].indexOf(k) >= 0; })[0];
+      return f ? '/' + f.path + '/#/mock/past/' + encodeURIComponent(mid) + '/' + encodeURIComponent(uid) : '';
+    };
+    return siteBase ? Promise.resolve(go(siteBase)) : fetch('/hub.json', { credentials: 'same-origin' }).then(function (r) { return r.json(); }).then(function (h) { siteBase = h.sites || []; return go(siteBase); }).catch(function () { return ''; });
+  }
   // one mock opened up: every question on the paper and the marks they got, wrong ones first-class
   function viewMock(id, name, m) {
     mkbody.innerHTML = '<p class="muted">Loading the paper…</p>';
@@ -844,6 +853,10 @@
           d.items.map(row).join('') + '</tbody></table></div>' +
           '<p class="muted">Question text isn\'t stored on the hub, only its id. The student can reopen the paper itself from Past mocks on the subject site.</p>'
           : '<p>This mock was handed in before papers were kept, so only the score is stored.</p>');
+      siteLink(d.s, d.id, id).then(function (href) {
+        var h3 = mkbody.querySelector('h3');
+        if (href && h3) h3.insertAdjacentHTML('afterend', '<p><a href="' + esc(href) + '" target="_blank" rel="noopener"><b>Open the paper as they saw it</b></a> <span class="muted">(opens the subject site: every question picture, their marks, the mark scheme)</span></p>');
+      });
       mkbody.querySelector('.mk-back').addEventListener('click', function () { openMocks(id, name); });
     }).catch(function (e) { mkbody.innerHTML = '<p><b>ERR</b> ' + esc(e.message) + '</p>'; });
   }
