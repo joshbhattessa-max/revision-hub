@@ -82,7 +82,7 @@ export async function onRequestPost(ctx) {
     if (Number.isFinite(x.mk)) it.mk = x.mk;
     return it;
   }).filter(x => x.q) : [];
-  if (!b || typeof b.id !== 'string' || !/^[a-z]{2,20}$/.test(b.s || '') || !items.length) return json({ error: 'That wasn\'t a mock paper.' }, 400);
+  if (!b || typeof b.id !== 'string' || !/^[a-z]+(-[a-z]+)*$/.test(b.s || '') || !items.length) return json({ error: 'That wasn\'t a mock paper.' }, 400);
   const mineKey = 'shared:' + s.accountId + ':' + b.id.slice(0, 40);
   let code = await kv.get(mineKey), old = code ? await kv.get('share:' + code, 'json') : null;
   if (!old) {
@@ -94,7 +94,7 @@ export async function onRequestPost(ctx) {
   }
   const num = v => Number.isFinite(v) ? v : null;
   const sh = {
-    owner: s.accountId, by: s.username, t: old ? old.t : Date.now(), s: b.s, board: String(b.board || '').slice(0, 40), qual: String(b.qual || '').slice(0, 40),
+    owner: s.accountId, by: s.username, t: old ? old.t : Date.now(), s: String(b.s).slice(0, 30), board: String(b.board || '').slice(0, 40), qual: String(b.qual || '').slice(0, 40),
     total: num(b.total), minutes: num(b.minutes), from: String(b.from || '').slice(0, 160), items,
     showScore: !!b.showScore, score: num(b.got) != null && num(b.max) ? { got: b.got, max: b.max, pct: num(b.pct), grade: b.grade ? String(b.grade).slice(0, 4) : null } : null
   };
