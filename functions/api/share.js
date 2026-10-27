@@ -75,7 +75,7 @@ export async function onRequestPost(ctx) {
   if (text.length > MAX_BYTES) return json({ error: 'That mock is too big to share.' }, 413);
   let b;
   try { b = JSON.parse(text); } catch (e) { return json({ error: 'That wasn\'t a mock paper.' }, 400); }
-  if (b && b.board) return postBoard(ctx, b);
+  if (b && b.board === true) return postBoard(ctx, b);
   const items = Array.isArray(b && b.items) ? b.items.slice(0, 80).map(x => {
     const it = { q: String(x && x.q || '').slice(0, 120) };
     if (Array.isArray(x.p)) it.p = x.p.slice(0, 30).map(k => String(k).slice(0, 20));
