@@ -20,7 +20,6 @@ Before you start, the fourteen subject sites should already be on Cloudflare (ch
 
 Everything (the home page, every subject and the admin console) needs a sign-in. A sign-in lasts 6 hours.
 
-- **Signed out**, `https://jbrevision.co.uk/` shows the front page (`welcome.html`) instead of the home page: the tagline, a screenshot, the subjects, and buttons to sign up or **try a few questions** (`/try`, `try.html` + `try.js`). That page shows three fixed past-paper questions (Biology, Chemistry, Maths) with their mark schemes from `try/`, lets you tick your marks, then asks you to make an account. It never opens anything behind the sign-in, and the marks stay in that browser tab. To swap a question, replace its two pictures in `try/` and its line in `try.js`.
 
 - **Accounts to start with:** `JoshB` / `admin` (admin), `JoshB` / `normal` and `test` / `test` (standard). Change these weak passwords in the admin console once the site is up.
 - **Wrong passwords:** each address gets 10 wrong attempts at one account, and 60 in all, every 15 minutes. A school shares one address, so one pupil's typos don't lock out the class.

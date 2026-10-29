@@ -11,14 +11,10 @@ import { autoUpdate } from './_lib/updates.js';
 import { fixKey, fixScript } from './_lib/mockfix.js';
 import { whoCookie, whoTag } from './_lib/who.js';
 
-// what anyone can open without signing in (the login page, the front page and "Try a few questions", Privacy, Terms)
+// what anyone can open without signing in (the login page, Privacy, Terms)
 const OPEN = new Set(['/login', '/login.html', '/login.js', '/hub.css', '/look.css', '/look.js', '/fonts.css', '/favicon.svg', '/favicon-32.png', '/favicon-32-dark.png',
   '/apple-touch-icon.png', '/og.png', '/sitemap.xml', '/api/login', '/api/signup', '/api/status',
-  '/privacy', '/privacy.html', '/terms', '/terms.html', '/consent.js', '/press.js', '/api/reset',
-  '/welcome', '/welcome.html', '/welcome.css', '/look-landing.css', '/try', '/try.html', '/try.js']);
-// the pictures for "Try a few questions" (try.js): three fixed questions and their mark schemes, plus the front page's
-// screenshot
-const TRY = p => /^\/try\/[a-z-]+\.webp$/.test(p);
+  '/privacy', '/privacy.html', '/terms', '/terms.html', '/consent.js', '/press.js', '/api/reset']);
 // what still works for everyone during maintenance (so an admin can sign in)
 const DURING_MAINTENANCE = new Set(['/press.js', '/og.png', '/sitemap.xml', '/login.js', '/hub.css', '/look.css', '/look.js', '/fonts.css', '/favicon.svg', '/favicon-32.png', '/favicon-32-dark.png', '/apple-touch-icon.png',
   '/api/login', '/api/logout', '/api/status', '/privacy', '/privacy.html', '/terms', '/terms.html']);
@@ -84,14 +80,7 @@ export async function onRequest(ctx) {
     if (adminLogin) return ctx.next();
   }
   if (PRINT(path)) return ctx.next();
-  // signed out, the front page is the welcome page (welcome.html, with "Try a few questions"); signed in, it's the hub
-  if (!session && path === '/' && ['GET', 'HEAD'].includes(ctx.request.method)) {
-    const res = await ctx.env.ASSETS.fetch(new URL('/welcome', url));
-    const out = new Response(res.body, res);
-    out.headers.set('cache-control', 'private, no-store');
-    return withConsent(out);
-  }
-  if (OPEN.has(path) || path.startsWith('/fonts/') || path.startsWith('/look-fonts/') || SHEET(path) || TRY(path)) {
+  if (OPEN.has(path) || path.startsWith('/fonts/') || path.startsWith('/look-fonts/') || SHEET(path)) {
     if (session && isLogin) return Response.redirect(url.origin + safeNext(url), 302);  // (a key's cookie is set on its next page)
     return withConsent(await fresh(ctx, path));
   }
