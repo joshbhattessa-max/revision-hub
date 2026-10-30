@@ -33,11 +33,12 @@ import { forgetMaintenance, maintenance } from '../../_lib/maintenance.js';
 import { forgetTakedown, takedownState } from '../../_lib/takedown.js';
 import { getKeys, newKey, saveKeys, sha256 } from '../../_lib/keys.js';
 import { SOURCES, load as loadDeploys, sync as syncDeploys, upsert as upsertDeploys } from '../../_lib/deploylog.js';
-import { KEEP_DAYS, SITES, db as activityDb, forget as forgetActivity, schema as activitySchema } from '../../_lib/activity.js';
+import { KEEP_DAYS, SITES, db as activityDb, schema as activitySchema } from '../../_lib/activity.js';
 import { cleanHtml } from '../../_lib/richtext.js';
 import { applyFix, fixKey, setFixFlag, wipeProgress } from '../../_lib/mockfix.js';
-import { MAX_BULLETS, MAX_LEN, forgetUpd, getAuto, getLog, getSubs, listUpd, saveSubs, sendUpdate, setAuto, sinceLast, writeBullets } from '../../_lib/updates.js';
+import { MAX_BULLETS, MAX_LEN, getAuto, getLog, getSubs, listUpd, saveSubs, sendUpdate, setAuto, sinceLast, writeBullets } from '../../_lib/updates.js';
 import { listReplies } from '../../_lib/replies.js';
+import { forgetAccount } from '../../_lib/forget.js';
 import { ban, getBans, liftIp, unban } from '../../_lib/bans.js';
 import { changeAccounts, clearVerifyFlag, endSessions, getAccounts, hashPassword, hubContent, json, listSessions, randomToken, refreshNoteFlag, saveAccounts, setNoteFlag } from '../../_lib/auth.js';
 
@@ -209,13 +210,7 @@ export async function onRequest(ctx) {
       return json({ error: 'There must always be at least one admin account.' }, 400);
     await saveAccounts(env, list.filter(x => x.id !== a.id));
     await endSessions(env, s => s.accountId === a.id);
-    await env.HUB_KV.delete('prog:' + a.id);
-    await env.HUB_KV.delete('consent:' + a.id);
-    await env.HUB_KV.delete('ecode:' + a.id);
-    await env.HUB_KV.delete('note:' + a.id);
-    await env.HUB_KV.delete(fixKey(a.id));
-    await forgetUpd(env, a.id);
-    await forgetActivity(env, a.id);
+    await forgetAccount(env, a.id);
     return json({ ok: true });
   }
 

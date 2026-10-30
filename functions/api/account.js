@@ -5,9 +5,9 @@
 //                         {signOutOthers: true}  sign out every other device
 //                         {clearProgress: true, password}  wipe their questions marked and mocks (_lib/mockfix.js)
 //   DELETE /api/account   {password}            delete the account and sign it out everywhere
-import { forget as forgetActivity } from '../_lib/activity.js';
 import { changeAccounts, clearCookie, endSessions, getAccounts, hashPassword, json, listSessions, noteFailure, saveAccounts, tooManyFailures, verifyPassword } from '../_lib/auth.js';
 import { canSend } from '../_lib/email.js';
+import { forgetAccount } from '../_lib/forget.js';
 import { wipeProgress } from '../_lib/mockfix.js';
 
 async function mine(ctx, password) {
@@ -101,10 +101,6 @@ export async function onRequestDelete(ctx) {
     return json({ error: "This is the only admin account, so it can't be deleted." }, 400);
   await saveAccounts(ctx.env, list.filter(a => a.id !== account.id));
   await endSessions(ctx.env, s => s.accountId === account.id);
-  await ctx.env.HUB_KV.delete('prog:' + account.id);  // and its study progress
-  await ctx.env.HUB_KV.delete('prefs:' + account.id);  // and its settings
-  await ctx.env.HUB_KV.delete('consent:' + account.id);  // and its cookie-choice record
-  await ctx.env.HUB_KV.delete('ecode:' + account.id);  // and any email code waiting for it
-  await forgetActivity(ctx.env, account.id);  // and its activity (the pages it opened)
+  await forgetAccount(ctx.env, account.id);  // and everything kept for it (functions/_lib/forget.js)
   return json({ ok: true }, 200, { 'set-cookie': clearCookie() });
 }
