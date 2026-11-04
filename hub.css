@@ -466,3 +466,13 @@ html[data-look] .wrap.set { max-width: 800px !important; }
 }
 html[data-look] .set > header.top { margin-bottom: 32px !important; }
 html[data-look] .set-sec { overflow: hidden; }
+
+/* MTS Resources (/mts, mts.js) */
+.mts-pw { display: flex; gap: 8px; flex-wrap: wrap; }
+.mts-pw input { width: 220px; height: 36px; padding: 0 12px; border: 1px solid var(--hl, var(--line)); border-radius: var(--r-s, 8px); background: var(--pg, var(--bg)); color: inherit; font: inherit; }
+.mts-pw input:focus { outline: 2px solid var(--tx, var(--ink)); outline-offset: 1px; }
+.mts-err { margin: 8px 0 0; font-size: 14px; color: #d33c3c; }
+.mts-err:empty { display: none; }
+.mts-empty { padding: 24px; color: var(--mu, var(--muted)); font-size: 15px; line-height: 1.5; }
+.mts-subjects { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; padding: 16px 24px 24px; }
+@media (max-width: 575px) { .mts-pw input { width: 100%; } .set-row { padding: 16px; } }

@@ -20,7 +20,7 @@ async function dropPrefix(kv, prefix, also) {
 
 export async function forgetAccount(env, id) {
   const kv = env.HUB_KV;
-  for (const k of ['prog:', 'prefs:', 'consent:', 'ecode:', 'note:']) await kv.delete(k + id);
+  for (const k of ['prog:', 'prefs:', 'consent:', 'ecode:', 'note:', 'mts:']) await kv.delete(k + id);
   await kv.delete(fixKey(id));
   await forgetUpd(env, id);
   await dropPrefix(kv, 'reply:' + id + ':');   // its answers to admin messages
