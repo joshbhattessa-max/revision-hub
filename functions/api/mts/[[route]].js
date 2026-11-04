@@ -1,10 +1,9 @@
 // MTS Resources for the signed-in account (functions/_lib/mts.js):
-//   GET  /api/mts            { state: 'none' | 'pending' | 'granted', open }
-//   POST /api/mts/request    ask the admin for access
+//   GET  /api/mts            { state: 'granted', open }   (only the admin gives access; without it, all of this is 404)
 //   POST /api/mts/unlock     { password }  the account's own password, once per sign-in, after access is granted
 //   GET  /api/mts/content    what's inside (only once granted and opened)
 import { getAccounts, json, noteFailure, tooManyFailures, verifyPassword } from '../../_lib/auth.js';
-import { getMts, putMts, setMtsFlags } from '../../_lib/mts.js';
+import { getMts, setMtsFlags } from '../../_lib/mts.js';
 
 // the school's subjects and papers go here once they're added (kept off the public site; see the README)
 const CONTENT = { subjects: [] };
@@ -16,16 +15,11 @@ export async function onRequest(ctx) {
   const me = data.session;
   if (me.viaKey) return json({ error: 'Sign in with your username and password to use MTS Resources.' }, 403);
   const rec = await getMts(env, me.accountId);
-  const state = rec ? rec.state : 'none';
+  const state = rec && rec.state === 'granted' ? 'granted' : 'none';
+  if (state !== 'granted') return json({ error: 'Not found' }, 404);
   const open = state === 'granted' && !!me.mtsOpen;
 
   if (route === '' && method === 'GET') return json({ state, open, asked: rec ? rec.asked : null });
-
-  if (route === 'request' && method === 'POST') {
-    if (state !== 'none') return json({ state });
-    await putMts(env, me.accountId, { state: 'pending', asked: Date.now(), username: me.username });
-    return json({ state: 'pending' });
-  }
 
   if (route === 'unlock' && method === 'POST') {
     if (state !== 'granted') return json({ error: "You don't have access to MTS Resources yet." }, 403);
