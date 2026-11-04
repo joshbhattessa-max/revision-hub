@@ -783,6 +783,7 @@
         api('POST', 'accounts', { username: u, password: p, role: r }).then(function () { say('201 created username=' + u + ' role=' + r); loadAccounts(); }).catch(function (e) { say(e.message, true); });
       });
       addPicker(list);
+      loadMts(list);
       loadBans();
       loadKeys();
     }).catch(function (e) { say(e.message, true); });
@@ -936,6 +937,48 @@
           .catch(function (e) { say(e.message, true); });
     });
     count();
+  }
+
+  // MTS Resources (/mts): who asked for access, who has it, and a way to give it to any account. Approved accounts
+  // then type their own password on /mts to open it (functions/_lib/mts.js)
+  function loadMts(accounts) {
+    var mbox = document.createElement('div');
+    mbox.id = 'acc-mts';
+    var intro = abox.querySelector('.tablewrap');
+    abox.insertBefore(mbox, intro);
+    api('GET', 'mts').then(function (rows) {
+      var waiting = rows.filter(function (r) { return r.state === 'pending'; }).length;
+      var has = {}; rows.forEach(function (r) { has[r.id] = 1; });
+      mbox.innerHTML = '<h2>MTS Resources [' + rows.length + ']' + (waiting ? ' <b>' + waiting + ' waiting</b>' : '') + '</h2>' +
+        '<p>People ask for access on <a href="/mts">/mts</a>. <i>approve</i> lets them in: the MTS Resources link then shows in their top bar, and they type their own password on the page to open it. <i>remove</i> takes access away straight away.</p>' +
+        (rows.length ? '<div class="tablewrap"><table border="1" cellpadding="3"><thead><tr><th>Username</th><th>State</th><th>Asked</th><th>Approved</th><th></th></tr></thead><tbody>' +
+          rows.map(function (r) {
+            return '<tr><td>' + esc(r.username) + ' <span class="muted"><code>' + esc(r.id) + '</code></span></td><td>' + (r.state === 'pending' ? '<b>waiting</b>' : 'has access') + '</td><td>' + when(r.asked) + '</td><td>' + when(r.granted) + '</td><td>' +
+              (r.state === 'pending' ? '<button type="button" class="mts-ok" data-id="' + esc(r.id) + '" data-name="' + esc(r.username) + '">approve</button> <button type="button" class="mts-no" data-id="' + esc(r.id) + '" data-name="' + esc(r.username) + '" data-q="Turn down">turn down</button>'
+                : '<button type="button" class="mts-no" data-id="' + esc(r.id) + '" data-name="' + esc(r.username) + '" data-q="Take access away from">remove access</button>') + '</td></tr>';
+          }).join('') + '</tbody></table></div>' : '<p class="muted">Nobody has asked yet.</p>') +
+        '<form class="mts-give"><label>give access to <select><option value="">(pick an account)</option>' +
+          accounts.filter(function (a) { return !has[a.id] && !a.banned; }).map(function (a) { return '<option value="' + esc(a.id) + '">' + esc(a.username) + ' (' + esc(a.id) + ')</option>'; }).join('') +
+          '</select></label> <button type="submit">approve</button></form>';
+      function grant(id, name) {
+        api('POST', 'mts/' + encodeURIComponent(id)).then(function () { say('mts access granted to ' + name); loadAccounts(); }).catch(function (e) { say(e.message, true); });
+      }
+      Array.prototype.forEach.call(mbox.querySelectorAll('.mts-ok'), function (b) {
+        b.addEventListener('click', function () { grant(b.getAttribute('data-id'), b.getAttribute('data-name')); });
+      });
+      Array.prototype.forEach.call(mbox.querySelectorAll('.mts-no'), function (b) {
+        b.addEventListener('click', function () {
+          var name = b.getAttribute('data-name');
+          if (!confirm(b.getAttribute('data-q') + ' ' + name + '? (MTS Resources)')) return;
+          api('DELETE', 'mts/' + encodeURIComponent(b.getAttribute('data-id'))).then(function () { say('mts access removed for ' + name); loadAccounts(); }).catch(function (e) { say(e.message, true); });
+        });
+      });
+      mbox.querySelector('.mts-give').addEventListener('submit', function (e) {
+        e.preventDefault();
+        var sel = mbox.querySelector('.mts-give select');
+        if (sel.value) grant(sel.value, sel.options[sel.selectedIndex].text);
+      });
+    }).catch(function (e) { mbox.innerHTML = '<p class="muted">MTS Resources: ' + esc(e.message) + '</p>'; });
   }
 
   // bans: banned accounts (deleted ones too, whose ban still stands), their attempts since, and internet addresses that

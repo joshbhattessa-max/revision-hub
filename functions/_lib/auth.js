@@ -141,6 +141,10 @@ export async function createSession(env, account, request, dev) {
   // the admin removed or corrected one of its mocks: its pages fix the browser's copy too (_lib/mockfix.js)
   const fix = await env.HUB_KV.get('mockfix:' + account.id, 'json');
   if (fix) info.mockfix = fix.t;
+  // access to MTS Resources: its pages show the top-bar link (functions/_lib/mts.js); the password still has to be
+  // typed on /mts in each new sign-in
+  const mts = await env.HUB_KV.get('mts:' + account.id, 'json');
+  if (mts && mts.state === 'granted') info.mts = true;
   // the key expires with the session; the metadata lets the admin console list sessions without reading each one
   await env.HUB_KV.put('sess:' + token, JSON.stringify(info), { expiration: Math.floor(info.expires / 1000), metadata: info });
   return token;

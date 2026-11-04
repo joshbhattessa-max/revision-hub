@@ -29,6 +29,8 @@
 //   POST   /api/admin/deploylog                  {entries: [...], done: {repo: [shas]}} adds or fills in deployments
 //   POST   /api/admin/deploylog/sync             checks GitHub for new deployments now
 //   POST   /api/admin/deploylog/key              -> {key} (shown once) for the Google Sheet's links; the old one stops working
+//   GET    /api/admin/mts                         MTS Resources: who asked for access and who has it
+//   POST   /api/admin/mts/:id                     give access    DELETE /api/admin/mts/:id  turn down a request or take access away
 import { forgetMaintenance, maintenance } from '../../_lib/maintenance.js';
 import { forgetTakedown, takedownState } from '../../_lib/takedown.js';
 import { getKeys, newKey, saveKeys, sha256 } from '../../_lib/keys.js';
@@ -40,6 +42,7 @@ import { MAX_BULLETS, MAX_LEN, getAuto, getLog, getSubs, listUpd, saveSubs, send
 import { listReplies } from '../../_lib/replies.js';
 import { forgetAccount } from '../../_lib/forget.js';
 import { ban, getBans, liftIp, unban } from '../../_lib/bans.js';
+import { getMts, listMts, mtsKey, putMts, setMtsFlags } from '../../_lib/mts.js';
 import { changeAccounts, clearVerifyFlag, endSessions, getAccounts, hashPassword, hubContent, json, listSessions, randomToken, refreshNoteFlag, saveAccounts, setNoteFlag } from '../../_lib/auth.js';
 
 const ROLES = ['admin', 'user'];
@@ -305,6 +308,30 @@ export async function onRequest(ctx) {
     const key = randomToken(24);
     await env.HUB_KV.put('deploylog:key', await sha256(key));
     return json({ key });
+  }
+  // MTS Resources: who asked for access and who has it (functions/_lib/mts.js)
+  if (route === 'mts' && method === 'GET') {
+    const accounts = await getAccounts(env);
+    return json((await listMts(env)).map(r => {
+      const a = accounts.find(x => x.id === r.id);
+      return { id: r.id, username: a ? a.username : (r.username || '?'), gone: !a, state: r.state, asked: r.asked || null, granted: r.granted || null };
+    }).filter(r => !r.gone).sort((x, y) => (x.state === 'pending' ? 0 : 1) - (y.state === 'pending' ? 0 : 1) || (y.asked || 0) - (x.asked || 0)));
+  }
+  const mtsRoute = route.match(/^mts\/([\w-]+)$/);
+  if (mtsRoute && method === 'POST') {
+    // give access: to someone who asked, or straight to any account
+    const a = (await getAccounts(env)).find(x => x.id === mtsRoute[1]);
+    if (!a) return json({ error: 'No such account.' }, 404);
+    const old = await getMts(env, a.id);
+    await putMts(env, a.id, { state: 'granted', asked: (old && old.asked) || null, granted: Date.now(), username: a.username });
+    await setMtsFlags(env, a.id, { mts: true });
+    return json({ ok: true });
+  }
+  if (mtsRoute && method === 'DELETE') {
+    // turn down a request, or take access away (they're shut out straight away, even mid-session)
+    await env.HUB_KV.delete(mtsKey(mtsRoute[1]));
+    await setMtsFlags(env, mtsRoute[1], { mts: false, mtsOpen: false });
+    return json({ ok: true });
   }
   return json({ error: 'Not found' }, 404);
 }

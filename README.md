@@ -158,3 +158,9 @@ prints or saves it. The mark scheme goes at the back, or in a PDF of its own (th
   item by item, newest wins). Deleting an account deletes its progress.
 - `study-meta.json` and `study/<subject>.json` are built from the subject sites by `examq_cop/tools/build_study_meta.py`;
   grade boundaries and examiner-report notes go into each subject's `data/` with `examq_cop/tools/build_study_data.py`.
+
+### MTS Resources (/mts)
+
+A section only some accounts can see. Someone opens `/mts` and presses **Request access**. Their request shows in **Admin console → Accounts → MTS Resources**, where you **approve** or **turn it down** (you can also give access straight to any account there, or **remove access** later, which shuts them out at once). Once approved, an **MTS Resources** link appears in their top bar on the home page and on every subject site, next to *Mock paper*; nobody else sees it. Opening it asks for their own account password again, once per sign-in.
+
+The middleware adds `mts-nav.js` (the link) only to sessions that have access. Access is kept in KV as `mts:<accountId>` and deleted with the account. Code: `mts.html`, `mts.js`, `mts-nav.js`, `functions/api/mts/`, `functions/_lib/mts.js`, and the MTS part of `admin.js`. The school's papers are never put in this repository (it's public): they'll be served only through `/api/mts/` to accounts that have opened the section.

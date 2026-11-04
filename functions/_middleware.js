@@ -125,7 +125,7 @@ export async function onRequest(ctx) {
   // (a past version keeps its own pages as they were, without today's cookie popup; the admin console stays bare HTML
   // with no CSS, so it gets none of the styled popups either)
   if (path.startsWith('/v/') || path === '/admin' || path === '/admin.html') return out;
-  return session.mockfix ? withFix(withConsent(out, true, session.note), ctx.env, session.accountId) : withConsent(out, true, session.note);
+  return session.mockfix ? withFix(withConsent(out, true, session.note, session.mts), ctx.env, session.accountId) : withConsent(out, true, session.note, session.mts);
 }
 
 // the admin removed or corrected one of this account's mocks: the page fixes the browser's copy of its progress first,
@@ -155,11 +155,12 @@ async function fresh(ctx, path) {
 
 // every page (the main site's and the subject sites' it serves) gets the cookie popup, consent.js; signed-in pages
 // also get activity.js, which tells the admin console's Activity tab what's being opened (functions/api/activity.js),
-// and note.js while a message from the admin console is waiting for them (functions/api/note.js)
-function withConsent(res, signedIn, note) {
+// and note.js while a message from the admin console is waiting for them (functions/api/note.js), and mts-nav.js
+// (the MTS Resources link in the top bar) only for accounts the admin gave access to (functions/_lib/mts.js)
+function withConsent(res, signedIn, note, mts) {
   if (res.status !== 200 || !(res.headers.get('content-type') || '').includes('text/html')) return res;
   const scripts = '<script src="/consent.js?v=2" defer></script><script src="/press.js?v=2" defer></script>' + (signedIn ? '<script src="/activity.js?v=1" defer></script>' : '') +
-    (note ? '<script src="/note.js?v=4" defer></script>' : '');
+    (note ? '<script src="/note.js?v=4" defer></script>' : '') + (mts ? '<script src="/mts-nav.js?v=1" defer></script>' : '');
   return new HTMLRewriter().on('body', { element(e) { e.append(scripts, { html: true }); } }).transform(res);
 }
 
