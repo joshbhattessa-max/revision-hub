@@ -5,8 +5,8 @@
 import { getAccounts, json, noteFailure, tooManyFailures, verifyPassword } from '../../_lib/auth.js';
 import { getMts, setMtsFlags } from '../../_lib/mts.js';
 
-// the school's subjects and papers go here once they're added (kept off the public site; see the README)
-const CONTENT = { subjects: [] };
+// the subjects; their questions live in the private mtsq site, served at /mts/<subject>/ (functions/mts/[[path]].js)
+const CONTENT = { subjects: [{ name: 'Maths', href: '/mts/maths/' }] };
 
 export async function onRequest(ctx) {
   const { request, env, params, data } = ctx;

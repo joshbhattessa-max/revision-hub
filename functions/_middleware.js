@@ -99,7 +99,9 @@ export async function onRequest(ctx) {
   // the revision planner was removed: old links and bookmarks go to the home page
   if (path === '/planner' || path === '/planner.html') return Response.redirect(url.origin + '/', 302);
   // MTS Resources is only for accounts the admin gave access to: for anyone else it doesn't exist (functions/_lib/mts.js)
-  if (MTS(path) && !session.mts) {
+  // its subjects (/mts/maths/...) also need the password typed on /mts this sign-in (functions/mts/[[path]].js)
+  if (path.startsWith('/mts/') && session.mts && !session.mtsOpen) return Response.redirect(url.origin + '/mts', 302);
+  if ((MTS(path) || path.startsWith('/mts/')) && !session.mts) {
     if (path.startsWith('/api/')) return json({ error: 'Not found' }, 404);
     return new Response(notFoundPage(url.pathname), { status: 404, headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store' } });
   }
