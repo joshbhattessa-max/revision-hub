@@ -18,6 +18,7 @@ const OPEN = new Set(['/login', '/login.html', '/login.js', '/hub.css', '/look.c
 // what still works for everyone during maintenance (so an admin can sign in)
 const DURING_MAINTENANCE = new Set(['/press.js', '/og.png', '/sitemap.xml', '/login.js', '/hub.css', '/look.css', '/look.js', '/fonts.css', '/favicon.svg', '/favicon-32.png', '/favicon-32-dark.png', '/apple-touch-icon.png',
   '/api/login', '/api/logout', '/api/status', '/privacy', '/privacy.html', '/terms', '/terms.html']);
+const MTS = p => ['/mts', '/mts.html', '/mts.js', '/mts-nav.js', '/api/mts'].includes(p) || p.startsWith('/api/mts/');
 const ADMIN = p => p === '/admin' || p === '/admin.html' || p === '/admin.js' || p === '/admin.css' || p.startsWith('/api/admin/') || p.startsWith('/v/');
 // the deployment log's CSV and PDF records for the owner's Google Sheet: no sign-in (Google fetches them), the key in
 // the address protects them (functions/deploys/)
@@ -97,6 +98,11 @@ export async function onRequest(ctx) {
   }
   // the revision planner was removed: old links and bookmarks go to the home page
   if (path === '/planner' || path === '/planner.html') return Response.redirect(url.origin + '/', 302);
+  // MTS Resources is only for accounts the admin gave access to: for anyone else it doesn't exist (functions/_lib/mts.js)
+  if (MTS(path) && !session.mts) {
+    if (path.startsWith('/api/')) return json({ error: 'Not found' }, 404);
+    return new Response(notFoundPage(url.pathname), { status: 404, headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store' } });
+  }
   // a past version of the site (/v/) only reads: nothing it sends can change anything
   if (!['GET', 'HEAD'].includes(ctx.request.method) && /^\/v\//.test(refererPath(ctx.request, url))) {
     return json({ error: 'This is a past version of the site, so nothing is saved.' }, 403);

@@ -1,6 +1,7 @@
-// MTS Resources (/mts): a section only some accounts can see. Someone asks for access on /mts, the admin approves it
-// in the admin console (Accounts → MTS Resources), and then they type their own password again on /mts to open it.
-//   KV mts:<accountId> = { state: 'pending' | 'granted', asked, granted? }   (the metadata holds the same, for listing)
+// MTS Resources (/mts): a section only some accounts can see. Only the admin gives access (admin console → Accounts →
+// MTS Resources); nobody can ask for it, and for everyone else /mts is a missing page. With access, they type their own
+// password again on /mts to open it.
+//   KV mts:<accountId> = { state: 'granted', granted }   (the metadata holds the same, for listing)
 //   sessions carry  mts: true   while the account has access (so every page shows the top-bar link, mts-nav.js)
 //               and mtsOpen: true once the password was typed in that session (it lasts as long as the sign-in)
 import { listSessions } from './auth.js';

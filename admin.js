@@ -950,13 +950,13 @@
       var waiting = rows.filter(function (r) { return r.state === 'pending'; }).length;
       var has = {}; rows.forEach(function (r) { has[r.id] = 1; });
       mbox.innerHTML = '<h2>MTS Resources [' + rows.length + ']' + (waiting ? ' <b>' + waiting + ' waiting</b>' : '') + '</h2>' +
-        '<p>People ask for access on <a href="/mts">/mts</a>. <i>approve</i> lets them in: the MTS Resources link then shows in their top bar, and they type their own password on the page to open it. <i>remove</i> takes access away straight away.</p>' +
+        '<p>Only you can give access: pick an account below. The MTS Resources link then shows in their top bar, and they type their own password on the page to open it. For everyone else <a href="/mts">/mts</a> is a missing page. <i>remove access</i> shuts them out straight away.</p>' +
         (rows.length ? '<div class="tablewrap"><table border="1" cellpadding="3"><thead><tr><th>Username</th><th>State</th><th>Asked</th><th>Approved</th><th></th></tr></thead><tbody>' +
           rows.map(function (r) {
             return '<tr><td>' + esc(r.username) + ' <span class="muted"><code>' + esc(r.id) + '</code></span></td><td>' + (r.state === 'pending' ? '<b>waiting</b>' : 'has access') + '</td><td>' + when(r.asked) + '</td><td>' + when(r.granted) + '</td><td>' +
               (r.state === 'pending' ? '<button type="button" class="mts-ok" data-id="' + esc(r.id) + '" data-name="' + esc(r.username) + '">approve</button> <button type="button" class="mts-no" data-id="' + esc(r.id) + '" data-name="' + esc(r.username) + '" data-q="Turn down">turn down</button>'
                 : '<button type="button" class="mts-no" data-id="' + esc(r.id) + '" data-name="' + esc(r.username) + '" data-q="Take access away from">remove access</button>') + '</td></tr>';
-          }).join('') + '</tbody></table></div>' : '<p class="muted">Nobody has asked yet.</p>') +
+          }).join('') + '</tbody></table></div>' : '<p class="muted">Nobody has access yet.</p>') +
         '<form class="mts-give"><label>give access to <select><option value="">(pick an account)</option>' +
           accounts.filter(function (a) { return !has[a.id] && !a.banned; }).map(function (a) { return '<option value="' + esc(a.id) + '">' + esc(a.username) + ' (' + esc(a.id) + ')</option>'; }).join('') +
           '</select></label> <button type="submit">approve</button></form>';
