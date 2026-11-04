@@ -1,5 +1,5 @@
 // MTS Resources' subjects (/mts/<subject>/...), served from the private mtsq site (its own Cloudflare Pages project,
-// MTS_ORIGIN, default https://mtsq.pages.dev). The middleware only lets accounts the admin gave access to, and that
+// at the address in MTS_ORIGIN, which must be set). The middleware only lets accounts the admin gave access to, and that
 // have typed their password on /mts this sign-in, get this far (functions/_lib/mts.js).
 const PASS_HEADERS = ['accept', 'accept-encoding', 'accept-language', 'range', 'user-agent'];
 
@@ -10,7 +10,12 @@ export async function onRequest(ctx) {
   if (!rest || rest === '/' || !['GET', 'HEAD'].includes(ctx.request.method)) return ctx.next();
   const s = ctx.data.session;
   if (!s || !s.mts || !s.mtsOpen) return Response.redirect(url.origin + '/mts', 302);
-  const origin = (ctx.env.MTS_ORIGIN || 'https://mtsq.pages.dev').replace(/\/+$/, '');
+  // the address must be set on purpose: never guess it (mtsq.pages.dev belongs to someone else, and the shared secret
+  // is sent with every request)
+  if (!/^https:\/\/[\w.-]+$/.test((ctx.env.MTS_ORIGIN || '').replace(/\/+$/, ''))) {
+    return new Response('MTS Resources isn\'t set up yet.', { status: 503, headers: { 'content-type': 'text/plain; charset=utf-8', 'cache-control': 'no-store' } });
+  }
+  const origin = ctx.env.MTS_ORIGIN.replace(/\/+$/, '');
   const headers = new Headers();
   for (const h of PASS_HEADERS) {
     const v = ctx.request.headers.get(h);
