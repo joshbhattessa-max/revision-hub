@@ -30,6 +30,8 @@
 //   POST   /api/admin/deploylog/sync             checks GitHub for new deployments now
 //   POST   /api/admin/deploylog/key              -> {key} (shown once) for the Google Sheet's links; the old one stops working
 //   GET    /api/admin/mts                         MTS Resources: who asked for access and who has it
+//   GET    /api/admin/papers                       past papers: the bucket (if bound), host/link switch, how many are copied
+//   PUT    /api/admin/papers {mode: host|link}     POST /api/admin/papers/copy {urls: [/papers/... up to 10]} copies them in now
 //   POST   /api/admin/mts/:id                     give access    DELETE /api/admin/mts/:id  turn down a request or take access away
 import { forgetMaintenance, maintenance } from '../../_lib/maintenance.js';
 import { forgetTakedown, takedownState } from '../../_lib/takedown.js';
@@ -42,6 +44,7 @@ import { MAX_BULLETS, MAX_LEN, getAuto, getLog, getSubs, listUpd, saveSubs, send
 import { listReplies } from '../../_lib/replies.js';
 import { forgetAccount } from '../../_lib/forget.js';
 import { ban, getBans, liftIp, unban } from '../../_lib/bans.js';
+import { copyPaper, papersState, parsePaper, setPapersMode } from '../../_lib/papers.js';
 import { getMts, listMts, mtsKey, putMts, setMtsFlags } from '../../_lib/mts.js';
 import { changeAccounts, clearVerifyFlag, endSessions, getAccounts, hashPassword, hubContent, json, listSessions, randomToken, refreshNoteFlag, saveAccounts, setNoteFlag } from '../../_lib/auth.js';
 
@@ -246,6 +249,22 @@ export async function onRequest(ctx) {
       until: on && minutes ? Date.now() + minutes * 60000 : null }));
     forgetMaintenance();
     return json(await maintenance(ctx, true));
+  }
+
+  if (route === 'papers' && method === 'GET') return json(await papersState(env));
+  if (route === 'papers' && method === 'PUT') {
+    await setPapersMode(env, body.mode);
+    return json(await papersState(env));
+  }
+  if (route === 'papers/copy' && method === 'POST') {
+    if (!env.PAPERS) return json({ error: 'No R2 bucket is bound as PAPERS yet.' }, 400);
+    const urls = (Array.isArray(body.urls) ? body.urls : []).slice(0, 10);
+    const done = await Promise.all(urls.map(async u => {
+      const p = parsePaper(String(u).split('#')[0]);
+      if (!p) return { url: u, ok: false, status: 400 };
+      return { url: u, ...(await copyPaper(env, p).catch(() => ({ ok: false, status: 502 }))) };
+    }));
+    return json({ done });
   }
 
   if (route === 'takedown' && method === 'GET') return json(await takedownState(env));

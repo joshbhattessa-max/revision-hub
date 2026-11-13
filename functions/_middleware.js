@@ -126,7 +126,8 @@ export async function onRequest(ctx) {
     return nf;
   }
   const out = new Response(res.body, res);
-  out.headers.set('cache-control', 'private, no-store');
+  // past papers never change at the same address, so this browser may keep them for a while (functions/_lib/papers.js)
+  if (!path.startsWith('/papers/')) out.headers.set('cache-control', 'private, no-store');
   if (keyCookie) out.headers.append('set-cookie', keyCookie);
   if (devCookie) out.headers.append('set-cookie', devCookie);
   if (who) out.headers.append('set-cookie', who);

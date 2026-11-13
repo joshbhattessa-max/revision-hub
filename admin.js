@@ -451,6 +451,7 @@
   function loadMaintenance() {
     api('GET', 'maintenance').then(drawMaintenance).catch(function (e) { say(e.message, true); });
     api('GET', 'takedown').then(drawTakedown).catch(function (e) { say(e.message, true); });
+    api('GET', 'papers').then(drawPapers).catch(function (e) { say(e.message, true); });
   }
 
   // takedown: a plain "This site has been taken down" page for everyone but admins, until it's turned off here
@@ -517,6 +518,73 @@
       put(!m.byAdmin);
     });
     mbox.querySelector('.savemsg').addEventListener('click', function () { put(m.byAdmin); });
+  }
+
+  // ------------------------------------------------------------------ past papers (functions/_lib/papers.js)
+  // where the PDFs behind every Papers tab and "Original paper" link come from: this site's R2 bucket (PAPERS), or a
+  // redirect to where they were found (Physics & Maths Tutor, the exam boards)
+  var pbox = document.getElementById('papers-box'), pCopying = false;
+  var PAPER_HOSTS = ['pmt.physicsandmathstutor.com', 'qualifications.pearson.com', 'cdn.sanity.io', 'www.ocr.org.uk', 'filestore.aqa.org.uk', 'www.aqa.org.uk', 'cdn.savemyexams.com'];
+  function paperPath(u) { var m = /^https?:\/\/([^/]+)(\/.*)$/.exec(u || ''); return m && PAPER_HOSTS.indexOf(m[1].toLowerCase()) >= 0 ? '/papers/' + m[1].toLowerCase() + m[2].split('#')[0] : null; }
+  function mb(n) { return (n / 1048576).toFixed(n > 1073741824 ? 0 : 1) + ' MB'; }
+  function drawPapers(p) {
+    pbox.innerHTML = '<fieldset><legend>papers: where past paper PDFs come from</legend>' +
+      '<p><b><samp>PAPERS_BUCKET = ' + (p.bucket ? 'bound' : 'not bound') + ' · MODE = ' + esc(p.mode) + '</samp></b></p>' +
+      (p.bucket ? '<p>' + p.count.toLocaleString('en-GB') + ' PDFs copied to the site, ' + mb(p.bytes) + '.</p>'
+        : '<p class="muted">No R2 bucket bound as PAPERS, so every paper link goes to where it was found (Physics &amp; Maths Tutor, the boards). ' +
+          'To host them here: Cloudflare → R2 → create bucket <code>jbr-papers</code>; then Pages project → Settings → Bindings → add R2 bucket, variable name <code>PAPERS</code>; redeploy.</p>') +
+      '<p><button type="button" class="pmode">' + (p.mode === 'link' ? 'set mode=host: serve papers from this site' : 'set mode=link: send people to the source instead') + '</button></p>' +
+      '<p class="muted">host: a paper not copied yet is copied the first time anyone opens it. link: every paper redirects to its source (use this if a board asks for its papers to be taken down).</p>' +
+      (p.bucket ? '<p><button type="button" class="pcopy"' + (pCopying ? ' disabled' : '') + '>POST copy: copy every paper of every subject now</button> <span class="pprog muted"></span></p>' : '') +
+      '</fieldset>';
+    pbox.querySelector('.pmode').addEventListener('click', function () {
+      api('PUT', 'papers', { mode: p.mode === 'link' ? 'host' : 'link' }).then(function (s) { drawPapers(s); say('papers mode=' + s.mode); }).catch(function (e) { say(e.message, true); });
+    });
+    var cb = pbox.querySelector('.pcopy');
+    if (cb) cb.addEventListener('click', function () {
+      if (!confirm('Copy every past paper (about 12,000 PDFs, roughly 7 GB) into the bucket now? Keep this tab open; it takes a while.')) return;
+      copyAllPapers(pbox.querySelector('.pprog'));
+    });
+  }
+  // every subject's paper list (its data/questions.js), then 10 at a time through /api/admin/papers/copy
+  function copyAllPapers(prog) {
+    pCopying = true;
+    var urls = [], seen = {}, failed = 0, done = 0;
+    prog.textContent = 'reading the subjects…';
+    fetch('/hub.json', { credentials: 'same-origin' }).then(function (r) { return r.json(); }).then(function (hub) {
+      return (hub.sites || []).reduce(function (chain, site) {
+        return chain.then(function () {
+          prog.textContent = 'reading ' + site.name + '…';
+          return fetch('/' + site.path + '/data/questions.js', { credentials: 'same-origin' }).then(function (r) { return r.text(); }).then(function (t) {
+            var d = JSON.parse(t.slice(t.indexOf('{'), t.lastIndexOf('}') + 1));
+            (d.papers || []).forEach(function (p) {
+              [p[6], p[7], p[8]].forEach(function (u) {
+                var x = u && paperPath(/^https?:/.test(u) ? u : d.urlBase + u);
+                if (x && !seen[x]) { seen[x] = 1; urls.push(x); }
+              });
+            });
+          }).catch(function () { /* a subject that won't load is skipped */ });
+        });
+      }, Promise.resolve());
+    }).then(function () {
+      var i = 0;
+      function next() {
+        if (i >= urls.length) return Promise.resolve();
+        var batch = urls.slice(i, i + 10); i += 10;
+        return api('POST', 'papers/copy', { urls: batch }).then(function (r) {
+          (r.done || []).forEach(function (x) { if (x.ok) done++; else failed++; });
+        }, function () { failed += batch.length; }).then(function () {
+          prog.textContent = (done + failed).toLocaleString('en-GB') + ' of ' + urls.length.toLocaleString('en-GB') + ' · ' + failed + ' failed';
+          return next();
+        });
+      }
+      // four batches at a time
+      return Promise.all([next(), next(), next(), next()]);
+    }).then(function () {
+      pCopying = false;
+      say('papers copied: ' + done + ', failed: ' + failed);
+      api('GET', 'papers').then(drawPapers);
+    }, function (e) { pCopying = false; say(e.message, true); });
   }
 
   // ------------------------------------------------------------------ update notes
