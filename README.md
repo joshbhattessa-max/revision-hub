@@ -44,6 +44,15 @@ Every signed-in page gets `activity.js` (added by the middleware), which sends `
 
 Without the binding nothing is recorded and the tab shows these steps. Deleting an account deletes its activity. Code: `activity.js`, `functions/api/activity.js`, `functions/_lib/activity.js`, and the Activity tab in `admin.js`.
 
+### Past papers (/papers/)
+
+Every past paper the subject sites link to (their **Papers** tab, and "Original paper" / "Mark scheme" on each question) is opened through this site at `/papers/<host>/<path>`, for signed-in accounts only. Where the PDF comes from (`functions/_lib/papers.js`):
+
+- **With an R2 bucket bound as `PAPERS`** (and the admin console's papers switch on `host`, the default): from the bucket. A paper that isn't in it yet is copied in from where it was found (Physics & Maths Tutor, AQA, Pearson, OCR) the first time anyone opens it, or all at once with *Maintenance → papers → copy every paper* (about 12,000 PDFs, ~7 GB, inside R2's free 10 GB).
+- **Without the bucket, or with the switch on `link`**: a redirect to where it was found, as before.
+
+To set it up once: Cloudflare dashboard → *R2* → *Create bucket* `jbr-papers`; the hub's Pages project → *Settings* → *Bindings* → *Add* → *R2 bucket*: name `PAPERS`, pick `jbr-papers`; *Deployments* → *Retry deployment*. Only the hosts in `HOSTS` are ever fetched.
+
 ### Access keys for agents
 
 For an AI agent (like a Claude agent) or a script, create a key in **Admin console → Accounts → Access keys for agents**. A key works like a standard account, never an admin one, and is shown once:
