@@ -126,8 +126,9 @@ export async function onRequest(ctx) {
     return nf;
   }
   const out = new Response(res.body, res);
-  // past papers never change at the same address, so this browser may keep them for a while (functions/_lib/papers.js)
-  if (!path.startsWith('/papers/')) out.headers.set('cache-control', 'private, no-store');
+  // past papers set their own caching (functions/_lib/papers.js); vendor/ files have the version in their name, so the
+  // browser may keep them (Pages' own revalidate-every-time default)
+  if (!path.startsWith('/papers/') && !path.startsWith('/vendor/')) out.headers.set('cache-control', 'private, no-store');
   if (keyCookie) out.headers.append('set-cookie', keyCookie);
   if (devCookie) out.headers.append('set-cookie', devCookie);
   if (who) out.headers.append('set-cookie', who);

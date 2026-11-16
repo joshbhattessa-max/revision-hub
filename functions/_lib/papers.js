@@ -7,6 +7,12 @@
 //     was found the first time anyone opens it (or all at once with the admin console's "copy every paper now").
 //   - otherwise (no bucket, or the switch on "link"): a redirect to the place it was found, as before.
 // Only the hosts below are ever fetched, so the address can't be used to fetch anything else.
+//
+// Dark papers (Settings → Study → Dark papers, prefs darkPapers 'on'): opening a paper in the browser gets a small page
+// instead (darkPage), which fetches the same address with ?raw and makes a dark copy in the browser (/papers-dark.js).
+// ?raw always answers with the PDF itself, fetched through this site even when papers are only linked, because the
+// page can't read a PDF from another site. PDFs are sent with no-cache (and an ETag), so turning the setting on or off
+// takes effect straight away instead of the browser showing the copy it kept.
 export const HOSTS = ['pmt.physicsandmathstutor.com', 'qualifications.pearson.com', 'cdn.sanity.io', 'www.ocr.org.uk',
   'filestore.aqa.org.uk', 'www.aqa.org.uk', 'cdn.savemyexams.com'];
 const MODE_KEY = 'papers:mode';
@@ -44,7 +50,7 @@ function pdfHeaders(key, obj) {
   const h = new Headers({
     'content-type': 'application/pdf',
     'content-disposition': 'inline; filename="' + fileName(key) + '"',
-    'cache-control': 'private, max-age=604800',
+    'cache-control': 'private, no-cache',
     'x-robots-tag': 'noindex, nofollow',
     'accept-ranges': 'bytes',
   });
@@ -80,11 +86,17 @@ export async function servePaper(ctx) {
   const url = new URL(request.url);
   const p = parsePaper(url.pathname);
   if (!p) return new Response('Not a past paper this site knows about.', { status: 404, headers: { 'content-type': 'text/plain; charset=utf-8' } });
+  const raw = url.searchParams.has('raw');
+  if (!raw && opensAsPage(request) && await darkOn(ctx)) return darkPage(p, url);
   if (!env.PAPERS || await papersMode(env) === 'link') {
-    return new Response(null, { status: 302, headers: { location: p.source, 'cache-control': 'private, max-age=300' } });
+    if (raw) return proxySource(p, request);
+    return new Response(null, { status: 302, headers: { location: p.source, 'cache-control': 'private, no-cache' } });
   }
   const range = rangeOf(request);
-  let obj = await env.PAPERS.get(p.key, range ? { range } : {});
+  const got = await env.PAPERS.get(p.key, { range: range || undefined, onlyIf: request.headers });
+  // the browser's copy is still right (If-None-Match matched): no body
+  if (got && !('body' in got)) return new Response(null, { status: 304, headers: pdfHeaders(p.key, got) });
+  let obj = got;
   if (!obj) {
     const c = await copyPaper(env, p).catch(() => ({ ok: false }));
     // couldn't copy it (the source is down or moved it): send them to the source rather than a dead end
@@ -103,6 +115,75 @@ export async function servePaper(ctx) {
   }
   h.set('content-length', String(obj.size));
   return new Response(obj.body, { headers: h });
+}
+
+// a person opening the paper in a tab (not a script fetching it)
+function opensAsPage(request) {
+  const dest = request.headers.get('sec-fetch-dest');
+  if (dest) return dest === 'document';
+  return (request.headers.get('accept') || '').includes('text/html');
+}
+
+async function darkOn(ctx) {
+  const s = ctx.data && ctx.data.session;
+  if (!s || !s.accountId) return false;
+  const prefs = await ctx.env.HUB_KV.get('prefs:' + s.accountId, 'json').catch(() => null);
+  return !!prefs && prefs.darkPapers === 'on';
+}
+
+// the PDF from where it was found, passed straight through (for the dark copy page when papers aren't kept here)
+async function proxySource(p, request) {
+  const r = await fetch(p.source, { headers: { 'user-agent': 'Mozilla/5.0 (compatible; JBRevision papers)' }, redirect: 'follow' }).catch(() => null);
+  if (!r || !r.ok) return new Response('Could not fetch this paper.', { status: 502, headers: { 'content-type': 'text/plain; charset=utf-8', 'cache-control': 'no-store' } });
+  if ((Number(r.headers.get('content-length')) || 0) > MAX_BYTES) return new Response('Too big.', { status: 413, headers: { 'cache-control': 'no-store' } });
+  const h = pdfHeaders(p.key, null);
+  h.delete('accept-ranges');
+  const len = r.headers.get('content-length');
+  if (len) h.set('content-length', len);
+  return new Response(request.method === 'HEAD' ? null : r.body, { headers: h });
+}
+
+const escHtml = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+// the page that makes and shows the dark copy (the work is done by /papers-dark.js)
+function darkPage(p, url) {
+  const file = fileName(p.key), name = escHtml(file.replace(/\.pdf$/i, ''));
+  const rawUrl = escHtml(url.pathname + '?raw=1');
+  const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<meta name="color-scheme" content="dark">
+<title>${name} (dark) · JB Revision</title>
+<link rel="icon" href="/favicon-32-dark.png" sizes="32x32" type="image/png">
+<style>
+  html, body { margin: 0; height: 100%; background: #141414; color: #ebebeb; font: 15px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  body { display: flex; flex-direction: column; }
+  .dk-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; padding: 10px 16px; border-bottom: 1px solid #2c2c2c; }
+  .dk-bar b { font-weight: 600; margin-right: auto; overflow-wrap: anywhere; }
+  .dk-msg { color: #a3a3a3; }
+  .dk-btn { display: inline-flex; align-items: center; height: 34px; padding: 0 14px; border-radius: 8px; background: #ebebeb; color: #141414; font-weight: 600; text-decoration: none; }
+  .dk-btn[hidden] { display: none; }
+  .dk-alt { color: #a3a3a3; }
+  .dk-alt:hover { color: #ebebeb; }
+  main { flex: 1; display: flex; }
+  main iframe { flex: 1; border: 0; width: 100%; background: #141414; }
+  .dk-mid { margin: auto; padding: 24px 16px; text-align: center; display: grid; gap: 14px; justify-items: center; }
+</style>
+</head>
+<body>
+<header class="dk-bar"><b>${name}</b><span class="dk-msg" id="dk-msg" role="status">Making a dark copy…</span>
+<a class="dk-btn" id="dk-dl" hidden download="${name} (dark).pdf">Download</a>
+<a class="dk-alt" href="${rawUrl}">Normal version</a></header>
+<main id="dk" data-raw="${rawUrl}" data-name="${name}"></main>
+<script src="/vendor/pdf-lib-1.17.1.min.js"></script>
+<script src="/papers-dark.js?v=1"></script>
+</body>
+</html>`;
+  return new Response(html, { headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'private, no-store',
+    'x-robots-tag': 'noindex, nofollow', 'content-security-policy': "frame-ancestors 'none'" } });
 }
 
 // for the admin console: how many papers are in the bucket and how big they are (lists the whole bucket, ~13 calls)

@@ -1,14 +1,16 @@
 // The signed-in person's settings, kept with their account so they follow them to every device and subject site.
-//   GET /api/prefs   {theme, look, csLang, t}
-//   PUT /api/prefs   any of {theme, look, csLang}: saves those, leaves the rest
+//   GET /api/prefs   {theme, look, csLang, darkPapers, t}
+//   PUT /api/prefs   any of {theme, look, csLang, darkPapers}: saves those, leaves the rest
 // look.js (on every page of the hub and the subject sites) copies them into the browser's own keys (hub-theme,
 // jbr-look, jbr-cs-lang) and saves a change made with the light/dark or look button; Settings (/settings) edits them all.
+// darkPapers (on/off, only in Settings) is read by the server: past papers open as dark copies (functions/_lib/papers.js).
 import { json } from '../_lib/auth.js';
 
 const OK = {
   theme: ['light', 'dark', 'device'],
   look: ['soft', 'bold'],
   csLang: ['cs', 'py', 'vb', 'java'],
+  darkPapers: ['off', 'on'],
 };
 const key = s => 'prefs:' + s.accountId;
 

@@ -1,5 +1,5 @@
 /* Settings (/settings): your account (username, email, password), how the site looks (light/dark/device, Studio or
-   Bubbly), study choices, offline mode (offline.js), and your data. Looks and study choices are kept with your account (functions/api/prefs.js)
+   Bubbly), study choices (including dark papers, which only this page can turn on), offline mode (offline.js), and your data. Looks and study choices are kept with your account (functions/api/prefs.js)
    and copied into each browser by look.js, so they apply on every subject site and device. */
 (function () {
   'use strict';
@@ -38,7 +38,9 @@
   function look() { return document.documentElement.getAttribute('data-look') === 'bold' ? 'bold' : 'soft'; }
   function lang() { try { return localStorage.getItem('jbr-cs-lang') || 'cs'; } catch (e) { return 'cs'; } }
 
-  function render(me) {
+  var DARK = [['off', 'Normal'], ['on', 'Dark']];
+
+  function render(me, prefs) {
     var key = !!me.viaKey, email = me.email
       ? esc(me.email) + ' <span class="set-tag' + (me.verified ? ' ok' : '') + '">' + (me.verified ? 'Checked' : 'Not checked') + '</span>'
       : 'None yet. Add one so you can reset your password if you forget it.';
@@ -61,6 +63,8 @@
 
     h += '<section class="set-sec"><h2>Study</h2>' +
       row('Programming language', 'For Computer Science: the questions, mocks and progress you see.', seg('csLang', LANGS, lang())) +
+      (key ? '' : row('Dark papers', 'Past papers, mark schemes and inserts open as dark copies: black pages with light writing. Each one has a Download button and a link back to the normal version.',
+        seg('darkPapers', DARK, prefs && prefs.darkPapers === 'on' ? 'on' : 'off'))) +
       '</section>';
 
     // Offline: download subjects to this device (offline.js)
@@ -88,7 +92,10 @@
       g.addEventListener('click', function (e) {
         var b = e.target.closest('button'); if (!b) return;
         var p = {}; p[g.getAttribute('data-name')] = b.getAttribute('data-v');
-        pick(g, b); keep(p);
+        pick(g, b);
+        // dark papers is only read by the server (functions/_lib/papers.js), so it goes straight to the account
+        if (p.darkPapers) api('PUT', '/api/prefs', p).then(function () { toast(p.darkPapers === 'on' ? 'Saved. Papers open dark from now on.' : 'Saved'); }, function (er) { toast(er.message, true); });
+        else keep(p);
       });
     });
     var looks = app.querySelector('.set-looks');
@@ -215,7 +222,7 @@
     setTimeout(function () { t.remove(); }, 2700);
   }
 
-  api('GET', '/api/account').then(render).catch(function (e) {
+  Promise.all([api('GET', '/api/account'), api('GET', '/api/prefs').catch(function () { return {}; })]).then(function (r) { render(r[0], r[1]); }).catch(function (e) {
     if (e.message !== 'Signed out') app.innerHTML = '<p class="loading">Could not load your settings.</p>';
   });
 })();
