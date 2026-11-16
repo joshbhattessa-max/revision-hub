@@ -177,9 +177,9 @@ function darkPage(p, url) {
 <header class="dk-bar"><b>${name}</b><span class="dk-msg" id="dk-msg" role="status">Making a dark copy…</span>
 <a class="dk-btn" id="dk-dl" hidden download="${name} (dark).pdf">Download</a>
 <a class="dk-alt" href="${rawUrl}">Normal version</a></header>
-<main id="dk" data-raw="${rawUrl}" data-name="${name}"></main>
+<main id="dk" data-raw="${rawUrl}" data-src="${escHtml(p.source)}" data-name="${name}"></main>
 <script src="/vendor/pdf-lib-1.17.1.min.js"></script>
-<script src="/papers-dark.js?v=1"></script>
+<script src="/papers-dark.js?v=2"></script>
 </body>
 </html>`;
   return new Response(html, { headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'private, no-store',

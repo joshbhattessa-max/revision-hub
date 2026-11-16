@@ -32,5 +32,9 @@ export async function onRequestPut(ctx) {
     if (prefs[k] !== body[k]) { prefs[k] = body[k]; changed = true; }
   }
   if (changed) { prefs.t = Date.now(); await ctx.env.HUB_KV.put(key(s), JSON.stringify(prefs)); }
-  return json(prefs);
+  const res = json(prefs);
+  // papers opened before were kept by this browser (they used to be sent with a week's max-age), so it would show
+  // those instead of asking the site for the dark (or normal) copy: empty this browser's cache of the site
+  if (body.darkPapers !== undefined) res.headers.set('clear-site-data', '"cache"');
+  return res;
 }
