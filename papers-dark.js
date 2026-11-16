@@ -37,9 +37,15 @@
   function run(box) {
     var msg = document.getElementById('dk-msg'), dl = document.getElementById('dk-dl');
     var phone = window.matchMedia && matchMedia('(pointer: coarse)').matches;
-    fetch(box.getAttribute('data-raw'), { credentials: 'same-origin' }).then(function (r) {
-      if (!r.ok) throw new Error('HTTP ' + r.status);
-      return r.arrayBuffer();
+    function get(url, opts) {
+      return fetch(url, opts).then(function (r) {
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        return r.arrayBuffer();
+      });
+    }
+    // through this site first; if that fails, straight from where the paper was found (PMT allows this)
+    get(box.getAttribute('data-raw'), { credentials: 'same-origin' }).catch(function () {
+      return get(box.getAttribute('data-src'), { credentials: 'omit', referrerPolicy: 'no-referrer' });
     }).then(function (b) {
       if (!root.PDFLib) throw new Error('pdf-lib missing');
       return makeDark(b, root.PDFLib);
@@ -54,8 +60,8 @@
         f.src = url;
         box.appendChild(f);
       }
-    }).catch(function () {
-      msg.textContent = "Couldn't make a dark copy of this one. The normal version still works.";
+    }).catch(function (er) {
+      msg.textContent = "Couldn't make a dark copy of this one (" + (er && er.message || 'unknown error') + '). The normal version still works.';
     });
   }
 
