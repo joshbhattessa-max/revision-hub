@@ -63,7 +63,7 @@
 
     h += '<section class="set-sec"><h2>Study</h2>' +
       row('Programming language', 'For Computer Science: the questions, mocks and progress you see.', seg('csLang', LANGS, lang())) +
-      (key ? '' : row('Dark papers', 'Past papers, mark schemes and inserts open as dark copies: black pages with light writing. Each one has a Download button and a link back to the normal version.',
+      (key ? '' : row('Dark papers', 'Mock papers you print, with their mark schemes, come out as dark copies: black pages with light writing. Past papers, mark schemes and inserts open dark too, with a Download button and a link back to the normal version.',
         seg('darkPapers', DARK, prefs && prefs.darkPapers === 'on' ? 'on' : 'off'))) +
       '</section>';
 
